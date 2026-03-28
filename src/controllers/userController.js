@@ -1,5 +1,7 @@
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
+const { logAction } = require('./systemController');
+
 const { uploadFile, deleteFile } = require('../utils/imagekit');
 
 const getUsers = async (req, res) => {
@@ -86,8 +88,13 @@ const updateStatus = async (req, res) => {
     const { status } = req.body;
     try {
         await db.execute('UPDATE users SET status = ? WHERE id = ?', [status, req.params.id]);
+        
+        // Log the action
+        await logAction(req.user.id, 'UPDATE_STATUS', 'users', `Updated status of user ID ${req.params.id} to ${status}`);
+        
         res.json({ message: 'Status updated successfully' });
     } catch (err) {
+
         console.error(err);
         res.status(500).send('Server Error');
     }
@@ -98,8 +105,13 @@ const resetPassword = async (req, res) => {
     try {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         await db.execute('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, req.params.id]);
+        
+        // Log the action
+        await logAction(req.user.id, 'RESET_PASSWORD', 'users', `Reset password for user ID ${req.params.id}`);
+
         res.json({ message: 'Password reset successfully' });
     } catch (err) {
+
         console.error(err);
         res.status(500).send('Server Error');
     }
@@ -126,8 +138,13 @@ const updatePasswords = async (req, res) => {
 const deleteUser = async (req, res) => {
     try {
         await db.execute('DELETE FROM users WHERE id = ?', [req.params.id]);
+
+        // Log the action
+        await logAction(req.user.id, 'DELETE_USER', 'users', `Deleted user ID ${req.params.id}`);
+
         res.json({ message: 'User deleted successfully' });
     } catch (err) {
+
         console.error(err);
         res.status(500).send('Server Error');
     }
@@ -154,8 +171,14 @@ const updateUser = async (req, res) => {
 
         values.push(req.params.id);
         await db.execute(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, values);
+
+        // Log the action with summary of changes
+        const summary = Object.keys(req.body).join(', ');
+        await logAction(req.user.id, 'UPDATE_USER', 'users', `Updated user ID ${req.params.id}: modified ${summary}`);
+
         res.json({ message: 'User updated successfully' });
     } catch (err) {
+
         console.error(err);
         res.status(500).send('Server Error');
     }

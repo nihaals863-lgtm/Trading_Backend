@@ -1,17 +1,19 @@
 const db = require('../config/db');
+const { logAction } = require('./systemController');
 const mockEngine = require('../utils/mockEngine');
 const bcrypt = require('bcryptjs');
+
 
 /**
  * Place a New Order
  */
 const placeOrder = async (req, res) => {
-    const { 
-        symbol, type, qty, price, 
-        order_type = 'MARKET', 
-        is_pending = false, 
-        userId: traderId, 
-        transactionPassword 
+    const {
+        symbol, type, qty, price,
+        order_type = 'MARKET',
+        is_pending = false,
+        userId: traderId,
+        transactionPassword
     } = req.body;
 
     const requesterId = req.user.id;
@@ -41,7 +43,7 @@ const placeOrder = async (req, res) => {
 
         // 3. Validate User Exists and Get Balance/Password
         const [userRows] = await db.execute(
-            'SELECT id, balance, transaction_password, role FROM users WHERE id = ?', 
+            'SELECT id, balance, transaction_password, role FROM users WHERE id = ?',
             [targetUserId]
         );
         const targetUser = userRows[0];
@@ -51,7 +53,7 @@ const placeOrder = async (req, res) => {
 
         // 4. Validate Transaction Password for the requester
         const [requesterRows] = await db.execute(
-            'SELECT transaction_password FROM users WHERE id = ?', 
+            'SELECT transaction_password FROM users WHERE id = ?',
             [requesterId]
         );
         const requester = requesterRows[0];
@@ -86,10 +88,10 @@ const placeOrder = async (req, res) => {
         const marginRequired = totalValue * 0.1; // 10% Margin
 
         if (targetUser.balance < marginRequired) {
-            return res.status(400).json({ 
-                message: 'Insufficient balance', 
-                required: marginRequired.toFixed(2), 
-                available: parseFloat(targetUser.balance || 0).toFixed(2) 
+            return res.status(400).json({
+                message: 'Insufficient balance',
+                required: marginRequired.toFixed(2),
+                available: parseFloat(targetUser.balance || 0).toFixed(2)
             });
         }
 
@@ -101,15 +103,15 @@ const placeOrder = async (req, res) => {
                 (user_id, symbol, type, order_type, qty, entry_price, margin_used, is_pending, status, trade_ip) 
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
-                targetUserId, 
-                symbol.toUpperCase(), 
-                type.toUpperCase(), 
-                order_type, 
-                qtyNum, 
-                executionPrice, 
-                marginRequired, 
-                is_pending ? 1 : 0, 
-                'OPEN', 
+                targetUserId,
+                symbol.toUpperCase(),
+                type.toUpperCase(),
+                order_type,
+                qtyNum,
+                executionPrice,
+                marginRequired,
+                is_pending ? 1 : 0,
+                'OPEN',
                 tradeIp
             ]
         );
@@ -121,8 +123,8 @@ const placeOrder = async (req, res) => {
         );
 
         console.log('✅ Trade Inserted:', result.insertId);
-        res.status(201).json({ 
-            message: 'Order placed successfully', 
+        res.status(201).json({
+            message: 'Order placed successfully',
             tradeId: result.insertId,
             executionPrice,
             marginUsed: marginRequired
@@ -199,7 +201,7 @@ const closeTrade = async (req, res) => {
     try {
         const [trades] = await db.execute('SELECT * FROM trades WHERE id = ?', [req.params.id]);
         if (trades.length === 0) return res.status(404).json({ message: 'Trade not found' });
-        
+
         const trade = trades[0];
         if (trade.status !== 'OPEN') {
             return res.status(400).json({ message: 'Trade is already closed or inactive' });
@@ -207,9 +209,9 @@ const closeTrade = async (req, res) => {
 
         const currentPrice = mockEngine.getPrice(trade.symbol);
         const finalExitPrice = exitPrice || currentPrice;
-        
-        const pnl = trade.type === 'BUY' 
-            ? (finalExitPrice - trade.entry_price) * trade.qty 
+
+        const pnl = trade.type === 'BUY'
+            ? (finalExitPrice - trade.entry_price) * trade.qty
             : (trade.entry_price - finalExitPrice) * trade.qty;
 
         // Release margin + Add/Subtract PnL
@@ -223,15 +225,19 @@ const closeTrade = async (req, res) => {
 
         // Update User Balance
         await db.execute(
-            'UPDATE users SET balance = balance + ? WHERE id = ?', 
+            'UPDATE users SET balance = balance + ? WHERE id = ?',
             [balanceChange, trade.user_id]
         );
 
         console.log(`✅ Trade ${trade.id} closed. PnL: ${pnl}, Margin Released: ${marginToRelease}, Balance Change: ${balanceChange}`);
+        
+        // Log the action (Audit)
+        await logAction(req.user.id || trade.user_id, 'CLOSE_TRADE', 'trades', `Closed trade ID #${trade.id} @ ${finalExitPrice}. PnL: ${pnl}`);
 
-        res.json({ 
-            message: 'Trade closed successfully', 
-            pnl, 
+        res.json({
+
+            message: 'Trade closed successfully',
+            pnl,
             marginReleased: marginToRelease,
             newBalanceChange: balanceChange
         });
@@ -247,8 +253,13 @@ const closeTrade = async (req, res) => {
 const deleteTrade = async (req, res) => {
     try {
         await db.execute('UPDATE trades SET status = "DELETED" WHERE id = ?', [req.params.id]);
+        
+        // Log the deletion (Audit)
+        await logAction(req.user.id, 'DELETE_TRADE', 'trades', `Soft-deleted trade ID #${req.params.id}`);
+
         res.json({ message: 'Trade deleted and moved to audit' });
     } catch (err) {
+
         console.error(err);
         res.status(500).send('Server Error');
     }

@@ -105,9 +105,12 @@ const globalBatchUpdate = async (req, res) => {
         // This is a high-stakes batch operation
         if (status) {
             await db.execute(`UPDATE client_settings SET ${segment}_enabled = ?`, [status === 'OPEN' ? 1 : 0]);
+            await logAction(req.user.id, 'BATCH_UPDATE', 'client_settings', `Global ${segment} status set to ${status}`);
+        } else if (limitUpdate) {
+            // Handle limit updates if logic is added here later
+            await logAction(req.user.id, 'BATCH_UPDATE', 'client_settings', `Global ${segment} limits updated`);
         }
         
-        await logAction(req.user.id, 'BATCH_UPDATE', 'client_settings', `Global ${segment} status set to ${status}`);
         res.json({ message: 'Global update completed' });
     } catch (err) {
         console.error(err);
