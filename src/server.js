@@ -14,7 +14,7 @@ const server = http.createServer(app);
 
 const ALLOWED_ORIGINS = [
     'http://localhost:5173', 
-    'http://localhost:3000', 
+    'https://traderss.kiaantechnology.com', 
     process.env.FRONTEND_URL
 ].filter(Boolean);
 
