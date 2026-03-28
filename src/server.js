@@ -1,18 +1,27 @@
+const express = require('express');
+const http = require('http');
+const cors = require('cors');
 const socketManager = require('./websocket/SocketManager');
 const marketDataService = require('./services/MarketDataService');
 const paperTradingEngine = require('./trading-engine/PaperTradingEngine');
 const { setIo } = require('./config/socket');
-require('dotenv').config();
+const runMigrations = require('./config/migrate');
+require('dotenv').config({ path: require('path').resolve(__dirname, '.env') });
 
-const app = express();
+const app = express();  
 app.set('trust proxy', true);
 const server = http.createServer(app);
+
+const ALLOWED_ORIGINS = [
+    'http://localhost:5173', 
+    'http://localhost:3000', 
+    process.env.FRONTEND_URL
+].filter(Boolean);
 
 const io = socketManager.init(server, ALLOWED_ORIGINS);
 setIo(io);
 
-// Start Paper Trading Engine
-paperTradingEngine.start();
+// Start Paper Trading Engine moved inside migration callback
 
 const authRoutes = require('./routes/authRoutes');
 const tradeRoutes = require('./routes/tradeRoutes');
@@ -115,6 +124,9 @@ runMigrations()
         server.listen(PORT, () => {
             console.log(`🚀 Server running on port ${PORT}`);
         });
+
+        // Initialize Paper Trading Engine after DB is ready (if applicable)
+        paperTradingEngine.start();
 
         // Initialize Market Data
         try {

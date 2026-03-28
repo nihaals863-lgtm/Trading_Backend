@@ -1,11 +1,15 @@
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let openai = null;
 
 export const parseQuery = async (query, injectedSchema = null) => {
   try {
+    if (!openai && process.env.OPENAI_API_KEY) {
+      openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    }
+    if (!openai) {
+      throw new Error("OpenAI API key missing");
+    }
     const prompt = `
   You are an expert MySQL query generator.
 
