@@ -1,0 +1,405 @@
+{
+  "info": {
+    "name": "AI Command Execution System",
+    "description": "Collection for testing the unified /api/ai/ai-command endpoint",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "1. ADD_FUND - Basic",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"text\": \"ID 16 me 5000 add karo\"}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/ai/ai-command",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "ai", "ai-command"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "2. ADD_FUND - English",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"text\": \"add 5000 to user 16\"}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/ai/ai-command",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "ai", "ai-command"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "3. ADD_FUND - With K suffix",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"text\": \"user 16 ko 5k credit karo\"}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/ai/ai-command",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "ai", "ai-command"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "4. BLOCK_USER - Basic",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"text\": \"user 10 block karo\"}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/ai/ai-command",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "ai", "ai-command"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "5. BLOCK_USER - English",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"text\": \"block user ID 10\"}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/ai/ai-command",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "ai", "ai-command"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "6. UNBLOCK_USER - Basic",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"text\": \"ID 12 ko unblock karo\"}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/ai/ai-command",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "ai", "ai-command"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "7. UNBLOCK_USER - English",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"text\": \"activate user 12\"}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/ai/ai-command",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "ai", "ai-command"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "8. CREATE_ADMIN - With Details",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"text\": \"new admin banao naam Rahul email rahul@gmail.com\"}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/ai/ai-command",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "ai", "ai-command"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "9. CREATE_ADMIN - With Password",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"text\": \"create admin naam John email john@test.com password Secure@123\"}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/ai/ai-command",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "ai", "ai-command"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "10. CREATE_ADMIN - Dummy Credentials",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"text\": \"add a admin with dummy credentials\"}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/ai/ai-command",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "ai", "ai-command"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "11. TRANSFER_FUND - Basic",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"text\": \"ID 10 se ID 20 me 500 transfer karo\"}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/ai/ai-command",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "ai", "ai-command"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "12. TRANSFER_FUND - English",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"text\": \"transfer 500 from user 10 to user 20\"}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/ai/ai-command",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "ai", "ai-command"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "13. ERROR - Missing Fields",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"text\": \"add 5000\"}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/ai/ai-command",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "ai", "ai-command"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "14. ERROR - Unknown Command",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"text\": \"random gibberish text that makes no sense\"}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/ai/ai-command",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "ai", "ai-command"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "15. ERROR - Invalid User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"text\": \"ID 99999 block karo\"}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/ai/ai-command",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "ai", "ai-command"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Legacy - AI Parse Only",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"text\": \"ID 16 me 5000 add karo\"}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/ai/ai-parse",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "ai", "ai-parse"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Legacy - Execute Command",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"action\": \"ADD_FUND\", \"userId\": 16, \"amount\": 5000}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/ai/execute-command",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "ai", "execute-command"]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "your_jwt_token_here",
+      "type": "string"
+    }
+  ]
+}

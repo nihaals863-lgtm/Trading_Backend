@@ -1,0 +1,430 @@
+const db = require('../config/db');
+const bcrypt = require('bcryptjs');
+const { uploadFile, deleteFile } = require('../utils/imagekit');
+
+const getUsers = async (req, res) => {
+    try {
+        const { role } = req.query;
+        let query = `
+            SELECT
+                u.*,
+                p.username as parent_username,
+                p.full_name as parent_name,
+                u.balance as ledger_balance,
+                u.credit_limit,
+                IFNULL(ud.kyc_status, 'PENDING') as kycStatus,
+                IFNULL((SELECT SUM(pnl) FROM trades WHERE user_id = u.id AND status = 'CLOSED'), 0.00) as gross_pl,
+                0.00 as brokerage,
+                0.00 as swap_charges,
+                IFNULL((SELECT SUM(pnl) FROM trades WHERE user_id = u.id AND status = 'CLOSED'), 0.00) as net_pl,
+                (SELECT COUNT(*) FROM trades WHERE user_id = u.id AND status = 'OPEN') as active_trades_count,
+                cs.config_json
+            FROM users u
+            LEFT JOIN users p ON u.parent_id = p.id
+            LEFT JOIN user_documents ud ON u.id = ud.user_id
+            LEFT JOIN client_settings cs ON u.id = cs.user_id
+            WHERE 1=1
+        `;
+        const params = [];
+
+        // Apply hierarchy filtering based on role
+        if (req.user.role !== 'SUPERADMIN') {
+            query += ' AND u.parent_id = ?';
+            params.push(req.user.id);
+        }
+
+        if (role) {
+            query += ' AND u.role = ?';
+            params.push(role);
+        }
+
+        const [rows] = await db.execute(query, params);
+        res.json(rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+
+const getUserProfile = async (req, res) => {
+    try {
+        const [userRows] = await db.execute('SELECT * FROM users WHERE id = ?', [req.params.id]);
+        if (userRows.length === 0) return res.status(404).json({ message: 'User not found' });
+
+        const [settingsRows] = await db.execute('SELECT * FROM client_settings WHERE user_id = ?', [req.params.id]);
+        const [brokerSharesRows] = await db.execute('SELECT * FROM broker_shares WHERE user_id = ?', [req.params.id]);
+        const [segmentRows] = await db.execute('SELECT * FROM user_segments WHERE user_id = ?', [req.params.id]);
+        const [docRows] = await db.execute('SELECT * FROM user_documents WHERE user_id = ?', [req.params.id]);
+
+        const settings = settingsRows[0] || {};
+        if (settings.config_json) {
+            try { settings.config = JSON.parse(settings.config_json); } catch (e) { settings.config = {}; }
+        }
+
+        const brokerShares = brokerSharesRows[0] || {};
+        if (brokerShares.permissions_json) {
+            try { brokerShares.permissions = JSON.parse(brokerShares.permissions_json); } catch (e) { brokerShares.permissions = {}; }
+        }
+        if (brokerShares.segments_json) {
+            try { brokerShares.segments = JSON.parse(brokerShares.segments_json); } catch (e) { brokerShares.segments = {}; }
+        }
+
+        res.json({
+            profile: userRows[0],
+            settings,
+            brokerShares,
+            segments: segmentRows,
+            documents: docRows[0] || {}
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+
+const updateStatus = async (req, res) => {
+    const { status } = req.body;
+    try {
+        await db.execute('UPDATE users SET status = ? WHERE id = ?', [status, req.params.id]);
+        res.json({ message: 'Status updated successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+
+const resetPassword = async (req, res) => {
+    const { newPassword } = req.body;
+    try {
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await db.execute('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, req.params.id]);
+        res.json({ message: 'Password reset successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+
+const updatePasswords = async (req, res) => {
+    const { newPassword, transactionPassword } = req.body;
+    try {
+        if (newPassword) {
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+            await db.execute('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, req.params.id]);
+        }
+        if (transactionPassword) {
+            const hashedTransPassword = await bcrypt.hash(transactionPassword, 10);
+            await db.execute('UPDATE users SET transaction_password = ? WHERE id = ?', [hashedTransPassword, req.params.id]);
+        }
+        res.json({ message: 'Passwords updated successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+
+const deleteUser = async (req, res) => {
+    try {
+        await db.execute('DELETE FROM users WHERE id = ?', [req.params.id]);
+        res.json({ message: 'User deleted successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+
+// ─── UPDATE USER PROFILE ─────────────────────────────
+const updateUser = async (req, res) => {
+    const { fullName, email, mobile, city, creditLimit, exposureMultiplier, isDemo, status, parentId } = req.body;
+    try {
+        const fields = [];
+        const values = [];
+
+        if (fullName !== undefined)         { fields.push('full_name = ?');          values.push(fullName); }
+        if (email !== undefined)            { fields.push('email = ?');              values.push(email); }
+        if (mobile !== undefined)           { fields.push('mobile = ?');             values.push(mobile); }
+        if (city !== undefined)             { fields.push('city = ?');               values.push(city); }
+        if (creditLimit !== undefined)      { fields.push('credit_limit = ?');       values.push(creditLimit); }
+        if (exposureMultiplier !== undefined){ fields.push('exposure_multiplier = ?'); values.push(exposureMultiplier); }
+        if (isDemo !== undefined)           { fields.push('is_demo = ?');            values.push(isDemo ? 1 : 0); }
+        if (status !== undefined)           { fields.push('status = ?');             values.push(status); }
+        if (parentId !== undefined)         { fields.push('parent_id = ?');          values.push(parentId); }
+
+        if (fields.length === 0) return res.status(400).json({ message: 'No fields to update' });
+
+        values.push(req.params.id);
+        await db.execute(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, values);
+        res.json({ message: 'User updated successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+
+// ─── CLIENT SETTINGS ─────────────────────────────────
+const updateClientSettings = async (req, res) => {
+    const {
+        allowFreshEntry, allowOrdersBetweenHL, tradeEquityUnits,
+        autoCloseEnabled, banAllSegmentLimitOrder,
+        autoClosePct, notifyPct, minProfitTime, scalpingSlEnabled,
+        config  // full complex config JSON (all segment data)
+    } = req.body;
+
+    try {
+        // Merge autoCloseEnabled into config JSON so it persists
+        const configObj = config || {};
+        if (autoCloseEnabled !== undefined) configObj.autoCloseEnabled = autoCloseEnabled;
+        const configJson = Object.keys(configObj).length > 0 ? JSON.stringify(configObj) : null;
+
+        await db.execute(`
+            INSERT INTO client_settings
+                (user_id, allow_fresh_entry, allow_orders_between_hl, trade_equity_units,
+                 auto_close_at_m2m_pct, notify_at_m2m_pct, min_time_to_book_profit,
+                 scalping_sl_enabled, ban_all_segment_limit_order, config_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                allow_fresh_entry = VALUES(allow_fresh_entry),
+                allow_orders_between_hl = VALUES(allow_orders_between_hl),
+                trade_equity_units = VALUES(trade_equity_units),
+                auto_close_at_m2m_pct = VALUES(auto_close_at_m2m_pct),
+                notify_at_m2m_pct = VALUES(notify_at_m2m_pct),
+                min_time_to_book_profit = VALUES(min_time_to_book_profit),
+                scalping_sl_enabled = VALUES(scalping_sl_enabled),
+                ban_all_segment_limit_order = VALUES(ban_all_segment_limit_order),
+                config_json = VALUES(config_json)
+        `, [
+            req.params.id,
+            allowFreshEntry !== undefined ? (allowFreshEntry ? 1 : 0) : 1,
+            allowOrdersBetweenHL !== undefined ? (allowOrdersBetweenHL ? 1 : 0) : 1,
+            tradeEquityUnits !== undefined ? (tradeEquityUnits ? 1 : 0) : 0,
+            autoClosePct !== undefined ? autoClosePct : 90,
+            notifyPct !== undefined ? notifyPct : 70,
+            minProfitTime !== undefined ? minProfitTime : 120,
+            scalpingSlEnabled !== undefined ? (scalpingSlEnabled === true || scalpingSlEnabled === 'Enabled' ? 1 : 0) : 0,
+            banAllSegmentLimitOrder !== undefined ? (banAllSegmentLimitOrder ? 1 : 0) : 0,
+            configJson
+        ]);
+
+        res.json({ message: 'Client settings updated' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+
+// ─── BROKER SHARES ───────────────────────────────────
+const getBrokerShares = async (req, res) => {
+    try {
+        const [rows] = await db.execute('SELECT * FROM broker_shares WHERE user_id = ?', [req.params.id]);
+        const data = rows[0] || {};
+        if (data.permissions_json) {
+            try { data.permissions = JSON.parse(data.permissions_json); } catch (e) { data.permissions = {}; }
+        }
+        if (data.segments_json) {
+            try { data.segments = JSON.parse(data.segments_json); } catch (e) { data.segments = {}; }
+        }
+        res.json(data);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+
+const updateBrokerShares = async (req, res) => {
+    const {
+        sharePL, shareBrokerage, shareSwap, brokerageType,
+        tradingClientsLimit, subBrokersLimit, permissions, segments
+    } = req.body;
+
+    try {
+        await db.execute(`
+            INSERT INTO broker_shares
+                (user_id, share_pl_pct, share_brokerage_pct, share_swap_pct,
+                 brokerage_type, trading_clients_limit, sub_brokers_limit,
+                 permissions_json, segments_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                share_pl_pct = VALUES(share_pl_pct),
+                share_brokerage_pct = VALUES(share_brokerage_pct),
+                share_swap_pct = VALUES(share_swap_pct),
+                brokerage_type = VALUES(brokerage_type),
+                trading_clients_limit = VALUES(trading_clients_limit),
+                sub_brokers_limit = VALUES(sub_brokers_limit),
+                permissions_json = VALUES(permissions_json),
+                segments_json = VALUES(segments_json)
+        `, [
+            req.params.id,
+            sharePL || 0,
+            shareBrokerage || 50,
+            shareSwap || 10,
+            brokerageType || 'Percentage',
+            tradingClientsLimit || 10,
+            subBrokersLimit || 3,
+            permissions ? JSON.stringify(permissions) : null,
+            segments ? JSON.stringify(segments) : null
+        ]);
+
+        res.json({ message: 'Broker shares updated' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+
+// ─── DOCUMENTS ───────────────────────────────────────
+const getDocuments = async (req, res) => {
+    try {
+        const [rows] = await db.execute('SELECT * FROM user_documents WHERE user_id = ?', [req.params.id]);
+        res.json(rows[0] || {});
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+
+const updateDocuments = async (req, res) => {
+    const { panNumber, aadharNumber, kycStatus } = req.body;
+    const files = req.files || {};
+
+    try {
+        // Upload files to ImageKit
+        let panScreenshot, aadharFront, aadharBack, bankProof;
+
+        if (files.panScreenshot && files.panScreenshot[0]) {
+            const result = await uploadFile(files.panScreenshot[0].buffer, files.panScreenshot[0].originalname, `/traders/kyc/${req.params.id}`);
+            panScreenshot = result.url;
+        }
+        if (files.aadharFront && files.aadharFront[0]) {
+            const result = await uploadFile(files.aadharFront[0].buffer, files.aadharFront[0].originalname, `/traders/kyc/${req.params.id}`);
+            aadharFront = result.url;
+        }
+        if (files.aadharBack && files.aadharBack[0]) {
+            const result = await uploadFile(files.aadharBack[0].buffer, files.aadharBack[0].originalname, `/traders/kyc/${req.params.id}`);
+            aadharBack = result.url;
+        }
+        if (files.bankProof && files.bankProof[0]) {
+            const result = await uploadFile(files.bankProof[0].buffer, files.bankProof[0].originalname, `/traders/kyc/${req.params.id}`);
+            bankProof = result.url;
+        }
+
+        // Build dynamic upsert
+        const setFields = ['user_id = ?'];
+        const values = [req.params.id];
+
+        if (panNumber !== undefined)     { setFields.push('pan_number = ?');     values.push(panNumber); }
+        if (aadharNumber !== undefined)  { setFields.push('aadhar_number = ?');  values.push(aadharNumber); }
+        if (kycStatus !== undefined)     { setFields.push('kyc_status = ?');     values.push(kycStatus); }
+        if (panScreenshot !== undefined) { setFields.push('pan_screenshot = ?'); values.push(panScreenshot); }
+        if (aadharFront !== undefined)   { setFields.push('aadhar_front = ?');   values.push(aadharFront); }
+        if (aadharBack !== undefined)    { setFields.push('aadhar_back = ?');    values.push(aadharBack); }
+        if (bankProof !== undefined)     { setFields.push('bank_proof = ?');     values.push(bankProof); }
+
+        await db.execute(`
+            INSERT INTO user_documents (${setFields.map(f => f.split(' = ?')[0]).join(', ')})
+            VALUES (${values.map(() => '?').join(', ')})
+            ON DUPLICATE KEY UPDATE
+                ${setFields.filter(f => !f.startsWith('user_id')).join(', ')}
+        `, [...values, ...values.slice(1)]);
+
+        // Return the uploaded URLs so frontend can display them
+        res.json({
+            message: 'Documents updated',
+            urls: {
+                panScreenshot: panScreenshot || undefined,
+                aadharFront: aadharFront || undefined,
+                aadharBack: aadharBack || undefined,
+                bankProof: bankProof || undefined
+            }
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+
+// ─── USER SEGMENTS ───────────────────────────────────
+const getUserSegments = async (req, res) => {
+    try {
+        const [rows] = await db.execute('SELECT * FROM user_segments WHERE user_id = ?', [req.params.id]);
+        res.json(rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+
+const updateUserSegments = async (req, res) => {
+    // segments: array of { segment, isEnabled, brokerageType, brokerageValue, leverage, maxLotPerScrip, marginType, exposureMultiplier, autoSquareOff, squareOffTime }
+    const { segments } = req.body;
+    if (!Array.isArray(segments)) return res.status(400).json({ message: 'segments must be an array' });
+
+    try {
+        for (const seg of segments) {
+            await db.execute(`
+                INSERT INTO user_segments
+                    (user_id, segment, is_enabled, brokerage_type, brokerage_value,
+                     leverage, max_lot_per_scrip, margin_type, exposure_multiplier,
+                     auto_square_off, square_off_time)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                    is_enabled = VALUES(is_enabled),
+                    brokerage_type = VALUES(brokerage_type),
+                    brokerage_value = VALUES(brokerage_value),
+                    leverage = VALUES(leverage),
+                    max_lot_per_scrip = VALUES(max_lot_per_scrip),
+                    margin_type = VALUES(margin_type),
+                    exposure_multiplier = VALUES(exposure_multiplier),
+                    auto_square_off = VALUES(auto_square_off),
+                    square_off_time = VALUES(square_off_time)
+            `, [
+                req.params.id,
+                seg.segment,
+                seg.isEnabled ? 1 : 0,
+                seg.brokerageType || 'PER_LOT',
+                seg.brokerageValue || 0,
+                seg.leverage || 1,
+                seg.maxLotPerScrip || 10,
+                seg.marginType || 'PER_LOT',
+                seg.exposureMultiplier || 1,
+                seg.autoSquareOff ? 1 : 0,
+                seg.squareOffTime || null
+            ]);
+        }
+        res.json({ message: 'Segments updated' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+
+const getBrokerClients = async (req, res) => {
+    try {
+        const brokerId = req.params.id;
+        const brokerIdStr = String(brokerId);
+
+        const [rows] = await db.execute(
+            `SELECT u.id, u.username, u.full_name, u.email, u.mobile, u.status, u.role,
+                    u.balance as ledger_balance, u.created_at, u.is_demo,
+                    p.username as parent_username
+             FROM users u
+             LEFT JOIN client_settings cs ON cs.user_id = u.id
+             LEFT JOIN users p ON u.parent_id = p.id
+             WHERE u.role = 'TRADER' AND (
+                u.parent_id = ?
+                OR cs.config_json LIKE CONCAT('%"broker":"', ?, ' :%')
+             )
+             ORDER BY u.id ASC`,
+            [brokerId, brokerIdStr]
+        );
+        res.json(rows);
+    } catch (err) {
+        console.error('getBrokerClients error:', err);
+        res.status(500).json({ message: 'Server Error', error: err.message });
+    }
+};
+
+module.exports = {
+    getUsers, getUserProfile, updateStatus, resetPassword, deleteUser, updatePasswords,
+    updateUser, updateClientSettings, getBrokerShares, updateBrokerShares,
+    getDocuments, updateDocuments, getUserSegments, updateUserSegments, getBrokerClients
+};
