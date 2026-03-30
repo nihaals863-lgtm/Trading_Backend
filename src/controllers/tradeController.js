@@ -156,6 +156,10 @@ const placeOrder = async (req, res) => {
             marginUsed: marginRequired
         });
 
+        // Log the trade placement
+        await logAction(requesterId, 'PLACE_ORDER', 'trades', `Placed ${type.toUpperCase()} order for ${sym} (Qty: ${qtyNum}, Price: ${executionPrice}) for user #${targetUserId}`);
+
+
     } catch (err) {
         console.error('❌ Trade Placement Error:', err);
         res.status(500).json({ message: 'Internal Server Error', error: err.message });
@@ -200,20 +204,35 @@ const getTrades = async (req, res) => {
     }
 };
 
-/**
- * Group Trades (Aggregated View)
- */
 const getGroupTrades = async (req, res) => {
     try {
-        const query = `
-            SELECT symbol, type, SUM(qty) as total_qty, AVG(entry_price) as avg_price, COUNT(*) as trade_count
-            FROM trades
-            WHERE status = 'OPEN'
-            GROUP BY symbol, type
+        const { id, role } = req.user;
+        let query = `
+            SELECT 
+                t.symbol, 
+                t.type, 
+                t.market_type,
+                SUM(t.qty) as total_qty, 
+                AVG(t.entry_price) as avg_price, 
+                COUNT(*) as trade_count
+            FROM trades t
+            JOIN users u ON t.user_id = u.id
+            WHERE t.status = 'OPEN'
         `;
-        const [rows] = await db.execute(query);
+        const params = [];
+
+        // Hierarchy Isolation: Superadmin sees everything, others see only their downline
+        if (role !== 'SUPERADMIN') {
+            query += ` AND (u.id = ? OR u.parent_id = ? OR u.parent_id IN (SELECT id FROM users WHERE parent_id = ?))`;
+            params.push(id, id, id);
+        }
+
+        query += ` GROUP BY t.symbol, t.type, t.market_type ORDER BY t.symbol ASC`;
+
+        const [rows] = await db.execute(query, params);
         res.json(rows);
     } catch (err) {
+
         console.error(err);
         res.status(500).send('Server Error');
     }

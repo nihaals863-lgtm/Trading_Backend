@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { logAction } = require('./systemController');
 
 const login = async (req, res) => {
   const username = req.body.username ? req.body.username.trim() : '';
@@ -103,6 +104,9 @@ const login = async (req, res) => {
         fullName: user.full_name
       }
     });
+    
+    // Log the successful login to the action ledger
+    await logAction(user.id, 'LOGIN', 'auth', `User ${user.username} logged in successfully from IP: ${req.ip || 'Unknown'}`);
   } catch (err) {
     console.error(err);
     res.status(500).send('Server Error');
@@ -196,6 +200,9 @@ const createUser = async (req, res) => {
         }
 
         res.status(201).json({ message: 'User created successfully', id: newUserId });
+
+        // Log user creation
+        await logAction(req.user.id, 'CREATE_USER', 'users', `Created new user: ${username} (ID: ${newUserId}, Role: ${role || 'TRADER'})`);
     } catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {
             return res.status(400).json({ message: 'Username already exists' });

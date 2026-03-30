@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { logAction } = require('./systemController');
 
 const createFund = async (req, res) => {
     const { userId, amount, notes, mode } = req.body; 
@@ -30,6 +31,9 @@ const createFund = async (req, res) => {
 
         await connection.commit();
         res.json({ message: 'Transaction successful', newBalance });
+
+        // Log the fund creation
+        await logAction(req.user.id, 'CREATE_FUND', 'ledger', `${type} of ${amountNum} for user #${userId}. Notes: ${notes || 'N/A'}`);
     } catch (err) {
         await connection.rollback();
         console.error(err);
@@ -69,4 +73,102 @@ const getFunds = async (req, res) => {
     }
 };
 
-module.exports = { createFund, getFunds };
+const updateFund = async (req, res) => {
+    const { id } = req.params;
+    const { amount, notes, mode } = req.body;
+    const connection = await db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // 1. Get existing entry
+        const [rows] = await connection.execute('SELECT * FROM ledger WHERE id = ?', [id]);
+        if (rows.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ message: 'Fund entry not found' });
+        }
+
+        const old = rows[0];
+        const oldAmount = parseFloat(old.amount);
+        const newAmount = parseFloat(amount);
+        const newType = mode === 'deposit' ? 'DEPOSIT' : 'WITHDRAW';
+
+        // 2. Reverse old balance effect
+        const oldReverse = old.type === 'DEPOSIT' ? -oldAmount : oldAmount;
+
+        // 3. Apply new balance effect
+        const newEffect = newType === 'DEPOSIT' ? newAmount : -newAmount;
+
+        const balanceChange = oldReverse + newEffect;
+
+        // 4. Update user balance
+        await connection.execute(
+            'UPDATE users SET balance = balance + ? WHERE id = ?',
+            [balanceChange, old.user_id]
+        );
+
+        // 5. Get new balance for ledger
+        const [userRows] = await connection.execute('SELECT balance FROM users WHERE id = ?', [old.user_id]);
+        const newBalance = parseFloat(userRows[0]?.balance || 0);
+
+        // 6. Update ledger entry
+        await connection.execute(
+            'UPDATE ledger SET amount = ?, type = ?, remarks = ?, balance_after = ? WHERE id = ?',
+            [newAmount, newType, notes || old.remarks, newBalance, id]
+        );
+
+        await connection.commit();
+        res.json({ message: 'Fund entry updated successfully', newBalance });
+
+        // Log the fund update
+        await logAction(req.user.id, 'UPDATE_FUND', 'ledger', `Updated fund entry #${id}. New Amount: ${newAmount}, New Type: ${newType}`);
+    } catch (err) {
+        await connection.rollback();
+        console.error('Update Fund Error:', err);
+        res.status(500).json({ message: 'Failed to update fund entry' });
+    } finally {
+        connection.release();
+    }
+};
+
+const deleteFund = async (req, res) => {
+    const { id } = req.params;
+    const connection = await db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // 1. Get the ledger entry
+        const [rows] = await connection.execute('SELECT * FROM ledger WHERE id = ?', [id]);
+        if (rows.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ message: 'Fund entry not found' });
+        }
+
+        const entry = rows[0];
+        const amount = parseFloat(entry.amount);
+
+        // 2. Reverse the balance change
+        // If it was DEPOSIT, subtract the amount. If WITHDRAW, add it back.
+        const reverseAmount = entry.type === 'DEPOSIT' ? -amount : amount;
+        await connection.execute(
+            'UPDATE users SET balance = balance + ? WHERE id = ?',
+            [reverseAmount, entry.user_id]
+        );
+
+        // 3. Delete the ledger entry
+        await connection.execute('DELETE FROM ledger WHERE id = ?', [id]);
+
+        await connection.commit();
+        res.json({ message: 'Fund entry deleted and balance reversed' });
+
+        // Log the fund deletion
+        await logAction(req.user.id, 'DELETE_FUND', 'ledger', `Deleted fund entry #${id} for user #${entry.user_id}. Reversed amount: ${reverseAmount}`);
+    } catch (err) {
+        await connection.rollback();
+        console.error('Delete Fund Error:', err);
+        res.status(500).json({ message: 'Failed to delete fund entry' });
+    } finally {
+        connection.release();
+    }
+};
+
+module.exports = { createFund, getFunds, updateFund, deleteFund };

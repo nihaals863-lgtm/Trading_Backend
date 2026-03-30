@@ -266,28 +266,6 @@ const runMigrations = async () => {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
 
-    await db.execute(`
-        CREATE TABLE IF NOT EXISTS ip_clusters (
-            id            INT AUTO_INCREMENT PRIMARY KEY,
-            ip_address    VARCHAR(45) NOT NULL UNIQUE,
-            user_count    INT DEFAULT 0,
-            status        ENUM('WATCH','BLOCKED','SAFE') DEFAULT 'WATCH',
-            last_detected TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    `);
-
-    await db.execute(`
-        CREATE TABLE IF NOT EXISTS forensic_logs (
-            id         INT AUTO_INCREMENT PRIMARY KEY,
-            user_id    INT NOT NULL,
-            event_type VARCHAR(50) NOT NULL,
-            severity   ENUM('INFO','LOW','MEDIUM','HIGH','CRITICAL') DEFAULT 'INFO',
-            details    TEXT DEFAULT NULL,
-            ip_address VARCHAR(45) DEFAULT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    `);
-
     // ─── 10. SYSTEM & CONFIG ───────────────────────────────────────────────────
 
     await db.execute(`
@@ -326,6 +304,34 @@ const runMigrations = async () => {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
 
+    // Seed default scrips if table is empty
+    await db.execute(`
+        INSERT IGNORE INTO scrip_data (symbol, lot_size, margin_req, market_type) VALUES
+            ('GOLD',        1, 100, 'MCX'),
+            ('GOLDM',       1, 50,  'MCX'),
+            ('SILVER',      1, 100, 'MCX'),
+            ('SILVERM',     1, 50,  'MCX'),
+            ('CRUDEOIL',    1, 100, 'MCX'),
+            ('COPPER',      1, 100, 'MCX'),
+            ('NICKEL',      1, 100, 'MCX'),
+            ('ZINC',        1, 100, 'MCX'),
+            ('LEAD',        1, 100, 'MCX'),
+            ('ALUMINIUM',   1, 100, 'MCX'),
+            ('NATURALGAS',  1, 100, 'MCX'),
+            ('MENTHAOIL',   1, 100, 'MCX'),
+            ('COTTON',      1, 100, 'MCX'),
+            ('NIFTY',       1, 50,  'EQUITY'),
+            ('BANKNIFTY',   1, 50,  'EQUITY'),
+            ('RELIANCE',    1, 50,  'EQUITY'),
+            ('TCS',         1, 50,  'EQUITY'),
+            ('HDFCBANK',    1, 50,  'EQUITY'),
+            ('INFY',        1, 50,  'EQUITY'),
+            ('ICICIBANK',   1, 50,  'EQUITY'),
+            ('SBIN',        1, 50,  'EQUITY'),
+            ('TATAMOTORS',  1, 50,  'EQUITY'),
+            ('TATASTEEL',   1, 50,  'EQUITY')
+    `);
+
     await db.execute(`
         CREATE TABLE IF NOT EXISTS tickers (
             id        INT AUTO_INCREMENT PRIMARY KEY,
@@ -349,50 +355,12 @@ const runMigrations = async () => {
     `);
 
     await db.execute(`
-        CREATE TABLE IF NOT EXISTS global_configs (
-            id           INT AUTO_INCREMENT PRIMARY KEY,
-            config_key   VARCHAR(100) NOT NULL UNIQUE,
-            config_value TEXT DEFAULT NULL,
-            module       VARCHAR(50) DEFAULT 'SYSTEM',
-            updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    `);
-
-    await db.execute(`
-        CREATE TABLE IF NOT EXISTS learning_center (
-            id         INT AUTO_INCREMENT PRIMARY KEY,
-            title      VARCHAR(255) NOT NULL,
-            content    LONGTEXT NOT NULL,
-            category   VARCHAR(100) DEFAULT 'General',
-            video_url  VARCHAR(255) DEFAULT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    `);
-
-    await db.execute(`
         CREATE TABLE IF NOT EXISTS internal_transfers (
             id           INT AUTO_INCREMENT PRIMARY KEY,
             from_user_id INT NOT NULL,
             to_user_id   INT NOT NULL,
             amount       DECIMAL(18,4) NOT NULL,
             created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    `);
-
-    // Legacy tables kept for backward compat
-    await db.execute(`
-        CREATE TABLE IF NOT EXISTS theme_settings (
-            id            INT AUTO_INCREMENT PRIMARY KEY,
-            setting_key   VARCHAR(100) NOT NULL UNIQUE,
-            setting_value VARCHAR(200) NOT NULL
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    `);
-
-    await db.execute(`
-        CREATE TABLE IF NOT EXISTS system_settings (
-            id            INT AUTO_INCREMENT PRIMARY KEY,
-            setting_key   VARCHAR(100) NOT NULL UNIQUE,
-            setting_value TEXT DEFAULT NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
 
@@ -429,17 +397,6 @@ const runMigrations = async () => {
     await addColumn('notifications', 'target_user_ids', 'TEXT DEFAULT NULL');
 
     // ─── 11. SEED DATA ─────────────────────────────────────────────────────────
-
-    // Insert default global_configs only if table is empty
-    await db.execute(`
-        INSERT IGNORE INTO global_configs (config_key, config_value, module) VALUES
-            ('mcx_enabled',            'true',  'MARKET'),
-            ('equity_enabled',         'true',  'MARKET'),
-            ('options_enabled',        'true',  'MARKET'),
-            ('maintenance_mode',       'false', 'SYSTEM'),
-            ('auto_square_off_time',   '23:30', 'RISK'),
-            ('min_withdrawal_amount',  '500',   'FINANCE')
-    `);
 
     // ─── 12. DATA MIGRATIONS ───────────────────────────────────────────────────
 
