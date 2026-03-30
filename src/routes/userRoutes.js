@@ -4,7 +4,8 @@ const multer = require('multer');
 const {
     getUsers, getUserProfile, updateStatus, deleteUser, updatePasswords, resetPassword,
     updateUser, updateClientSettings, getBrokerShares, updateBrokerShares,
-    getDocuments, updateDocuments, getUserSegments, updateUserSegments, getBrokerClients
+    getDocuments, updateDocuments, getUserSegments, updateUserSegments, getBrokerClients,
+    resetAccount, recalculateBrokerage
 } = require('../controllers/userController');
 const { authMiddleware, roleMiddleware, brokerPermission } = require('../middleware/auth');
 
@@ -18,6 +19,8 @@ router.put('/:id/status', authMiddleware, roleMiddleware(['SUPERADMIN', 'ADMIN']
 router.delete('/:id', authMiddleware, roleMiddleware(['SUPERADMIN', 'ADMIN']), deleteUser);
 router.put('/:id/passwords', authMiddleware, brokerPermission('createClientsAllowed'), updatePasswords);
 router.post('/:id/reset-password', authMiddleware, roleMiddleware(['SUPERADMIN', 'ADMIN', 'BROKER']), brokerPermission('createClientsAllowed'), resetPassword);
+router.post('/:id/reset-account', authMiddleware, roleMiddleware(['SUPERADMIN', 'ADMIN']), resetAccount);
+router.post('/:id/recalculate-brokerage', authMiddleware, roleMiddleware(['SUPERADMIN', 'ADMIN']), recalculateBrokerage);
 
 // ─── NEW ROUTES ───────────────────────────────────────
 router.put('/:id', authMiddleware, brokerPermission('createClientsAllowed'), updateUser);

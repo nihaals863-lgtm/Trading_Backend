@@ -446,8 +446,108 @@ const getBrokerClients = async (req, res) => {
     }
 };
 
+/**
+ * Reset Account — deletes all trades, refunds margin, resets PnL for a user
+ * Ledger balance and fund transactions remain untouched
+ */
+const resetAccount = async (req, res) => {
+    const userId = req.params.id;
+    const connection = await db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // 1. Get all OPEN trades to refund margin
+        const [openTrades] = await connection.execute(
+            'SELECT SUM(margin_used) as totalMargin FROM trades WHERE user_id = ? AND status = "OPEN"',
+            [userId]
+        );
+        const marginToRefund = parseFloat(openTrades[0]?.totalMargin || 0);
+
+        // 2. Delete all trades for this user
+        const [deleteResult] = await connection.execute(
+            'DELETE FROM trades WHERE user_id = ?', [userId]
+        );
+
+        // 3. Refund locked margin back to balance
+        if (marginToRefund > 0) {
+            await connection.execute(
+                'UPDATE users SET balance = balance + ? WHERE id = ?',
+                [marginToRefund, userId]
+            );
+        }
+
+        await connection.commit();
+
+        await logAction(req.user.id, 'RESET_ACCOUNT', 'users',
+            `Reset account for user #${userId}. Deleted ${deleteResult.affectedRows} trades, refunded margin: ${marginToRefund}`);
+
+        res.json({
+            message: 'Account reset successfully',
+            tradesDeleted: deleteResult.affectedRows,
+            marginRefunded: marginToRefund
+        });
+    } catch (err) {
+        await connection.rollback();
+        console.error('Reset Account Error:', err);
+        res.status(500).json({ message: 'Failed to reset account' });
+    } finally {
+        connection.release();
+    }
+};
+
+/**
+ * Recalculate Brokerage — recalculates brokerage for all closed trades of a user
+ */
+const recalculateBrokerage = async (req, res) => {
+    const userId = req.params.id;
+    try {
+        // Get user's client settings for brokerage config
+        const [settingsRows] = await db.execute(
+            'SELECT config_json FROM client_settings WHERE user_id = ?', [userId]
+        );
+        const config = settingsRows.length > 0 ? JSON.parse(settingsRows[0].config_json || '{}') : {};
+
+        // Get all closed trades
+        const [trades] = await db.execute(
+            'SELECT id, symbol, qty, entry_price, exit_price, type FROM trades WHERE user_id = ? AND status = "CLOSED"',
+            [userId]
+        );
+
+        let totalBrokerage = 0;
+        const brokeragePerLot = parseFloat(config.mcxBrokerage || 0);
+        const brokerageType = config.mcxBrokerageType || 'per_crore';
+
+        for (const trade of trades) {
+            let brokerage = 0;
+            if (brokerageType === 'per_lot') {
+                brokerage = trade.qty * brokeragePerLot;
+            } else {
+                // per crore basis
+                const turnover = trade.qty * (parseFloat(trade.entry_price) + parseFloat(trade.exit_price || 0));
+                brokerage = (turnover / 10000000) * brokeragePerLot;
+            }
+            totalBrokerage += brokerage;
+
+            await db.execute('UPDATE trades SET brokerage = ? WHERE id = ?', [brokerage, trade.id]);
+        }
+
+        await logAction(req.user.id, 'RECALCULATE_BROKERAGE', 'users',
+            `Recalculated brokerage for user #${userId}. Total: ${totalBrokerage.toFixed(2)} across ${trades.length} trades`);
+
+        res.json({
+            message: 'Brokerage recalculated successfully',
+            tradesUpdated: trades.length,
+            totalBrokerage: totalBrokerage.toFixed(2)
+        });
+    } catch (err) {
+        console.error('Recalculate Brokerage Error:', err);
+        res.status(500).json({ message: 'Failed to recalculate brokerage' });
+    }
+};
+
 module.exports = {
     getUsers, getUserProfile, updateStatus, resetPassword, deleteUser, updatePasswords,
     updateUser, updateClientSettings, getBrokerShares, updateBrokerShares,
-    getDocuments, updateDocuments, getUserSegments, updateUserSegments, getBrokerClients
+    getDocuments, updateDocuments, getUserSegments, updateUserSegments, getBrokerClients,
+    resetAccount, recalculateBrokerage
 };

@@ -173,6 +173,7 @@ const runMigrations = async () => {
             target_price DECIMAL(18,4) DEFAULT NULL,
             status       ENUM('OPEN','CLOSED','CANCELLED','DELETED') NOT NULL DEFAULT 'OPEN',
             is_pending   TINYINT(1) DEFAULT 0,
+            market_type  ENUM('MCX','EQUITY','COMEX','FOREX','CRYPTO') DEFAULT 'MCX',
             entry_time   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             exit_time    TIMESTAMP NULL DEFAULT NULL,
             pnl          DECIMAL(18,4) DEFAULT 0,
@@ -182,6 +183,11 @@ const runMigrations = async () => {
             KEY status (status)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
+
+    // Add market_type to trades & scrip_data for existing DBs
+    await addColumn('trades', 'market_type', "ENUM('MCX','EQUITY','COMEX','FOREX','CRYPTO') DEFAULT 'MCX' AFTER is_pending");
+    await addColumn('trades', 'brokerage', "DECIMAL(18,4) DEFAULT 0 AFTER pnl");
+    await addColumn('scrip_data', 'market_type', "ENUM('MCX','EQUITY','COMEX','FOREX','CRYPTO') DEFAULT 'MCX' AFTER margin_req");
 
     // ─── 8. FINANCIALS ─────────────────────────────────────────────────────────
 
@@ -311,11 +317,12 @@ const runMigrations = async () => {
 
     await db.execute(`
         CREATE TABLE IF NOT EXISTS scrip_data (
-            id         INT AUTO_INCREMENT PRIMARY KEY,
-            symbol     VARCHAR(50) NOT NULL UNIQUE,
-            lot_size   INT NOT NULL DEFAULT 1,
-            margin_req DECIMAL(18,4) NOT NULL DEFAULT 100,
-            status     ENUM('OPEN','CLOSED') DEFAULT 'OPEN'
+            id          INT AUTO_INCREMENT PRIMARY KEY,
+            symbol      VARCHAR(50) NOT NULL UNIQUE,
+            lot_size    INT NOT NULL DEFAULT 1,
+            margin_req  DECIMAL(18,4) NOT NULL DEFAULT 100,
+            market_type ENUM('MCX','EQUITY','COMEX','FOREX','CRYPTO') DEFAULT 'MCX',
+            status      ENUM('OPEN','CLOSED') DEFAULT 'OPEN'
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
 

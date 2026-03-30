@@ -68,7 +68,7 @@ const placeOrder = async (req, res) => {
 
         const isMatch = await bcrypt.compare(transactionPassword, requester.transaction_password);
         if (!isMatch) {
-            return res.status(401).json({ message: 'Invalid transaction password' });
+            return res.status(403).json({ message: 'Invalid transaction password' });
         }
 
         // 5. Execution Price Logic
@@ -88,29 +88,55 @@ const placeOrder = async (req, res) => {
         const marginRequired = totalValue * 0.1; // 10% Margin
 
         if (targetUser.balance < marginRequired) {
+            const avail = parseFloat(targetUser.balance || 0).toFixed(2);
             return res.status(400).json({
-                message: 'Insufficient balance',
+                message: `Insufficient balance. Required margin: ₹${marginRequired.toFixed(2)}, Available: ₹${avail}`,
                 required: marginRequired.toFixed(2),
-                available: parseFloat(targetUser.balance || 0).toFixed(2)
+                available: avail
             });
         }
 
-        console.log('Executing with:', { targetUserId, symbol, type, executionPrice, marginRequired });
+        // 7. Detect market_type from symbol
+        const sym = symbol.toUpperCase();
+        const MCX_SYMBOLS = ['GOLD', 'GOLDM', 'SILVER', 'SILVERM', 'CRUDEOIL', 'COPPER', 'NICKEL', 'ZINC', 'LEAD', 'ALUMINIUM', 'ALUMINI', 'NATURALGAS', 'MENTHAOIL', 'COTTON', 'BULLDEX', 'CRUDEOIL MINI', 'ZINCMINI', 'LEADMINI', 'SILVER MIC'];
+        let marketType = 'MCX';
+        if (MCX_SYMBOLS.some(s => sym.includes(s))) {
+            marketType = 'MCX';
+        } else if (sym.includes('/') || ['EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD'].some(f => sym.includes(f))) {
+            marketType = 'FOREX';
+        } else if (['BTC', 'ETH', 'SOL', 'USDT'].some(c => sym.includes(c))) {
+            marketType = 'CRYPTO';
+        } else if (['GC', 'SI', 'HG', 'CL'].some(c => sym.startsWith(c))) {
+            marketType = 'COMEX';
+        } else {
+            marketType = 'EQUITY';
+        }
 
-        // 7. Insert Trade
+        // Also check if scrip_data has market_type defined
+        try {
+            const [scripRows] = await db.execute('SELECT market_type FROM scrip_data WHERE symbol = ?', [sym]);
+            if (scripRows.length > 0 && scripRows[0].market_type) {
+                marketType = scripRows[0].market_type;
+            }
+        } catch (_) { /* scrip_data may not have market_type column yet */ }
+
+        console.log('Executing with:', { targetUserId, symbol, type, executionPrice, marginRequired, marketType });
+
+        // 8. Insert Trade
         const [result] = await db.execute(
-            `INSERT INTO trades 
-                (user_id, symbol, type, order_type, qty, entry_price, margin_used, is_pending, status, trade_ip) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO trades
+                (user_id, symbol, type, order_type, qty, entry_price, margin_used, is_pending, market_type, status, trade_ip)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 targetUserId,
-                symbol.toUpperCase(),
+                sym,
                 type.toUpperCase(),
                 order_type,
                 qtyNum,
                 executionPrice,
                 marginRequired,
                 is_pending ? 1 : 0,
+                marketType,
                 'OPEN',
                 tradeIp
             ]
@@ -248,21 +274,173 @@ const closeTrade = async (req, res) => {
 };
 
 /**
- * Soft Delete Trade (Audit Trail)
+ * Soft Delete Trade (Audit Trail) — refunds margin + PnL back to user
  */
 const deleteTrade = async (req, res) => {
     try {
+        // Verify transaction password if provided
+        if (req.body && req.body.transactionPassword) {
+            const [users] = await db.execute('SELECT transaction_password FROM users WHERE id = ?', [req.user.id]);
+            if (users.length && users[0].transaction_password) {
+                const match = await bcrypt.compare(req.body.transactionPassword, users[0].transaction_password);
+                if (!match) return res.status(403).json({ message: 'Invalid transaction password' });
+            }
+        }
+
+        const [trades] = await db.execute('SELECT * FROM trades WHERE id = ?', [req.params.id]);
+        if (trades.length === 0) return res.status(404).json({ message: 'Trade not found' });
+
+        const trade = trades[0];
+        if (trade.status === 'DELETED') return res.status(400).json({ message: 'Trade already deleted' });
+
+        // Refund: margin + PnL (for CLOSED trades) or just margin (for OPEN trades)
+        const marginToRefund = parseFloat(trade.margin_used || 0);
+        const pnlToRefund = trade.status === 'CLOSED' ? parseFloat(trade.pnl || 0) : 0;
+        const balanceRefund = marginToRefund + pnlToRefund;
+
         await db.execute('UPDATE trades SET status = "DELETED" WHERE id = ?', [req.params.id]);
-        
-        // Log the deletion (Audit)
-        await logAction(req.user.id, 'DELETE_TRADE', 'trades', `Soft-deleted trade ID #${req.params.id}`);
 
-        res.json({ message: 'Trade deleted and moved to audit' });
+        if (balanceRefund !== 0) {
+            await db.execute('UPDATE users SET balance = balance + ? WHERE id = ?', [balanceRefund, trade.user_id]);
+        }
+
+        await logAction(req.user.id, 'DELETE_TRADE', 'trades', `Deleted trade #${req.params.id}. Refunded margin: ${marginToRefund}, PnL: ${pnlToRefund}`);
+
+        res.json({ message: 'Trade deleted and refunded', marginRefunded: marginToRefund, pnlRefunded: pnlToRefund });
     } catch (err) {
-
-        console.error(err);
-        res.status(500).send('Server Error');
+        console.error('Delete Trade Error:', err);
+        res.status(500).json({ message: 'Server Error' });
     }
 };
 
-module.exports = { placeOrder, getTrades, getGroupTrades, closeTrade, deleteTrade };
+/**
+ * Update Trade (modify entry_price, exit_price, qty)
+ */
+const updateTrade = async (req, res) => {
+    try {
+        const { entry_price, exit_price, qty, transactionPassword } = req.body;
+
+        // Verify transaction password
+        if (transactionPassword) {
+            const [users] = await db.execute('SELECT transaction_password FROM users WHERE id = ?', [req.user.id]);
+            if (users.length && users[0].transaction_password) {
+                const match = await bcrypt.compare(transactionPassword, users[0].transaction_password);
+                if (!match) return res.status(403).json({ message: 'Invalid transaction password' });
+            }
+        }
+
+        const [trades] = await db.execute('SELECT * FROM trades WHERE id = ?', [req.params.id]);
+        if (trades.length === 0) return res.status(404).json({ message: 'Trade not found' });
+
+        const trade = trades[0];
+
+        // Build dynamic update
+        const updates = [];
+        const params = [];
+
+        if (qty !== undefined && qty !== '' && qty !== null) {
+            const newQty = parseInt(qty);
+            if (newQty <= 0) return res.status(400).json({ message: 'Quantity must be positive' });
+            updates.push('qty = ?');
+            params.push(newQty);
+
+            // Recalculate margin: price * qty * 0.1
+            const price = entry_price ? parseFloat(entry_price) : parseFloat(trade.entry_price);
+            const newMargin = price * newQty * 0.1;
+            const oldMargin = parseFloat(trade.margin_used || 0);
+            const marginDiff = newMargin - oldMargin;
+
+            updates.push('margin_used = ?');
+            params.push(newMargin);
+
+            // Adjust user balance for margin difference
+            if (marginDiff !== 0) {
+                await db.execute('UPDATE users SET balance = balance - ? WHERE id = ?', [marginDiff, trade.user_id]);
+            }
+        }
+
+        if (entry_price !== undefined && entry_price !== '' && entry_price !== null) {
+            updates.push('entry_price = ?');
+            params.push(parseFloat(entry_price));
+        }
+
+        if (exit_price !== undefined && exit_price !== '' && exit_price !== null) {
+            updates.push('exit_price = ?');
+            params.push(parseFloat(exit_price));
+
+            // Recalculate PnL if both entry and exit price exist
+            const entryP = entry_price ? parseFloat(entry_price) : parseFloat(trade.entry_price);
+            const exitP = parseFloat(exit_price);
+            const q = qty ? parseInt(qty) : trade.qty;
+            const pnl = trade.type === 'BUY' ? (exitP - entryP) * q : (entryP - exitP) * q;
+            updates.push('pnl = ?');
+            params.push(pnl);
+        }
+
+        if (updates.length === 0) return res.status(400).json({ message: 'No fields to update' });
+
+        params.push(req.params.id);
+        await db.execute(`UPDATE trades SET ${updates.join(', ')} WHERE id = ?`, params);
+
+        await logAction(req.user.id, 'UPDATE_TRADE', 'trades', `Updated trade #${req.params.id}: ${updates.map(u => u.split(' =')[0]).join(', ')}`);
+
+        res.json({ message: 'Trade updated successfully' });
+    } catch (err) {
+        console.error('Update Trade Error:', err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+/**
+ * Restore Trade — reopens a CLOSED trade by removing exit data
+ * Reverses the close: removes exit_price, exit_time, resets PnL, re-deducts margin from balance
+ */
+const restoreTrade = async (req, res) => {
+    try {
+        const { transactionPassword } = req.body;
+
+        // Verify transaction password
+        if (transactionPassword) {
+            const [users] = await db.execute('SELECT transaction_password FROM users WHERE id = ?', [req.user.id]);
+            if (users.length && users[0].transaction_password) {
+                const match = await bcrypt.compare(transactionPassword, users[0].transaction_password);
+                if (!match) return res.status(403).json({ message: 'Invalid transaction password' });
+            }
+        }
+
+        const [trades] = await db.execute('SELECT * FROM trades WHERE id = ?', [req.params.id]);
+        if (trades.length === 0) return res.status(404).json({ message: 'Trade not found' });
+
+        const trade = trades[0];
+        if (trade.status !== 'CLOSED') {
+            return res.status(400).json({ message: 'Only CLOSED trades can be restored' });
+        }
+
+        // Reverse the close: take back PnL + margin that was released, then re-lock margin
+        const pnl = parseFloat(trade.pnl || 0);
+        const margin = parseFloat(trade.margin_used || 0);
+        // On close: balance += pnl + margin. To reverse: balance -= (pnl + margin) then balance += 0 (margin stays locked)
+        // Net: balance -= pnl (refund the PnL reversal, keep margin locked)
+        const balanceDeduction = pnl; // Remove the PnL that was credited on close
+
+        // Reopen the trade
+        await db.execute(
+            'UPDATE trades SET status = "OPEN", exit_price = NULL, exit_time = NULL, pnl = 0 WHERE id = ?',
+            [req.params.id]
+        );
+
+        // Reverse balance: deduct the PnL that was added on close
+        if (balanceDeduction !== 0) {
+            await db.execute('UPDATE users SET balance = balance - ? WHERE id = ?', [balanceDeduction, trade.user_id]);
+        }
+
+        await logAction(req.user.id, 'RESTORE_TRADE', 'trades', `Restored trade #${req.params.id} to OPEN. PnL reversed: ${pnl}`);
+
+        res.json({ message: 'Trade restored to OPEN', pnlReversed: pnl });
+    } catch (err) {
+        console.error('Restore Trade Error:', err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+module.exports = { placeOrder, getTrades, getGroupTrades, closeTrade, deleteTrade, updateTrade, restoreTrade };
