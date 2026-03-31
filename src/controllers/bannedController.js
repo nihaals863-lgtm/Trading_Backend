@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const bcrypt = require('bcryptjs');
 
 const getBannedOrders = async (req, res) => {
     try {
@@ -11,8 +12,20 @@ const getBannedOrders = async (req, res) => {
 };
 
 const createBannedOrder = async (req, res) => {
-    const { scripId, startTime, endTime } = req.body;
+    const { scripId, startTime, endTime, transactionPassword } = req.body;
     try {
+        // Validate transaction password
+        const [users] = await db.execute('SELECT transaction_password FROM users WHERE id = ?', [req.user.id]);
+        if (users.length && users[0].transaction_password) {
+            if (!transactionPassword) {
+                return res.status(400).json({ message: 'Transaction password is required' });
+            }
+            const isMatch = await bcrypt.compare(transactionPassword, users[0].transaction_password);
+            if (!isMatch) {
+                return res.status(400).json({ message: 'Invalid transaction password' });
+            }
+        }
+
         const [result] = await db.execute(
             'INSERT INTO banned_limit_orders (scrip_id, start_time, end_time) VALUES (?, ?, ?)',
             [scripId, startTime, endTime]

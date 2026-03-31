@@ -342,12 +342,17 @@ const updateDocuments = async (req, res) => {
         if (aadharBack !== undefined)    { setFields.push('aadhar_back = ?');    values.push(aadharBack); }
         if (bankProof !== undefined)     { setFields.push('bank_proof = ?');     values.push(bankProof); }
 
+        // Safety: If no documents are being updated (only user_id is in setFields), return early
+        if (setFields.length <= 1 && panNumber === undefined && aadharNumber === undefined && kycStatus === undefined) {
+            return res.json({ message: 'No changes detected' });
+        }
+
         await db.execute(`
             INSERT INTO user_documents (${setFields.map(f => f.split(' = ?')[0]).join(', ')})
             VALUES (${values.map(() => '?').join(', ')})
             ON DUPLICATE KEY UPDATE
                 ${setFields.filter(f => !f.startsWith('user_id')).join(', ')}
-        `, [...values, ...values.slice(1)]);
+        `, [...values, ...values.slice(1).filter((v, i) => !setFields[i + 1].startsWith('user_id'))]);
 
         // Return the uploaded URLs so frontend can display them
         res.json({

@@ -71,7 +71,56 @@ const placeOrder = async (req, res) => {
             return res.status(403).json({ message: 'Invalid transaction password' });
         }
 
-        // 5. Execution Price Logic
+        // 5. Banned Limit Order Check
+        if (order_type !== 'MARKET') {
+            const now = new Date();
+            const [bans] = await db.execute(
+                'SELECT id FROM banned_limit_orders WHERE scrip_id = ? AND start_time <= ? AND end_time >= ?',
+                [symbol, now, now]
+            );
+            if (bans.length > 0) {
+                return res.status(400).json({ message: `Limit orders are banned for ${symbol} during this time period` });
+            }
+        }
+
+        // 6. Expiry Rules Check
+        const [scripRows] = await db.execute('SELECT expiry_date FROM scrip_data WHERE symbol = ?', [symbol]);
+        const [expiryRuleRows] = await db.execute('SELECT * FROM expiry_rules WHERE id = 1');
+        const expiryRule = expiryRuleRows[0];
+        const scrip = scripRows[0];
+
+        if (expiryRule && scrip && scrip.expiry_date) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const expiryDate = new Date(scrip.expiry_date);
+            expiryDate.setHours(0, 0, 0, 0);
+            const daysLeft = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+
+            // Days before expiry check
+            const stopDays = parseInt(expiryRule.days_before_expiry) || 0;
+            if (stopDays > 0 && daysLeft <= stopDays && expiryRule.allow_expiring_scrip === 'No') {
+                return res.status(400).json({
+                    message: `${symbol} expires in ${daysLeft} day(s). New orders are not allowed within ${stopDays} days of expiry.`
+                });
+            }
+
+            // Away points check for limit orders
+            if (order_type !== 'MARKET' && price) {
+                const awayPoints = expiryRule.away_points ? JSON.parse(expiryRule.away_points) : {};
+                const allowedAway = parseFloat(awayPoints[symbol] || 0);
+                if (allowedAway > 0) {
+                    const currentPriceNow = mockEngine.getPrice(symbol);
+                    const diff = Math.abs(parseFloat(price) - currentPriceNow);
+                    if (diff > allowedAway) {
+                        return res.status(400).json({
+                            message: `Limit order price is too far from market price. Max allowed: ${allowedAway} points away. Current price: ${currentPriceNow}`
+                        });
+                    }
+                }
+            }
+        }
+
+        // 7. Execution Price Logic
         const currentPrice = mockEngine.getPrice(symbol);
         const executionPrice = (order_type === 'MARKET' || !price) ? currentPrice : parseFloat(price);
         const qtyNum = parseInt(qty, 10);
@@ -83,7 +132,7 @@ const placeOrder = async (req, res) => {
             return res.status(400).json({ message: 'Quantity must be a positive number' });
         }
 
-        // 6. Basic Margin/Balance Check (Placeholder: 10% margin requirement)
+        // 8. Basic Margin/Balance Check (Placeholder: 10% margin requirement)
         const totalValue = executionPrice * qtyNum;
         const marginRequired = totalValue * 0.1; // 10% Margin
 
@@ -181,8 +230,13 @@ const getTrades = async (req, res) => {
         }
 
         if (req.query.is_pending !== undefined) {
+            const isPending = req.query.is_pending === 'true' || req.query.is_pending === '1' ? 1 : 0;
             query += ' AND t.is_pending = ?';
-            params.push(req.query.is_pending === 'true' || req.query.is_pending === '1' ? 1 : 0);
+            params.push(isPending);
+            // Pending orders list should only show active (OPEN) ones, not cancelled
+            if (isPending === 1 && !status) {
+                query += " AND t.status = 'OPEN'";
+            }
         }
 
         // Filter by specific user_id (for client detail views)
@@ -240,6 +294,8 @@ const getGroupTrades = async (req, res) => {
 
 /**
  * Close/Square-off Trade
+ * - Pending orders (is_pending=1): cancelled immediately, margin refunded, no PnL
+ * - Open orders: closed at exitPrice or current market price
  */
 const closeTrade = async (req, res) => {
     const { exitPrice } = req.body;
@@ -252,6 +308,22 @@ const closeTrade = async (req, res) => {
             return res.status(400).json({ message: 'Trade is already closed or inactive' });
         }
 
+        const marginToRelease = parseFloat(trade.margin_used || 0);
+
+        // Pending orders: cancel with no PnL, just refund margin
+        if (trade.is_pending == 1) {
+            await db.execute(
+                'UPDATE trades SET status = "CANCELLED", exit_price = entry_price, exit_time = NOW(), pnl = 0 WHERE id = ?',
+                [req.params.id]
+            );
+            await db.execute(
+                'UPDATE users SET balance = balance + ? WHERE id = ?',
+                [marginToRelease, trade.user_id]
+            );
+            await logAction(req.user.id || trade.user_id, 'CANCEL_TRADE', 'trades', `Cancelled pending order #${trade.id}. Margin refunded: ${marginToRelease}`);
+            return res.json({ message: 'Pending order cancelled', pnl: 0, marginReleased: marginToRelease, newBalanceChange: marginToRelease });
+        }
+
         const currentPrice = mockEngine.getPrice(trade.symbol);
         const finalExitPrice = exitPrice || currentPrice;
 
@@ -260,7 +332,6 @@ const closeTrade = async (req, res) => {
             : (trade.entry_price - finalExitPrice) * trade.qty;
 
         // Release margin + Add/Subtract PnL
-        const marginToRelease = parseFloat(trade.margin_used || 0);
         const balanceChange = pnl + marginToRelease;
 
         await db.execute(
@@ -275,12 +346,11 @@ const closeTrade = async (req, res) => {
         );
 
         console.log(`✅ Trade ${trade.id} closed. PnL: ${pnl}, Margin Released: ${marginToRelease}, Balance Change: ${balanceChange}`);
-        
+
         // Log the action (Audit)
         await logAction(req.user.id || trade.user_id, 'CLOSE_TRADE', 'trades', `Closed trade ID #${trade.id} @ ${finalExitPrice}. PnL: ${pnl}`);
 
         res.json({
-
             message: 'Trade closed successfully',
             pnl,
             marginReleased: marginToRelease,
@@ -317,7 +387,7 @@ const deleteTrade = async (req, res) => {
         const pnlToRefund = trade.status === 'CLOSED' ? parseFloat(trade.pnl || 0) : 0;
         const balanceRefund = marginToRefund + pnlToRefund;
 
-        await db.execute('UPDATE trades SET status = "DELETED" WHERE id = ?', [req.params.id]);
+        await db.execute('UPDATE trades SET status = "DELETED", exit_time = NOW() WHERE id = ?', [req.params.id]);
 
         if (balanceRefund !== 0) {
             await db.execute('UPDATE users SET balance = balance + ? WHERE id = ?', [balanceRefund, trade.user_id]);

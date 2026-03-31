@@ -2,17 +2,25 @@ const db = require('../config/db');
 const { logAction } = require('./systemController');
 
 const createFund = async (req, res) => {
-    const { userId, amount, notes, mode } = req.body; 
+    const { userId, amount, notes, mode } = req.body;
     const type = mode === 'deposit' ? 'DEPOSIT' : 'WITHDRAW';
+    const role = req.user.role;
+    const loggedInId = req.user.id;
 
     const connection = await db.getConnection();
     try {
         await connection.beginTransaction();
 
-        // 1. Get Current Balance
-        const [userRows] = await connection.execute('SELECT balance FROM users WHERE id = ? FOR UPDATE', [userId]);
+        // 1. Get Current Balance + verify ownership
+        const [userRows] = await connection.execute('SELECT balance, parent_id FROM users WHERE id = ? FOR UPDATE', [userId]);
         if (userRows.length === 0) throw new Error('User not found');
-        
+
+        // Broker can only fund their own directly assigned clients
+        if (role === 'BROKER' && userRows[0].parent_id !== loggedInId) {
+            await connection.rollback();
+            return res.status(403).json({ message: 'You can only manage funds for your own clients' });
+        }
+
         const currentBalance = parseFloat(userRows[0].balance || 0);
         const amountNum = parseFloat(amount);
         const newBalance = type === 'DEPOSIT' ? currentBalance + amountNum : currentBalance - amountNum;
@@ -46,13 +54,35 @@ const createFund = async (req, res) => {
 const getFunds = async (req, res) => {
     try {
         const { userId, amount } = req.query;
+        const role = req.user.role;
+        const loggedInId = req.user.id;
+
         let query = `
-            SELECT l.*, u.username, u.full_name 
-            FROM ledger l 
-            JOIN users u ON l.user_id = u.id 
+            SELECT l.*, u.username, u.full_name
+            FROM ledger l
+            JOIN users u ON l.user_id = u.id
             WHERE 1=1
         `;
         const params = [];
+
+        // Role-based hierarchy filter
+        if (role === 'SUPERADMIN') {
+            // sees all
+        } else if (role === 'ADMIN') {
+            // sees all traders/brokers under them (any depth) via subquery
+            query += ` AND l.user_id IN (
+                SELECT id FROM users WHERE parent_id = ?
+                UNION
+                SELECT u2.id FROM users u2
+                JOIN users u3 ON u2.parent_id = u3.id
+                WHERE u3.parent_id = ?
+            )`;
+            params.push(loggedInId, loggedInId);
+        } else {
+            // BROKER — only directly assigned clients
+            query += ` AND u.parent_id = ?`;
+            params.push(loggedInId);
+        }
 
         if (userId) {
             query += " AND u.username LIKE ?";

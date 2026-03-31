@@ -1,8 +1,8 @@
 const { KiteConnect } = require('kiteconnect');
 const kiteRepo = require('../repositories/KiteRepository');
 const crypto = require('crypto');
-require('dotenv').config();
 
+// Access keys from process.env (loaded by server.js)
 const API_KEY = process.env.KITE_API_KEY;
 const API_SECRET = process.env.KITE_API_SECRET;
 

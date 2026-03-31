@@ -188,6 +188,7 @@ const runMigrations = async () => {
     await addColumn('trades', 'market_type', "ENUM('MCX','EQUITY','COMEX','FOREX','CRYPTO') DEFAULT 'MCX' AFTER is_pending");
     await addColumn('trades', 'brokerage', "DECIMAL(18,4) DEFAULT 0 AFTER pnl");
     await addColumn('scrip_data', 'market_type', "ENUM('MCX','EQUITY','COMEX','FOREX','CRYPTO') DEFAULT 'MCX' AFTER margin_req");
+    await addColumn('scrip_data', 'expiry_date', "DATE DEFAULT NULL AFTER market_type");
 
     // ─── 8. FINANCIALS ─────────────────────────────────────────────────────────
 
@@ -342,15 +343,67 @@ const runMigrations = async () => {
     `);
 
     await db.execute(`
+        CREATE TABLE IF NOT EXISTS banned_limit_orders (
+            id         INT AUTO_INCREMENT PRIMARY KEY,
+            scrip_id   VARCHAR(50) NOT NULL,
+            start_time DATETIME NOT NULL,
+            end_time   DATETIME NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS expiry_rules (
+            id                    INT AUTO_INCREMENT PRIMARY KEY,
+            auto_square_off       ENUM('Yes','No') DEFAULT 'No',
+            square_off_time       VARCHAR(10) DEFAULT '11:30',
+            allow_expiring_scrip  ENUM('Yes','No') DEFAULT 'No',
+            days_before_expiry    INT DEFAULT 0,
+            away_points           JSON DEFAULT NULL,
+            updated_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+
+    await db.execute(`
+        INSERT IGNORE INTO expiry_rules (id, auto_square_off, square_off_time, allow_expiring_scrip, days_before_expiry)
+        VALUES (1, 'No', '11:30', 'No', 0)
+    `);
+
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS bank_details (
+            id               INT AUTO_INCREMENT PRIMARY KEY,
+            bank_name        VARCHAR(100) NOT NULL,
+            account_holder   VARCHAR(100) NOT NULL,
+            account_number   VARCHAR(50) NOT NULL,
+            ifsc             VARCHAR(20) NOT NULL,
+            branch           VARCHAR(100) NOT NULL,
+            status           ENUM('Active','Inactive') DEFAULT 'Active',
+            created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+
+    await db.execute(`
         CREATE TABLE IF NOT EXISTS support_tickets (
             id          INT AUTO_INCREMENT PRIMARY KEY,
             user_id     INT NOT NULL,
             subject     VARCHAR(255) NOT NULL,
-            message     TEXT NOT NULL,
-            admin_reply TEXT DEFAULT NULL,
             priority    ENUM('LOW','NORMAL','HIGH') DEFAULT 'NORMAL',
             status      ENUM('PENDING','RESOLVED') DEFAULT 'PENDING',
-            created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+    await addColumn('support_tickets', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at');
+
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS ticket_messages (
+            id          INT AUTO_INCREMENT PRIMARY KEY,
+            ticket_id   INT NOT NULL,
+            sender_id   INT NOT NULL,
+            sender_role VARCHAR(20) NOT NULL,
+            message     TEXT NOT NULL,
+            created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (ticket_id) REFERENCES support_tickets(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
 

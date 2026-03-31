@@ -70,8 +70,8 @@ const getRiskScoring = async (req, res) => {
  * General Login History
  */
 const getIpLogins = async (req, res) => {
-    const { startDate, endDate, location, search } = req.query;
-    console.log('DEBUG: IP Logins Filters received:', { startDate, endDate, location, search });
+    const { startDate, endDate, location, search, role } = req.query;
+    console.log('DEBUG: IP Logins Filters received:', { startDate, endDate, location, search, role });
     try {
         let query = `
             SELECT 
@@ -106,6 +106,10 @@ const getIpLogins = async (req, res) => {
             query += ' AND (l.username LIKE ? OR l.ip_address LIKE ? OR l.city LIKE ? OR u.full_name LIKE ?)';
             const searchVal = `%${search}%`;
             params.push(searchVal, searchVal, searchVal, searchVal);
+        }
+        if (role) {
+            query += ' AND u.role = ?';
+            params.push(role);
         }
 
         query += ' ORDER BY l.timestamp DESC LIMIT 500';

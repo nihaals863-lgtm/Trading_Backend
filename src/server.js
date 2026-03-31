@@ -1,3 +1,4 @@
+require('dotenv').config({ path: require('path').resolve(__dirname, '.env') });
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
@@ -6,7 +7,6 @@ const marketDataService = require('./services/MarketDataService');
 const paperTradingEngine = require('./trading-engine/PaperTradingEngine');
 const { setIo } = require('./config/socket');
 const runMigrations = require('./config/migrate');
-require('dotenv').config({ path: require('path').resolve(__dirname, '.env') });
 
 const app = express();  
 app.set('trust proxy', true);
@@ -127,6 +127,10 @@ runMigrations()
 
         // Initialize Paper Trading Engine after DB is ready (if applicable)
         paperTradingEngine.start();
+
+        // Start Expiry Square-off cron job
+        const { startExpirySquareOffJob } = require('./services/expirySquareOffService');
+        startExpirySquareOffJob();
 
         // Initialize Market Data
         try {
