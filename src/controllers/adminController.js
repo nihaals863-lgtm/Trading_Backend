@@ -2,6 +2,7 @@ const db = require('../config/db');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { uploadFile } = require('../utils/imagekit');
 
 // Tables are now created by src/config/migrate.js on server startup.
 
@@ -94,39 +95,71 @@ const savePanelSettings = async (req, res) => {
             } catch (_) {}
         }
 
-        // Handle logo file
+        // Handle logo file - Upload to ImageKit
         let logoPath = null;
         const logoFile = req.files?.logo?.[0];
+        console.log(`[savePanelSettings] req.files:`, req.files ? Object.keys(req.files) : 'none');
+        console.log(`[savePanelSettings] logoFile exists:`, !!logoFile);
+
         if (logoFile) {
-            const ext = path.extname(logoFile.originalname).toLowerCase();
-            const newFilename = `logo-${userId}${ext}`;
-            const newFilePath = path.join(uploadDir, newFilename);
-            if (fs.existsSync(logoFile.path)) fs.renameSync(logoFile.path, newFilePath);
-            logoPath = `/uploads/logo/${newFilename}`;
+            try {
+                console.log(`[Logo Upload] Starting upload for admin ${userId}...`);
+                console.log(`[Logo Upload] File: ${logoFile.originalname}, Size: ${logoFile.size} bytes`);
+
+                const result = await uploadFile(
+                    logoFile.buffer,
+                    `logo-${userId}`,
+                    '/admin/logos'
+                );
+
+                console.log(`[Logo Upload] uploadFile returned:`, result);
+
+                if (result && result.url) {
+                    logoPath = result.url;
+                    console.log(`[Logo Upload] ✅ Success! URL: ${logoPath}`);
+                } else {
+                    console.error(`[Logo Upload] ❌ uploadFile returned null or no URL:`, result);
+                }
+            } catch (err) {
+                console.error(`[Logo Upload] ❌ ERROR:`, {
+                    message: err.message,
+                    stack: err.stack
+                });
+            }
+        } else {
+            console.log(`[Logo Upload] No logo file provided for admin ${userId}`);
         }
 
-        // Handle profile image file
+        // Handle profile image file - Upload to ImageKit
         let profileImagePath = null;
         const profileFile = req.files?.profileImage?.[0];
         if (profileFile) {
-            const ext = path.extname(profileFile.originalname).toLowerCase();
-            const newFilename = `profile-${userId}${ext}`;
-            const newFilePath = path.join(profileDir, newFilename);
-            if (fs.existsSync(profileFile.path)) fs.renameSync(profileFile.path, newFilePath);
-            profileImagePath = `/uploads/profile/${newFilename}`;
+            try {
+                const result = await uploadFile(
+                    profileFile.buffer,
+                    `profile-${userId}`,
+                    '/admin/profiles'
+                );
+                profileImagePath = result.url;
+            } catch (err) {
+                console.error('Profile image upload failed:', err.message);
+            }
         }
 
-        // Handle background image file
+        // Handle background image file - Upload to ImageKit
         let bgImagePath = null;
         const bgFile = req.files?.bgImage?.[0];
         if (bgFile) {
-            const bgDir = path.join(__dirname, '../../uploads/bg');
-            if (!fs.existsSync(bgDir)) fs.mkdirSync(bgDir, { recursive: true });
-            const ext = path.extname(bgFile.originalname).toLowerCase();
-            const newFilename = `bg-${userId}${ext}`;
-            const newFilePath = path.join(bgDir, newFilename);
-            if (fs.existsSync(bgFile.path)) fs.renameSync(bgFile.path, newFilePath);
-            bgImagePath = `/uploads/bg/${newFilename}`;
+            try {
+                const result = await uploadFile(
+                    bgFile.buffer,
+                    `bg-${userId}`,
+                    '/admin/backgrounds'
+                );
+                bgImagePath = result.url;
+            } catch (err) {
+                console.error('Background image upload failed:', err.message);
+            }
         }
 
         // Build upsert — only update columns that were provided
@@ -138,18 +171,33 @@ const savePanelSettings = async (req, res) => {
         if (profileImagePath !== null) { cols.push('profile_image_path'); vals.push(profileImagePath); }
         if (bgImagePath !== null)      { cols.push('bg_image_path');      vals.push(bgImagePath); }
 
+        console.log(`[savePanelSettings] Columns to update:`, cols);
+        console.log(`[savePanelSettings] logoPath value:`, logoPath);
+
         if (cols.length > 0) {
             const colList    = cols.join(', ');
             const placeholders = cols.map(() => '?').join(', ');
             const updateClause = cols.map(c => `${c} = VALUES(${c})`).join(', ');
-            await db.execute(
-                `INSERT INTO admin_panel_settings (user_id, ${colList})
+            const sql = `INSERT INTO admin_panel_settings (user_id, ${colList})
                  VALUES (?, ${placeholders})
-                 ON DUPLICATE KEY UPDATE ${updateClause}`,
-                [userId, ...vals]
-            );
+                 ON DUPLICATE KEY UPDATE ${updateClause}`;
+            console.log(`[savePanelSettings] SQL:`, sql);
+            console.log(`[savePanelSettings] Params:`, [userId, ...vals]);
+
+            await db.execute(sql, [userId, ...vals]);
+            console.log(`[savePanelSettings] ✅ Database update successful`);
+        } else {
+            // Even if no changes, ensure record exists for this user
+            console.log(`[savePanelSettings] No changes provided, but ensuring admin record exists...`);
+            try {
+                await db.execute('INSERT IGNORE INTO admin_panel_settings (user_id) VALUES (?)', [userId]);
+                console.log(`[savePanelSettings] ✅ Ensured record exists for user ${userId}`);
+            } catch (e) {
+                console.error(`[savePanelSettings] Failed to ensure record:`, e.message);
+            }
         }
 
+        console.log(`[savePanelSettings] Final response - logoPath: ${logoPath}, profileImagePath: ${profileImagePath}, bgImagePath: ${bgImagePath}`);
         res.json({ message: 'Panel settings saved', logoPath, profileImagePath, bgImagePath });
     } catch (err) {
         console.error(err);

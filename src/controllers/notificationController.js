@@ -153,12 +153,29 @@ const createNotification = async (req, res) => {
 const getUsersByRole = async (req, res) => {
     const { role } = req.params;
     const userId = req.user.id;
+    const userRole = req.user.role;
+
     try {
-        // Only show users created by the logged-in user (parent_id = current user)
-        const [rows] = await db.execute(
-            'SELECT id, username, full_name, email, role FROM users WHERE role = ? AND status = ? AND parent_id = ? ORDER BY full_name ASC',
-            [role, 'Active', userId]
-        );
+        let query = 'SELECT id, username, full_name, email, role FROM users WHERE role = ? AND status = ? ';
+        let params = [role, 'Active'];
+
+        // Hierarchy filtering based on user role
+        if (userRole === 'SUPERADMIN') {
+            // SUPERADMIN sees all users of the requested role
+        } else if (userRole === 'ADMIN') {
+            // ADMIN sees direct children + grandchildren (any depth through intermediate admins)
+            query += `AND (parent_id = ? OR parent_id IN (
+                SELECT u.id FROM users u WHERE u.parent_id = ?
+            ))`;
+            params.push(userId, userId);
+        } else if (userRole === 'BROKER') {
+            // BROKER sees only direct children (traders created by them)
+            query += 'AND parent_id = ?';
+            params.push(userId);
+        }
+
+        query += ' ORDER BY full_name ASC';
+        const [rows] = await db.execute(query, params);
         res.json(rows);
     } catch (err) {
         console.error('getUsersByRole:', err);

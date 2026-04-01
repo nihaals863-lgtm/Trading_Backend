@@ -7,6 +7,11 @@ const { uploadFile, deleteFile } = require('../utils/imagekit');
 const getUsers = async (req, res) => {
     try {
         const { role } = req.query;
+        const currentUserId = req.user.id;
+        const currentUserRole = req.user.role;
+
+        console.log(`[getUsers] User ${currentUserId} (${currentUserRole}) requesting users with role filter: ${role || 'all'}`);
+
         let query = `
             SELECT
                 u.*,
@@ -20,7 +25,8 @@ const getUsers = async (req, res) => {
                 0.00 as swap_charges,
                 IFNULL((SELECT SUM(pnl) FROM trades WHERE user_id = u.id AND status = 'CLOSED'), 0.00) as net_pl,
                 (SELECT COUNT(*) FROM trades WHERE user_id = u.id AND status = 'OPEN') as active_trades_count,
-                cs.config_json
+                cs.config_json,
+                cs.broker_id
             FROM users u
             LEFT JOIN users p ON u.parent_id = p.id
             LEFT JOIN user_documents ud ON u.id = ud.user_id
@@ -30,17 +36,21 @@ const getUsers = async (req, res) => {
         const params = [];
 
         // Apply hierarchy filtering based on role
-        if (req.user.role !== 'SUPERADMIN') {
-            query += ' AND u.parent_id = ?';
-            params.push(req.user.id);
-        }
+        // Show clients to:
+        // 1. The creator (parent_id = current user id)
+        // 2. The assigned broker (broker_id = current user id)
+        query += ' AND (u.parent_id = ? OR cs.broker_id = ?)';
+        params.push(currentUserId, currentUserId);
 
         if (role) {
             query += ' AND u.role = ?';
             params.push(role);
         }
 
+        console.log(`[getUsers] Executing query with params:`, params);
+
         const [rows] = await db.execute(query, params);
+        console.log(`[getUsers] Returned ${rows.length} users`);
         res.json(rows);
     } catch (err) {
         console.error(err);
@@ -190,6 +200,7 @@ const updateClientSettings = async (req, res) => {
         allowFreshEntry, allowOrdersBetweenHL, tradeEquityUnits,
         autoCloseEnabled, banAllSegmentLimitOrder,
         autoClosePct, notifyPct, minProfitTime, scalpingSlEnabled,
+        brokerId,  // Broker assignment
         config  // full complex config JSON (all segment data)
     } = req.body;
 
@@ -203,8 +214,8 @@ const updateClientSettings = async (req, res) => {
             INSERT INTO client_settings
                 (user_id, allow_fresh_entry, allow_orders_between_hl, trade_equity_units,
                  auto_close_at_m2m_pct, notify_at_m2m_pct, min_time_to_book_profit,
-                 scalping_sl_enabled, ban_all_segment_limit_order, config_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 scalping_sl_enabled, ban_all_segment_limit_order, config_json, broker_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 allow_fresh_entry = VALUES(allow_fresh_entry),
                 allow_orders_between_hl = VALUES(allow_orders_between_hl),
@@ -214,7 +225,8 @@ const updateClientSettings = async (req, res) => {
                 min_time_to_book_profit = VALUES(min_time_to_book_profit),
                 scalping_sl_enabled = VALUES(scalping_sl_enabled),
                 ban_all_segment_limit_order = VALUES(ban_all_segment_limit_order),
-                config_json = VALUES(config_json)
+                config_json = VALUES(config_json),
+                broker_id = VALUES(broker_id)
         `, [
             req.params.id,
             allowFreshEntry !== undefined ? (allowFreshEntry ? 1 : 0) : 1,
@@ -225,7 +237,8 @@ const updateClientSettings = async (req, res) => {
             minProfitTime !== undefined ? minProfitTime : 120,
             scalpingSlEnabled !== undefined ? (scalpingSlEnabled === true || scalpingSlEnabled === 'Enabled' ? 1 : 0) : 0,
             banAllSegmentLimitOrder !== undefined ? (banAllSegmentLimitOrder ? 1 : 0) : 0,
-            configJson
+            configJson,
+            brokerId || null
         ]);
 
         res.json({ message: 'Client settings updated' });

@@ -23,6 +23,18 @@ const login = async (req, res) => {
       return res.status(400).json({ message: 'Invalid password' });
     }
 
+    // Check if account is inactive
+    if (user.status === 'Inactive') {
+      console.log(`DEBUG: Inactive account login attempt: ${username}`);
+      return res.status(403).json({ message: 'Your account is inactive. Please contact superadmin.' });
+    }
+
+    // Check if account is suspended
+    if (user.status === 'Suspended') {
+      console.log(`DEBUG: Suspended account login attempt: ${username}`);
+      return res.status(403).json({ message: 'Your account is suspended. Please contact superadmin.' });
+    }
+
     // KYC check for TRADER role
     if (user.role === 'TRADER') {
       try {
@@ -119,6 +131,10 @@ const createUser = async (req, res) => {
     
     // Enforcement: Hierarchy Check
     // SUPERADMIN can create ADMIN, BROKER, or TRADER
+    // ADMIN can create BROKER or TRADER (but not ADMIN or SUPERADMIN)
+    // BROKER can only create TRADER
+    // TRADER cannot create anyone
+
     if (creatorRole === 'ADMIN' && (role === 'SUPERADMIN' || role === 'ADMIN')) {
         return res.status(403).json({ message: 'Admins cannot create other Admins or Superadmins' });
     }
@@ -131,7 +147,8 @@ const createUser = async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(password || '123456', 10);
-        
+
+        const finalParentId = parentId || req.user.id;
         const params = [
             username || null,
             hashedPassword,
@@ -139,13 +156,13 @@ const createUser = async (req, res) => {
             email || null,
             mobile || null,
             role || 'TRADER',
-            parentId || req.user.id,
+            finalParentId,
             creditLimit || 0,
             city || null,
             'Active'
         ];
 
-        console.log('Inserting user with params:', params);
+        console.log(`[createUser] Creator: ${req.user.username} (ID: ${req.user.id}), Role: ${role || 'TRADER'}, Username: ${username}, Parent ID: ${finalParentId}`);
 
         const [result] = await db.execute(
             'INSERT INTO users (username, password, full_name, email, mobile, role, parent_id, credit_limit, city, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
