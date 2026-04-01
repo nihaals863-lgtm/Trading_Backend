@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const { logAction } = require('./systemController');
+const { uploadFile } = require('../utils/imagekit');
 
 const getRequests = async (req, res) => {
     const { type, status } = req.query; // type: DEPOSIT/WITHDRAW, status: PENDING
@@ -111,9 +112,9 @@ const createRequest = async (req, res) => {
         }
 
         if (req.file) {
-            // Assume file is uploaded to /uploads/
-            screenshotUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-            console.log('DEBUG: Screenshot URL:', screenshotUrl);
+            const uploaded = await uploadFile(req.file.buffer, req.file.originalname, '/deposits');
+            screenshotUrl = uploaded.url;
+            console.log('DEBUG: Screenshot uploaded to ImageKit:', screenshotUrl);
         }
 
         const [result] = await db.execute(
