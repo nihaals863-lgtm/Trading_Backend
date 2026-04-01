@@ -532,4 +532,54 @@ const restoreTrade = async (req, res) => {
     }
 };
 
-module.exports = { placeOrder, getTrades, getGroupTrades, closeTrade, deleteTrade, updateTrade, restoreTrade };
+/**
+ * Modify Pending Order — trader can modify their own pending orders (qty, price)
+ */
+const modifyPendingOrder = async (req, res) => {
+    try {
+        const { qty, price } = req.body;
+        const tradeId = req.params.id;
+        const userId = req.user.id;
+
+        const [trades] = await db.execute('SELECT * FROM trades WHERE id = ?', [tradeId]);
+        if (trades.length === 0) return res.status(404).json({ message: 'Trade not found' });
+
+        const trade = trades[0];
+
+        // Trader can only modify their own orders
+        if (trade.user_id !== userId) {
+            return res.status(403).json({ message: 'Not authorized to modify this order' });
+        }
+
+        // Only pending orders can be modified
+        if (trade.status !== 'PENDING' && trade.is_pending !== 1) {
+            return res.status(400).json({ message: 'Only pending orders can be modified' });
+        }
+
+        const updates = [];
+        const params = [];
+
+        if (qty !== undefined && qty !== null) {
+            updates.push('qty = ?');
+            params.push(parseInt(qty));
+        }
+        if (price !== undefined && price !== null) {
+            updates.push('entry_price = ?');
+            params.push(parseFloat(price));
+        }
+
+        if (updates.length === 0) {
+            return res.status(400).json({ message: 'Nothing to update' });
+        }
+
+        params.push(tradeId);
+        await db.execute(`UPDATE trades SET ${updates.join(', ')} WHERE id = ?`, params);
+
+        res.json({ message: 'Pending order modified successfully' });
+    } catch (err) {
+        console.error('Modify Pending Order Error:', err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+module.exports = { placeOrder, getTrades, getGroupTrades, closeTrade, deleteTrade, updateTrade, restoreTrade, modifyPendingOrder };
