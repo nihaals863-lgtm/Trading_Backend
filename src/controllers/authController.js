@@ -159,10 +159,10 @@ const createUser = async (req, res) => {
             await db.execute('INSERT IGNORE INTO client_settings (user_id) VALUES (?)', [newUserId]);
         } catch (e) { console.error('client_settings auto-create failed:', e.message); }
 
-        // Auto-create user_documents for TRADER (KYC starts as PENDING)
+        // Auto-create user_documents for TRADER (KYC auto-verified so they can login immediately)
         if ((role || 'TRADER') === 'TRADER') {
             try {
-                await db.execute('INSERT IGNORE INTO user_documents (user_id, kyc_status) VALUES (?, ?)', [newUserId, 'PENDING']);
+                await db.execute('INSERT IGNORE INTO user_documents (user_id, kyc_status) VALUES (?, ?)', [newUserId, 'VERIFIED']);
             } catch (e) { console.error('user_documents auto-create failed:', e.message); }
         }
 

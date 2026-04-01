@@ -218,6 +218,14 @@ const runMigrations = async () => {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
 
+    // Add missing columns to payment_requests (added for withdrawal bank details)
+    await addColumn('payment_requests', 'bank_name',       "VARCHAR(100) DEFAULT NULL AFTER screenshot_url");
+    await addColumn('payment_requests', 'account_holder',  "VARCHAR(100) DEFAULT NULL AFTER bank_name");
+    await addColumn('payment_requests', 'account_number',  "VARCHAR(50) DEFAULT NULL AFTER account_holder");
+    await addColumn('payment_requests', 'ifsc_code',       "VARCHAR(20) DEFAULT NULL AFTER account_number");
+    await addColumn('payment_requests', 'upi_id',          "VARCHAR(100) DEFAULT NULL AFTER ifsc_code");
+    await addColumn('payment_requests', 'payment_method',  "VARCHAR(30) DEFAULT NULL AFTER upi_id");
+
     // ─── 9. SECURITY ───────────────────────────────────────────────────────────
 
     await db.execute(`
@@ -335,12 +343,18 @@ const runMigrations = async () => {
 
     await db.execute(`
         CREATE TABLE IF NOT EXISTS tickers (
-            id        INT AUTO_INCREMENT PRIMARY KEY,
-            text      TEXT NOT NULL,
-            speed     INT DEFAULT 10,
-            is_active TINYINT(1) DEFAULT 1
+            id         INT AUTO_INCREMENT PRIMARY KEY,
+            text       TEXT NOT NULL,
+            speed      INT DEFAULT 10,
+            is_active  TINYINT(1) DEFAULT 1,
+            start_time DATETIME DEFAULT NULL,
+            end_time   DATETIME DEFAULT NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
+
+    // Add start_time/end_time for tickers created before these columns existed
+    await addColumn('tickers', 'start_time', 'DATETIME DEFAULT NULL AFTER is_active');
+    await addColumn('tickers', 'end_time',   'DATETIME DEFAULT NULL AFTER start_time');
 
     await db.execute(`
         CREATE TABLE IF NOT EXISTS banned_limit_orders (

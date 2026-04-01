@@ -26,7 +26,18 @@ const updateScrip = async (req, res) => {
 
 const getTickers = async (req, res) => {
     try {
-        const [rows] = await db.execute('SELECT * FROM tickers ORDER BY id DESC');
+        // If ?all=true (admin panel), return everything; otherwise only active tickers within schedule
+        if (req.query.all === 'true') {
+            const [rows] = await db.execute('SELECT * FROM tickers ORDER BY id DESC');
+            return res.json(rows);
+        }
+        const [rows] = await db.execute(
+            `SELECT * FROM tickers
+             WHERE is_active = 1
+               AND (start_time IS NULL OR start_time <= NOW())
+               AND (end_time IS NULL OR end_time >= NOW())
+             ORDER BY id DESC`
+        );
         res.json(rows);
     } catch (err) {
         console.error(err);
