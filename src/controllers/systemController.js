@@ -16,29 +16,29 @@ const getActionLedger = async (req, res) => {
         const limitNum = Math.max(1, parseInt(limit) || 20);
         const offset = (pageNum - 1) * limitNum;
 
-        let query = `SELECT al.*, u.username FROM action_ledger al
-                     LEFT JOIN users u ON al.admin_id = u.id`;
-        let countQuery = `SELECT COUNT(*) as total FROM action_ledger al`;
-        let params = [];
+        // Build search filter safely
+        const hasSearch = message && message.trim();
+        const searchTerm = hasSearch ? `%${message.trim()}%` : null;
 
-        // Only add filter if message is provided and not empty/whitespace
-        const searchMessage = message && message.trim() ? `%${message}%` : null;
-        if (searchMessage) {
-            query += ` WHERE al.description LIKE ?`;
-            countQuery += ` WHERE al.description LIKE ?`;
-            params.push(searchMessage);
-        }
+        // Main query - always same structure, params vary
+        const mainQuery = `SELECT al.id, al.admin_id, al.action_type, al.target_table, al.description, al.timestamp, u.username
+                          FROM action_ledger al
+                          LEFT JOIN users u ON al.admin_id = u.id
+                          WHERE (? IS NULL OR al.description LIKE ?)
+                          ORDER BY al.timestamp DESC
+                          LIMIT ? OFFSET ?`;
 
-        query += ` ORDER BY al.timestamp DESC LIMIT ? OFFSET ?`;
-        params.push(limitNum, offset);
+        const mainParams = [searchTerm, searchTerm, limitNum, offset];
 
-        console.log('[getActionLedger] Final Query:', query);
-        console.log('[getActionLedger] Params:', params, `(count: ${params.length})`);
+        // Count query
+        const countQuery = `SELECT COUNT(*) as total FROM action_ledger al
+                           WHERE (? IS NULL OR al.description LIKE ?)`;
+        const countParams = [searchTerm, searchTerm];
 
-        const [rows] = await db.execute(query, params);
+        console.log('[getActionLedger] Main params:', mainParams);
+        console.log('[getActionLedger] Count params:', countParams);
 
-        // Count query uses only the search param (if any), not limit/offset
-        let countParams = searchMessage ? [searchMessage] : [];
+        const [rows] = await db.execute(mainQuery, mainParams);
         const [[{ total }]] = await db.execute(countQuery, countParams);
 
         res.json({ rows, total, page: pageNum, limit: limitNum });
