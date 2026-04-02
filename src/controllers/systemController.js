@@ -12,28 +12,35 @@ const logAction = async (userId, action, target, details) => {
 const getActionLedger = async (req, res) => {
     try {
         const { message, page = 1, limit = 20 } = req.query;
-        const offset = (Math.max(1, parseInt(page)) - 1) * parseInt(limit);
-        
+        const pageNum = Math.max(1, parseInt(page) || 1);
+        const limitNum = Math.max(1, parseInt(limit) || 20);
+        const offset = (pageNum - 1) * limitNum;
+
         let query = `SELECT al.*, u.username FROM action_ledger al
                      LEFT JOIN users u ON al.admin_id = u.id`;
         let countQuery = `SELECT COUNT(*) as total FROM action_ledger al`;
         let queryParams = [];
 
-        if (message) {
+        // Only add filter if message is provided and not empty/whitespace
+        if (message && message.trim()) {
             query += ` WHERE al.description LIKE ?`;
             countQuery += ` WHERE al.description LIKE ?`;
             queryParams.push(`%${message}%`);
         }
 
         query += ` ORDER BY al.timestamp DESC LIMIT ? OFFSET ?`;
-        
-        const [rows] = await db.execute(query, [...queryParams, parseInt(limit), offset]);
+
+        const [rows] = await db.execute(query, [...queryParams, limitNum, offset]);
         const [[{ total }]] = await db.execute(countQuery, queryParams);
 
-        res.json({ rows, total });
+        res.json({ rows, total, page: pageNum, limit: limitNum });
     } catch (err) {
-        console.error('[getActionLedger]', err);
-        res.status(500).json({ message: 'Server Error' });
+        console.error('[getActionLedger] Error:', {
+            message: err.message,
+            code: err.code,
+            sql: err.sql
+        });
+        res.status(500).json({ message: 'Server Error', error: err.message });
     }
 };
 
