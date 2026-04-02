@@ -50,6 +50,28 @@ const parseWithRules = (rawText) => {
         return sm ? parseFloat(sm[1]) : null;
     };
 
+    // Extract username from natural language (Hindi/Hinglish/English patterns)
+    const SKIP_WORDS = ['user','id','account','fund','rupee','rupees','the','a','an','to','from','se','me','ko'];
+    const extractUsername = (str) => {
+        // "popat ke account" or "popat ka account"
+        let m = str.match(/([a-z][a-z0-9_]+)\s+ke\s+account/i)
+               || str.match(/([a-z][a-z0-9_]+)\s+ka\s+account/i);
+        if (m && !SKIP_WORDS.includes(m[1].toLowerCase())) return m[1];
+        // "popat me" or "popat mein" — word before me/mein that isn't a keyword or number
+        m = str.match(/([a-z][a-z0-9_]+)\s+(?:me|mein)\b/i);
+        if (m && !/^\d+$/.test(m[1]) && !SKIP_WORDS.includes(m[1].toLowerCase())) return m[1];
+        // "popat se" — word before se
+        m = str.match(/([a-z][a-z0-9_]+)\s+se\b/i);
+        if (m && !/^\d+$/.test(m[1]) && !SKIP_WORDS.includes(m[1].toLowerCase())) return m[1];
+        // English "to [username] account" or "to [username]"
+        m = str.match(/\bto\s+([a-z][a-z0-9_]+)(?:\s+account)?/i);
+        if (m && !/^\d+$/.test(m[1]) && !SKIP_WORDS.includes(m[1].toLowerCase())) return m[1];
+        // English "from [username] account" or "from [username]"
+        m = str.match(/\bfrom\s+([a-z][a-z0-9_]+)(?:\s+account)?/i);
+        if (m && !/^\d+$/.test(m[1]) && !SKIP_WORDS.includes(m[1].toLowerCase())) return m[1];
+        return null;
+    };
+
     // ── Intent signals ────────────────────────────────────────────────────────
 
     const isTransfer = /transfer|bhejo|send\s+to|se\s+.*?\s+(?:me|ko)|from\s+.*?\s+to/.test(tl)
@@ -57,9 +79,10 @@ const parseWithRules = (rawText) => {
 
     const isCreateAdmin = /(?:new|naya|create|bana[ao]|add\s+a?n?\s*)\s*admin|admin\s+(?:banao|create|add|bana)|admin\s+with/.test(tl);
 
-    const isBlock   = /(?<!un)\bblock\b|suspend|band\s*karo|\broko\b/.test(tl);
-    const isUnblock = /unblock|activate|chalu\s*karo|kholo/.test(tl);
-    const isAddWord = /\badd\b|deposit|jama|daalo|dalo|credit|bdhao|badhao/.test(tl);
+    const isBlock      = /(?<!un)\bblock\b|suspend|band\s*karo|\broko\b/.test(tl);
+    const isUnblock    = /unblock|activate|chalu\s*karo|kholo/.test(tl);
+    const isWithdraw   = /nikalo|nikaalo|hatao|withdraw|deduct|wapas\s*karo|minus|ghataao|ghata/.test(tl);
+    const isAddWord    = /\badd\b|deposit|jama|daalo|dalo|credit|bdhao|badhao/.test(tl);
 
     // ── Priority order: most specific → least specific ────────────────────────
 
@@ -129,36 +152,41 @@ const parseWithRules = (rawText) => {
         };
     }
 
-    // 5. ADD_FUND (flexible parsing - works with various formats)
+    // 5. WITHDRAW_FUND
+    if (isWithdraw && !isTransfer) {
+        const userIdMatch = extractIdAfter(tl, /(?:user\s*id|user|id)/);
+        const username    = !userIdMatch ? extractUsername(tl) : null;
+        const stripped    = userIdMatch ? tl.replace(userIdMatch.fullMatch, '') : tl;
+        const amount      = parseAmount(stripped);
+        return {
+            action  : 'WITHDRAW_FUND',
+            userId  : userIdMatch ? userIdMatch.value : null,
+            username: username || null,
+            amount  : amount   || null,
+        };
+    }
+
+    // 6. ADD_FUND (flexible parsing — ID-based and username-based)
     if (isAddWord) {
         const userIdMatch = extractIdAfter(tl, /(?:user\s*id|user|id)/);
-        const textWithoutId = userIdMatch ? tl.replace(userIdMatch.fullMatch, '') : tl;
-        const amount = parseAmount(textWithoutId);
+        const username    = !userIdMatch ? extractUsername(tl) : null;
+        const stripped    = userIdMatch ? tl.replace(userIdMatch.fullMatch, '') : tl;
+        const amount      = parseAmount(stripped);
 
         if (userIdMatch && amount !== null) {
-            return {
-                action: 'ADD_FUND',
-                userId: userIdMatch.value,
-                amount,
-            };
+            return { action: 'ADD_FUND', userId: userIdMatch.value, username: null, amount };
         }
-
-        // Fallback: if original logic didn't work, try extracting any numbers
-        const allNumbers = [...tl.matchAll(/\b(\d+)\b/g)].map(m => parseInt(m[1], 10));
-        if (allNumbers.length >= 2 && userIdMatch) {
-            const userId = userIdMatch.value;
-            const otherNum = allNumbers.find(n => n !== userId);
-            if (otherNum) {
-                return {
-                    action: 'ADD_FUND',
-                    userId,
-                    amount: otherNum,
-                };
-            }
+        if (username && amount !== null) {
+            return { action: 'ADD_FUND', userId: null, username, amount };
+        }
+        // Last resort: two bare numbers → first is userId, second is amount
+        const allNums = [...tl.matchAll(/\b(\d+)\b/g)].map(m => parseInt(m[1], 10));
+        if (allNums.length >= 2) {
+            return { action: 'ADD_FUND', userId: allNums[0], username: null, amount: allNums[1] };
         }
     }
 
-    // 6. UNKNOWN
+    // 7. UNKNOWN
     return { action: 'UNKNOWN', raw: rawText };
 };
 
@@ -173,21 +201,41 @@ Your job is to detect INTENT first, then extract fields. Return structured JSON 
 ⚠️  IMPORTANT: Do NOT default to ADD_FUND. Detect the correct intent from the sentence.
 
 Supported actions:
-1. ADD_FUND      → requires userId + amount   → { "action": "ADD_FUND", "userId": <int>, "amount": <int> }
-2. CREATE_ADMIN  → requires name + email      → { "action": "CREATE_ADMIN", "name": "<str>", "email": "<str>", "password": "<str>" }
-3. BLOCK_USER    → requires userId            → { "action": "BLOCK_USER", "userId": <int> }
-4. UNBLOCK_USER  → requires userId            → { "action": "UNBLOCK_USER", "userId": <int> }
-5. TRANSFER_FUND → requires fromUserId + toUserId + amount → { "action": "TRANSFER_FUND", "fromUserId": <int>, "toUserId": <int>, "amount": <int> }
+1. ADD_FUND      → add/deposit money to a user's account
+   With ID:       { "action": "ADD_FUND", "userId": <int>, "username": null, "amount": <int> }
+   With username: { "action": "ADD_FUND", "userId": null, "username": "<str>", "amount": <int> }
+2. WITHDRAW_FUND → deduct/withdraw money from a user's account
+   With ID:       { "action": "WITHDRAW_FUND", "userId": <int>, "username": null, "amount": <int> }
+   With username: { "action": "WITHDRAW_FUND", "userId": null, "username": "<str>", "amount": <int> }
+3. CREATE_ADMIN  → { "action": "CREATE_ADMIN", "name": "<str>", "email": "<str>", "password": "<str>" }
+4. BLOCK_USER    → { "action": "BLOCK_USER", "userId": <int> }
+5. UNBLOCK_USER  → { "action": "UNBLOCK_USER", "userId": <int> }
+6. TRANSFER_FUND → { "action": "TRANSFER_FUND", "fromUserId": <int>, "toUserId": <int>, "amount": <int> }
 
 Examples:
 Input : "ID 16 me 2000 add karo"
-Output: { "action": "ADD_FUND", "userId": 16, "amount": 2000 }
+Output: { "action": "ADD_FUND", "userId": 16, "username": null, "amount": 2000 }
 
-Input : "add a admin with dummy credentials"
-Output: { "action": "CREATE_ADMIN", "name": "dummy_admin", "email": "dummy@example.com", "password": "Admin@123" }
+Input : "popat ke account me 5000 daalo"
+Output: { "action": "ADD_FUND", "userId": null, "username": "popat", "amount": 5000 }
 
-Input : "new admin banao naam Rahul email rahul@gmail.com"
-Output: { "action": "CREATE_ADMIN", "name": "Rahul", "email": "rahul@gmail.com", "password": "Admin@123" }
+Input : "popat me 5000 daalo"
+Output: { "action": "ADD_FUND", "userId": null, "username": "popat", "amount": 5000 }
+
+Input : "add 3000 to john account"
+Output: { "action": "ADD_FUND", "userId": null, "username": "john", "amount": 3000 }
+
+Input : "popat ke account se 5000 nikalo"
+Output: { "action": "WITHDRAW_FUND", "userId": null, "username": "popat", "amount": 5000 }
+
+Input : "popat se 2000 nikalo"
+Output: { "action": "WITHDRAW_FUND", "userId": null, "username": "popat", "amount": 2000 }
+
+Input : "withdraw 1000 from john"
+Output: { "action": "WITHDRAW_FUND", "userId": null, "username": "john", "amount": 1000 }
+
+Input : "ID 16 se 500 withdraw karo"
+Output: { "action": "WITHDRAW_FUND", "userId": 16, "username": null, "amount": 500 }
 
 Input : "user 10 block karo"
 Output: { "action": "BLOCK_USER", "userId": 10 }
@@ -198,12 +246,16 @@ Output: { "action": "UNBLOCK_USER", "userId": 12 }
 Input : "ID 10 se ID 20 me 500 transfer karo"
 Output: { "action": "TRANSFER_FUND", "fromUserId": 10, "toUserId": 20, "amount": 500 }
 
+Input : "new admin banao naam Rahul email rahul@gmail.com"
+Output: { "action": "CREATE_ADMIN", "name": "Rahul", "email": "rahul@gmail.com", "password": "Admin@123" }
+
 Rules:
-- Detect intent FIRST before extracting fields
-- "add admin" / "create admin" / "admin banao" → always CREATE_ADMIN, never ADD_FUND
-- ADD_FUND requires BOTH a numeric userId AND a numeric amount in the sentence
+- "ke account me / me / daalo / jama / add / deposit" → ADD_FUND
+- "ke account se / se / nikalo / hatao / withdraw / deduct" → WITHDRAW_FUND
+- "admin banao / create admin" → always CREATE_ADMIN, never ADD_FUND
+- If user says a name (non-numeric word) → use "username" field; if numeric ID → use "userId" field
 - If dummy/fake/test/sample is mentioned for admin → generate placeholder credentials
-- Never return null — always use a meaningful default value
+- Never return null for action — always detect the correct intent
 - Return valid JSON only, no extra text`;
 
 const parseWithOpenAI = async (text) => {

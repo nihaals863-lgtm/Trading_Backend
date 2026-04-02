@@ -175,7 +175,7 @@ const updateUser = async (req, res) => {
         if (exposureMultiplier !== undefined){ fields.push('exposure_multiplier = ?'); values.push(exposureMultiplier); }
         if (isDemo !== undefined)           { fields.push('is_demo = ?');            values.push(isDemo ? 1 : 0); }
         if (status !== undefined)           { fields.push('status = ?');             values.push(status); }
-        if (parentId !== undefined)         { fields.push('parent_id = ?');          values.push(parentId); }
+        if (parentId !== undefined)         { fields.push('parent_id = ?');          values.push(parseInt(parentId) || null); }
 
         if (fields.length === 0) return res.status(400).json({ message: 'No fields to update' });
 

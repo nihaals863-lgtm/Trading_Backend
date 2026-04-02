@@ -111,8 +111,24 @@ exports.getRecordings = async (req, res) => {
     const params = [];
 
     if (user_id) {
-      where += ' AND vr.user_id = ?';
-      params.push(user_id);
+      // Match: exact user_id stored | parsed_command.userId | parsed_command.username | transcript contains username
+      // Covers all cases: ID-based commands, username-based commands (new format), and old recordings
+      const [uRows] = await db.execute(
+        'SELECT id, username, full_name FROM users WHERE id = ? LIMIT 1', [user_id]
+      );
+      if (uRows.length) {
+        const uname = uRows[0].username;
+        where += ` AND (
+          vr.user_id = ?
+          OR (vr.user_id IS NULL AND JSON_UNQUOTE(JSON_EXTRACT(vr.parsed_command, '$.userId')) = ?)
+          OR (vr.user_id IS NULL AND LOWER(JSON_UNQUOTE(JSON_EXTRACT(vr.parsed_command, '$.username'))) = LOWER(?))
+          OR (vr.user_id IS NULL AND LOWER(vr.transcript) LIKE LOWER(?))
+        )`;
+        params.push(user_id, String(user_id), uname, `%${uname}%`);
+      } else {
+        where += ' AND vr.user_id = ?';
+        params.push(user_id);
+      }
     }
     if (admin_id) {
       where += ' AND vr.admin_id = ?';
