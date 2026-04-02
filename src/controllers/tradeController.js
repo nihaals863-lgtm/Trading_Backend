@@ -29,7 +29,8 @@ const placeOrder = async (req, res) => {
         order_type = 'MARKET',
         is_pending = false,
         userId: traderId,
-        transactionPassword
+        transactionPassword,
+        exit_price
     } = req.body;
 
     const requesterId = req.user.id;
@@ -138,7 +139,7 @@ const placeOrder = async (req, res) => {
 
         // 7. Execution Price Logic
         const currentPrice = mockEngine.getPrice(symbol);
-        const executionPrice = (order_type === 'MARKET' || !price) ? currentPrice : parseFloat(price);
+        const executionPrice = price ? parseFloat(price) : (order_type === 'MARKET' ? currentPrice : 0);
         const qtyNum = parseInt(qty, 10);
 
         if (isNaN(executionPrice) || executionPrice <= 0) {
@@ -190,8 +191,8 @@ const placeOrder = async (req, res) => {
         // 8. Insert Trade
         const [result] = await db.execute(
             `INSERT INTO trades
-                (user_id, symbol, type, order_type, qty, entry_price, margin_used, is_pending, market_type, status, trade_ip)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                (user_id, symbol, type, order_type, qty, entry_price, exit_price, margin_used, is_pending, market_type, status, trade_ip)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 targetUserId,
                 sym,
@@ -199,6 +200,7 @@ const placeOrder = async (req, res) => {
                 order_type,
                 qtyNum,
                 executionPrice,
+                exit_price ? parseFloat(exit_price) : null,
                 marginRequired,
                 is_pending ? 1 : 0,
                 marketType,
@@ -378,7 +380,7 @@ const closeTrade = async (req, res) => {
         }
 
         const currentPrice = mockEngine.getPrice(trade.symbol);
-        const finalExitPrice = exitPrice || currentPrice;
+        const finalExitPrice = exitPrice || trade.exit_price || currentPrice;
 
         const pnl = trade.type === 'BUY'
             ? (finalExitPrice - trade.entry_price) * trade.qty
