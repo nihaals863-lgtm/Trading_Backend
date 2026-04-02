@@ -19,19 +19,27 @@ const getActionLedger = async (req, res) => {
         let query = `SELECT al.*, u.username FROM action_ledger al
                      LEFT JOIN users u ON al.admin_id = u.id`;
         let countQuery = `SELECT COUNT(*) as total FROM action_ledger al`;
-        let queryParams = [];
+        let params = [];
 
         // Only add filter if message is provided and not empty/whitespace
-        if (message && message.trim()) {
+        const searchMessage = message && message.trim() ? `%${message}%` : null;
+        if (searchMessage) {
             query += ` WHERE al.description LIKE ?`;
             countQuery += ` WHERE al.description LIKE ?`;
-            queryParams.push(`%${message}%`);
+            params.push(searchMessage);
         }
 
         query += ` ORDER BY al.timestamp DESC LIMIT ? OFFSET ?`;
+        params.push(limitNum, offset);
 
-        const [rows] = await db.execute(query, [...queryParams, limitNum, offset]);
-        const [[{ total }]] = await db.execute(countQuery, queryParams);
+        console.log('[getActionLedger] Final Query:', query);
+        console.log('[getActionLedger] Params:', params, `(count: ${params.length})`);
+
+        const [rows] = await db.execute(query, params);
+
+        // Count query uses only the search param (if any), not limit/offset
+        let countParams = searchMessage ? [searchMessage] : [];
+        const [[{ total }]] = await db.execute(countQuery, countParams);
 
         res.json({ rows, total, page: pageNum, limit: limitNum });
     } catch (err) {
