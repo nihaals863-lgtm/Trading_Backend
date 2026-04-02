@@ -26,11 +26,33 @@ const updateScrip = async (req, res) => {
 
 const getTickers = async (req, res) => {
     try {
-        // If ?all=true (admin panel), return everything; otherwise only active tickers within schedule
+        const userId = req.user.id;
+        const userRole = req.user.role;
+
+        // If ?all=true (admin panel), return only their created tickers
         if (req.query.all === 'true') {
-            const [rows] = await db.execute('SELECT * FROM tickers ORDER BY id DESC');
+            console.log(`[getTickers] User ${userId} (${userRole}) requesting all tickers`);
+
+            let query = 'SELECT * FROM tickers WHERE created_by = ? OR created_by IS NULL ORDER BY id DESC';
+            let params = [userId];
+
+            // For SUPERADMIN/ADMIN, also include tickers created by their children
+            if (userRole === 'SUPERADMIN' || userRole === 'ADMIN') {
+                query = `SELECT * FROM tickers
+                         WHERE created_by = ? OR created_by IN (
+                             SELECT id FROM users WHERE parent_id = ?
+                         ) OR created_by IS NULL
+                         ORDER BY id DESC`;
+                params = [userId, userId];
+            }
+
+            console.log(`[getTickers] Query params:`, params);
+            const [rows] = await db.execute(query, params);
+            console.log(`[getTickers] Returned ${rows.length} tickers`);
             return res.json(rows);
         }
+
+        // For public view, only active tickers within schedule
         const [rows] = await db.execute(
             `SELECT * FROM tickers
              WHERE is_active = 1
@@ -47,10 +69,11 @@ const getTickers = async (req, res) => {
 
 const createTicker = async (req, res) => {
     const { text, start_time, end_time } = req.body;
+    const userId = req.user.id;
     try {
         await db.execute(
-            'INSERT INTO tickers (text, start_time, end_time, is_active) VALUES (?, ?, ?, ?)',
-            [text, start_time, end_time, 1]
+            'INSERT INTO tickers (text, start_time, end_time, is_active, created_by) VALUES (?, ?, ?, ?, ?)',
+            [text, start_time, end_time, 1, userId]
         );
         res.json({ message: 'Ticker created successfully' });
     } catch (err) {

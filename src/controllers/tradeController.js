@@ -8,6 +8,22 @@ const bcrypt = require('bcryptjs');
  * Place a New Order
  */
 const placeOrder = async (req, res) => {
+    // Safety check: ensure req.body exists
+    console.log('[placeOrder] Request received:');
+    console.log('  Method:', req.method);
+    console.log('  URL:', req.url);
+    console.log('  Content-Type:', req.headers['content-type']);
+    console.log('  Body type:', typeof req.body);
+    console.log('  Body is Array:', Array.isArray(req.body));
+    console.log('  Body keys:', req.body ? Object.keys(req.body) : 'N/A');
+    console.log('  Body:', JSON.stringify(req.body, null, 2));
+
+    if (!req.body || Object.keys(req.body).length === 0) {
+        console.error('[placeOrder] ERROR: req.body is empty or undefined!');
+        console.error('[placeOrder] Request headers:', req.headers);
+        return res.status(400).json({ message: 'Request body is empty. Please check your request format.' });
+    }
+
     const {
         symbol, type, qty, price,
         order_type = 'MARKET',
@@ -249,12 +265,49 @@ const getTrades = async (req, res) => {
             params.push(req.user.id, req.user.id);
         }
 
+        // Filter by username
+        if (req.query.username) {
+            query += ' AND u.username LIKE ?';
+            params.push(`%${req.query.username}%`);
+        }
+
         query += ' ORDER BY t.entry_time DESC';
         const [rows] = await db.execute(query, params);
         res.json(rows);
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
+    }
+};
+
+/**
+ * Get Single Trade by ID
+ */
+const getTradeById = async (req, res) => {
+    try {
+        const [rows] = await db.execute(
+            `SELECT t.*, u.username, u.full_name 
+             FROM trades t 
+             JOIN users u ON t.user_id = u.id 
+             WHERE t.id = ?`,
+            [req.params.id]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ message: 'Trade not found' });
+        }
+
+        const trade = rows[0];
+
+        // Access check: Admin sees all, Others see only theirs
+        if (req.user.role !== 'SUPERADMIN' && req.user.role !== 'ADMIN' && trade.user_id !== req.user.id) {
+            return res.status(403).json({ message: 'Not authorized to view this trade' });
+        }
+
+        res.json(trade);
+    } catch (err) {
+        console.error('Get Trade by ID Error:', err);
+        res.status(500).json({ message: 'Server Error' });
     }
 };
 
@@ -582,4 +635,4 @@ const modifyPendingOrder = async (req, res) => {
     }
 };
 
-module.exports = { placeOrder, getTrades, getGroupTrades, closeTrade, deleteTrade, updateTrade, restoreTrade, modifyPendingOrder };
+module.exports = { placeOrder, getTrades, getTradeById, getGroupTrades, closeTrade, deleteTrade, updateTrade, restoreTrade, modifyPendingOrder };

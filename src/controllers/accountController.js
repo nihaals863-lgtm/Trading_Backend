@@ -12,7 +12,7 @@ const db = require('../config/db');
  */
 const getHierarchyAccounts = async (req, res) => {
     try {
-        const { fromDate, toDate } = req.query;
+        const { fromDate, toDate, roleFilter } = req.query;
         const loggedInId = req.user.id;
 
         // Build date filter for trades
@@ -27,14 +27,23 @@ const getHierarchyAccounts = async (req, res) => {
             dateParams.push(toDate + ' 23:59:59');
         }
 
-        // Get all brokers/admins under logged-in user
-        const [brokers] = await db.execute(
-            `SELECT u.id, u.username, u.full_name, u.role, bs.share_pl_pct, bs.share_brokerage_pct
-             FROM users u
-             LEFT JOIN broker_shares bs ON bs.user_id = u.id
-             WHERE u.parent_id = ? AND u.role IN ('BROKER','ADMIN','SUPERADMIN')`,
-            [loggedInId]
-        );
+        // Get users under logged-in user
+        // roleFilter='BROKER' for BrokerAccountsPage (only brokers)
+        // roleFilter=null for AccountsPage (all roles)
+        let query = `SELECT u.id, u.username, u.full_name, u.role, bs.share_pl_pct, bs.share_brokerage_pct
+                     FROM users u
+                     LEFT JOIN broker_shares bs ON bs.user_id = u.id
+                     WHERE u.parent_id = ?`;
+        let queryParams = [loggedInId];
+
+        if (roleFilter === 'BROKER') {
+            query += " AND u.role = 'BROKER'";
+        } else {
+            // For AccountsPage, show all non-superadmin users (ADMIN, BROKER, TRADER)
+            query += " AND u.role IN ('ADMIN', 'BROKER', 'TRADER')";
+        }
+
+        const [brokers] = await db.execute(query, queryParams);
 
         const result = [];
 

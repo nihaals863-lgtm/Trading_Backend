@@ -24,7 +24,7 @@ const getNotifications = async (req, res) => {
                 LIMIT 100
             `, [userId, userId]);
         } else if (role === 'SUPERADMIN') {
-            // SuperAdmin sees ALL notifications (they are the sender)
+            // SUPERADMIN sees only notifications for users they created
             [rows] = await db.execute(`
                 SELECT
                     n.*,
@@ -32,11 +32,29 @@ const getNotifications = async (req, res) => {
                 FROM notifications n
                 LEFT JOIN notification_reads nr
                     ON nr.notification_id = n.id AND nr.user_id = ?
+                WHERE n.created_by = ? OR n.created_by IN (
+                    SELECT id FROM users WHERE parent_id = ?
+                )
                 ORDER BY n.created_at DESC
                 LIMIT 100
-            `, [userId]);
+            `, [userId, userId, userId]);
+        } else if (role === 'ADMIN') {
+            // ADMIN sees notifications they created + notifications targeted to users they created
+            [rows] = await db.execute(`
+                SELECT
+                    n.*,
+                    CASE WHEN nr.user_id IS NOT NULL THEN 1 ELSE 0 END AS is_read
+                FROM notifications n
+                LEFT JOIN notification_reads nr
+                    ON nr.notification_id = n.id AND nr.user_id = ?
+                WHERE n.created_by = ? OR n.created_by IN (
+                    SELECT id FROM users WHERE parent_id = ?
+                )
+                ORDER BY n.created_at DESC
+                LIMIT 100
+            `, [userId, userId, userId]);
         } else {
-            // Other roles see notifications targeted to them only (not superadmin's)
+            // BROKER and TRADER see notifications targeted to them only
             [rows] = await db.execute(`
                 SELECT
                     n.*,
@@ -159,23 +177,25 @@ const getUsersByRole = async (req, res) => {
         let query = 'SELECT id, username, full_name, email, role FROM users WHERE role = ? AND status = ? ';
         let params = [role, 'Active'];
 
-        // Hierarchy filtering based on user role
+        // Each user sees only the users they created (parent_id = current user id)
         if (userRole === 'SUPERADMIN') {
-            // SUPERADMIN sees all users of the requested role
+            // SUPERADMIN sees only their created users of the requested role
+            query += 'AND parent_id = ?';
+            params.push(userId);
         } else if (userRole === 'ADMIN') {
-            // ADMIN sees direct children + grandchildren (any depth through intermediate admins)
-            query += `AND (parent_id = ? OR parent_id IN (
-                SELECT u.id FROM users u WHERE u.parent_id = ?
-            ))`;
-            params.push(userId, userId);
+            // ADMIN sees only their created users of the requested role
+            query += 'AND parent_id = ?';
+            params.push(userId);
         } else if (userRole === 'BROKER') {
-            // BROKER sees only direct children (traders created by them)
+            // BROKER sees only their created traders
             query += 'AND parent_id = ?';
             params.push(userId);
         }
 
         query += ' ORDER BY full_name ASC';
+        console.log('[getUsersByRole] Query:', query, 'Params:', params);
         const [rows] = await db.execute(query, params);
+        console.log('[getUsersByRole] Returned', rows.length, 'users');
         res.json(rows);
     } catch (err) {
         console.error('getUsersByRole:', err);

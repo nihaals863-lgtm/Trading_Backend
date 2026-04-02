@@ -3,7 +3,28 @@ const bcrypt = require('bcryptjs');
 
 const getBannedOrders = async (req, res) => {
     try {
-        const [rows] = await db.execute('SELECT * FROM banned_limit_orders ORDER BY id DESC');
+        const userId = req.user.id;
+        const userRole = req.user.role;
+
+        console.log(`[getBannedOrders] User ${userId} (${userRole}) requesting banned orders`);
+
+        // Each user sees only their created banned orders
+        let query = 'SELECT * FROM banned_limit_orders WHERE created_by = ? OR created_by IS NULL ORDER BY id DESC';
+        let params = [userId];
+
+        // For SUPERADMIN/ADMIN, also include orders created by their children
+        if (userRole === 'SUPERADMIN' || userRole === 'ADMIN') {
+            query = `SELECT * FROM banned_limit_orders
+                     WHERE created_by = ? OR created_by IN (
+                         SELECT id FROM users WHERE parent_id = ?
+                     ) OR created_by IS NULL
+                     ORDER BY id DESC`;
+            params = [userId, userId];
+        }
+
+        console.log(`[getBannedOrders] Query params:`, params);
+        const [rows] = await db.execute(query, params);
+        console.log(`[getBannedOrders] Returned ${rows.length} banned orders`);
         res.json(rows);
     } catch (err) {
         console.error(err);
@@ -27,8 +48,8 @@ const createBannedOrder = async (req, res) => {
         }
 
         const [result] = await db.execute(
-            'INSERT INTO banned_limit_orders (scrip_id, start_time, end_time) VALUES (?, ?, ?)',
-            [scripId, startTime, endTime]
+            'INSERT INTO banned_limit_orders (scrip_id, start_time, end_time, created_by) VALUES (?, ?, ?, ?)',
+            [scripId, startTime, endTime, req.user.id]
         );
         res.status(201).json({ message: 'Scrip banned successfully', id: result.insertId });
     } catch (err) {
