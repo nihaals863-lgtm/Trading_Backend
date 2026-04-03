@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 const { logAction } = require('./systemController');
+const { getFromCache, saveToCache, invalidateCache } = require('../utils/cacheManager');
 
 const { uploadFile, deleteFile } = require('../utils/imagekit');
 
@@ -11,6 +12,17 @@ const getUsers = async (req, res) => {
         const currentUserRole = req.user.role;
 
         console.log(`[getUsers] User ${currentUserId} (${currentUserRole}) requesting users with role filter: ${role || 'all'}`);
+
+        // Try to get from cache first (safe: if fails, continues to DB query)
+        const cacheKey = `users_${currentUserId}_${role || 'all'}`;
+        try {
+            const cachedData = await getFromCache(cacheKey);
+            if (cachedData) {
+                return res.json(cachedData);
+            }
+        } catch (cacheErr) {
+            console.log(`[getUsers] Cache read failed, proceeding with DB query`);
+        }
 
         let query = `
             SELECT
@@ -51,6 +63,14 @@ const getUsers = async (req, res) => {
 
         const [rows] = await db.execute(query, params);
         console.log(`[getUsers] Returned ${rows.length} users`);
+
+        // Save to cache (safe: if fails, response still sent)
+        try {
+            await saveToCache(cacheKey, rows, 300); // 5 min cache
+        } catch (cacheErr) {
+            console.log(`[getUsers] Cache save failed, but data sent`);
+        }
+
         res.json(rows);
     } catch (err) {
         console.error(err);
@@ -185,6 +205,16 @@ const updateUser = async (req, res) => {
         // Log the action with summary of changes
         const summary = Object.keys(req.body).join(', ');
         await logAction(req.user.id, 'UPDATE_USER', 'users', `Updated user ID ${req.params.id}: modified ${summary}`);
+
+        // Clear cache for this user (Option A - immediate consistency)
+        try {
+            await invalidateCache(`users_${req.params.id}_all`);
+            await invalidateCache(`users_${req.params.id}_TRADER`);
+            await invalidateCache(`users_${req.params.id}_BROKER`);
+            console.log(`[Cache] Cleared user ${req.params.id} cache`);
+        } catch (e) {
+            console.log(`[Cache] Clear failed but update succeeded`);
+        }
 
         res.json({ message: 'User updated successfully' });
     } catch (err) {

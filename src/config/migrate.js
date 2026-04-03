@@ -19,6 +19,20 @@ const addColumn = async (table, column, definition) => {
     }
 };
 
+// Helper: CREATE INDEX and silently ignore if index already exists (errno 1061)
+const addIndex = async (table, indexName, columns) => {
+    try {
+        await db.execute(`CREATE INDEX ${indexName} ON \`${table}\` (${columns})`);
+        console.log(`  ✅ Added index ${table}.${indexName}`);
+    } catch (err) {
+        if (err.errno === 1061 || err.code === 'ER_DUP_KEYNAME') {
+            // index already exists — fine
+        } else {
+            console.error(`  ⚠️  ${table}.${indexName}: ${err.message}`);
+        }
+    }
+};
+
 const runMigrations = async () => {
     console.log('\n🔄 Running DB migrations...');
 
@@ -617,6 +631,57 @@ const runMigrations = async () => {
             KEY user_symbol (user_id, symbol)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
+
+    // ─── 15. NEW CLIENT BANK SETTINGS ──────────────────────────────────────────
+
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS new_client_bank (
+            id               INT AUTO_INCREMENT PRIMARY KEY,
+            account_holder   VARCHAR(255) DEFAULT NULL,
+            account_number   VARCHAR(255) DEFAULT NULL,
+            bank_name        VARCHAR(255) DEFAULT NULL,
+            ifsc             VARCHAR(255) DEFAULT NULL,
+            phone_pe         VARCHAR(255) DEFAULT NULL,
+            google_pay       VARCHAR(255) DEFAULT NULL,
+            paytm            VARCHAR(255) DEFAULT NULL,
+            upi_id           VARCHAR(255) DEFAULT NULL,
+            updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+
+    // ─── PERFORMANCE INDEXES ───────────────────────────────────────────────────
+    console.log('\n📊 Adding performance indexes...');
+
+    // Users table indexes
+    await addIndex('users', 'idx_users_parent_id', 'parent_id');
+    await addIndex('users', 'idx_users_role', 'role');
+    await addIndex('users', 'idx_users_status', 'status');
+    await addIndex('users', 'idx_users_role_status', 'role, status');
+
+    // Trades table indexes
+    await addIndex('trades', 'idx_trades_user_id', 'user_id');
+    await addIndex('trades', 'idx_trades_status', 'status');
+    await addIndex('trades', 'idx_trades_created_at', 'created_at');
+    await addIndex('trades', 'idx_trades_user_status', 'user_id, status');
+    await addIndex('trades', 'idx_trades_symbol', 'symbol');
+
+    // Ledger table indexes
+    await addIndex('ledger', 'idx_ledger_user_id', 'user_id');
+    await addIndex('ledger', 'idx_ledger_created_at', 'created_at');
+    await addIndex('ledger', 'idx_ledger_user_created', 'user_id, created_at');
+
+    // Payment requests indexes
+    await addIndex('payment_requests', 'idx_payment_user_id', 'user_id');
+    await addIndex('payment_requests', 'idx_payment_status', 'status');
+    await addIndex('payment_requests', 'idx_payment_created_at', 'created_at');
+
+    // IP logs indexes
+    await addIndex('ip_logs', 'idx_ip_logs_user_id', 'user_id');
+    await addIndex('ip_logs', 'idx_ip_logs_ip_address', 'ip_address');
+
+    // IP logins indexes
+    await addIndex('ip_logins', 'idx_ip_logins_user_id', 'user_id');
+    await addIndex('ip_logins', 'idx_ip_logins_timestamp', 'timestamp');
 
     console.log('✅ DB migrations complete\n');
 };

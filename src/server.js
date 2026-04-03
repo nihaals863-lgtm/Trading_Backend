@@ -2,6 +2,8 @@ require('dotenv').config({ path: require('path').resolve(__dirname, '.env') });
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
+const compression = require('compression');
+const { initializeCache } = require('./utils/cacheManager');
 const socketManager = require('./websocket/SocketManager');
 const marketDataService = require('./services/MarketDataService');
 const paperTradingEngine = require('./trading-engine/PaperTradingEngine');
@@ -47,6 +49,10 @@ const { logIp } = require('./middleware/logger');
 
 // Middleware
 app.use(cors({ origin: ALLOWED_ORIGINS, credentials: true }));
+app.use(compression({
+    level: 6,  // Compression level (0-9, 6 is good balance)
+    threshold: 1024  // Only compress responses > 1KB
+}));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(logIp); // Log IP for every authenticated request
@@ -122,6 +128,9 @@ setIo(io);
 // Run DB migrations first, then start server
 runMigrations()
     .then(async () => {
+        // Initialize Redis Cache (safe: fails gracefully if unavailable)
+        await initializeCache();
+
         server.listen(PORT, () => {
             console.log(`🚀 Server running on port ${PORT}`);
         });

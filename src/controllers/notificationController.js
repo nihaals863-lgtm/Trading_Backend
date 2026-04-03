@@ -24,37 +24,9 @@ const getNotifications = async (req, res) => {
                 LIMIT 100
             `, [userId, userId]);
         } else if (role === 'SUPERADMIN') {
-            // SUPERADMIN sees only notifications for users they created
-            [rows] = await db.execute(`
-                SELECT
-                    n.*,
-                    CASE WHEN nr.user_id IS NOT NULL THEN 1 ELSE 0 END AS is_read
-                FROM notifications n
-                LEFT JOIN notification_reads nr
-                    ON nr.notification_id = n.id AND nr.user_id = ?
-                WHERE n.created_by = ? OR n.created_by IN (
-                    SELECT id FROM users WHERE parent_id = ?
-                )
-                ORDER BY n.created_at DESC
-                LIMIT 100
-            `, [userId, userId, userId]);
-        } else if (role === 'ADMIN') {
-            // ADMIN sees notifications they created + notifications targeted to users they created
-            [rows] = await db.execute(`
-                SELECT
-                    n.*,
-                    CASE WHEN nr.user_id IS NOT NULL THEN 1 ELSE 0 END AS is_read
-                FROM notifications n
-                LEFT JOIN notification_reads nr
-                    ON nr.notification_id = n.id AND nr.user_id = ?
-                WHERE n.created_by = ? OR n.created_by IN (
-                    SELECT id FROM users WHERE parent_id = ?
-                )
-                ORDER BY n.created_at DESC
-                LIMIT 100
-            `, [userId, userId, userId]);
-        } else {
-            // BROKER and TRADER see notifications targeted to them only
+            // SUPERADMIN sees:
+            // 1. Notifications they CREATED (sent)
+            // 2. Notifications TARGETED to them (received)
             [rows] = await db.execute(`
                 SELECT
                     n.*,
@@ -63,12 +35,60 @@ const getNotifications = async (req, res) => {
                 LEFT JOIN notification_reads nr
                     ON nr.notification_id = n.id AND nr.user_id = ?
                 WHERE
-                    n.target_role = ?
-                    OR n.target_user_id = ?
+                    n.created_by = ?
+                    OR n.target_role = 'ALL'
+                    OR n.target_role = ?
                     OR FIND_IN_SET(?, REPLACE(n.target_user_ids, ' ', '')) > 0
                 ORDER BY n.created_at DESC
                 LIMIT 100
-            `, [userId, role, userId, String(userId)]);
+            `, [userId, userId, role, String(userId)]);
+        } else if (role === 'ADMIN') {
+            if (source === 'self') {
+                // User Notifications page — only show notifications created by this admin
+                [rows] = await db.execute(`
+                    SELECT
+                        n.*,
+                        CASE WHEN nr.user_id IS NOT NULL THEN 1 ELSE 0 END AS is_read
+                    FROM notifications n
+                    LEFT JOIN notification_reads nr
+                        ON nr.notification_id = n.id AND nr.user_id = ?
+                    WHERE n.created_by = ?
+                    ORDER BY n.created_at DESC
+                    LIMIT 100
+                `, [userId, userId]);
+            } else {
+                // Notifications page — only show notifications TARGETED to this admin
+                [rows] = await db.execute(`
+                    SELECT
+                        n.*,
+                        CASE WHEN nr.user_id IS NOT NULL THEN 1 ELSE 0 END AS is_read
+                    FROM notifications n
+                    LEFT JOIN notification_reads nr
+                        ON nr.notification_id = n.id AND nr.user_id = ?
+                    WHERE
+                        n.target_role = 'ALL'
+                        OR n.target_role = ?
+                        OR FIND_IN_SET(?, REPLACE(n.target_user_ids, ' ', '')) > 0
+                    ORDER BY n.created_at DESC
+                    LIMIT 100
+                `, [userId, role, String(userId)]);
+            }
+        } else {
+            // BROKER and TRADER see notifications targeted to them only
+            // Priority: Specific user targeting > Role-based targeting
+            [rows] = await db.execute(`
+                SELECT
+                    n.*,
+                    CASE WHEN nr.user_id IS NOT NULL THEN 1 ELSE 0 END AS is_read
+                FROM notifications n
+                LEFT JOIN notification_reads nr
+                    ON nr.notification_id = n.id AND nr.user_id = ?
+                WHERE
+                    FIND_IN_SET(?, REPLACE(n.target_user_ids, ' ', '')) > 0
+                    OR (n.target_user_ids IS NULL AND (n.target_role = ? OR n.target_role = 'ALL'))
+                ORDER BY n.created_at DESC
+                LIMIT 100
+            `, [userId, String(userId), role]);
         }
 
         res.json(rows);

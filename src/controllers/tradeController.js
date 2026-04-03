@@ -2,6 +2,7 @@ const db = require('../config/db');
 const { logAction } = require('./systemController');
 const mockEngine = require('../utils/mockEngine');
 const bcrypt = require('bcryptjs');
+const { invalidateCache } = require('../utils/cacheManager');
 
 
 /**
@@ -405,6 +406,15 @@ const closeTrade = async (req, res) => {
         // Log the action (Audit)
         await logAction(req.user.id || trade.user_id, 'CLOSE_TRADE', 'trades', `Closed trade ID #${trade.id} @ ${finalExitPrice}. PnL: ${pnl}`);
 
+        // Clear cache on trade close (Option A - immediate consistency)
+        try {
+            await invalidateCache(`m2m_${trade.user_id}_TRADER`);
+            await invalidateCache(`m2m_${trade.user_id}_SUPERADMIN`);
+            console.log(`[Cache] Cleared trade cache for user ${trade.user_id}`);
+        } catch (e) {
+            console.log(`[Cache] Clear failed but trade closed`);
+        }
+
         res.json({
             message: 'Trade closed successfully',
             pnl,
@@ -449,6 +459,14 @@ const deleteTrade = async (req, res) => {
         }
 
         await logAction(req.user.id, 'DELETE_TRADE', 'trades', `Deleted trade #${req.params.id}. Refunded margin: ${marginToRefund}, PnL: ${pnlToRefund}`);
+
+        // Clear cache on trade delete (Option A)
+        try {
+            await invalidateCache(`m2m_${trade.user_id}_TRADER`);
+            await invalidateCache(`m2m_${trade.user_id}_SUPERADMIN`);
+        } catch (e) {
+            console.log(`[Cache] Clear failed but trade deleted`);
+        }
 
         res.json({ message: 'Trade deleted and refunded', marginRefunded: marginToRefund, pnlRefunded: pnlToRefund });
     } catch (err) {
