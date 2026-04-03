@@ -187,8 +187,8 @@ exports.getRecordings = async (req, res) => {
       ${where}
     `;
 
-    const [rows] = await db.execute(sql, [...params, parseInt(limit), offset]);
-    const [countRow] = await db.execute(countSql, params);
+    const [rows] = await db.query(sql, [...params, parseInt(limit), offset]);
+    const [countRow] = await db.query(countSql, params);
 
     console.log(`[getRecordings] ✅ Found ${rows.length} recordings, total: ${countRow[0].total}`);
 
