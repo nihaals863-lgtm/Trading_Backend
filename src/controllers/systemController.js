@@ -38,8 +38,8 @@ const getActionLedger = async (req, res) => {
         console.log('[getActionLedger] Main params:', mainParams);
         console.log('[getActionLedger] Count params:', countParams);
 
-        const [rows] = await db.execute(mainQuery, mainParams);
-        const [[{ total }]] = await db.execute(countQuery, countParams);
+        const [rows] = await db.query(mainQuery, mainParams);
+        const [[{ total }]] = await db.query(countQuery, countParams);
 
         res.json({ rows, total, page: pageNum, limit: limitNum });
     } catch (err) {
