@@ -564,24 +564,31 @@ const executeVoiceCommand = async (req, res) => {
     };
 
     // ── Smart user resolver: exact → partial username → partial full_name ──
+    // Scoped to only find users under the current admin's hierarchy (parent_id)
+    const reqUserForResolve = req.user || {};
+    const scopeParentId = (reqUserForResolve.role === 'SUPERADMIN' || reqUserForResolve.role === 'ADMIN') ? reqUserForResolve.id : null;
+
     const resolveUserByName = async (conn, rawName) => {
         const term = rawName.toString().trim();
         const isDevanagari = /[\u0900-\u097F]/.test(term);
         const latinTerm = isDevanagari ? transliterateDevanagari(term) : term;
         const searchTerms = [...new Set([term, latinTerm])];
 
+        const parentFilter = scopeParentId ? ' AND parent_id = ?' : '';
+        const parentParam = scopeParentId ? [scopeParentId] : [];
+
         for (const t of searchTerms) {
             // 1. Exact username match (case-insensitive)
             const [exact] = await conn.execute(
-                'SELECT id, username, full_name FROM users WHERE LOWER(username) = LOWER(?) LIMIT 1', [t]
+                `SELECT id, username, full_name FROM users WHERE LOWER(username) = LOWER(?)${parentFilter} LIMIT 1`, [t, ...parentParam]
             );
             if (exact.length) return exact[0];
         }
         for (const t of searchTerms) {
             // 2. Partial username OR full_name match
             const [partial] = await conn.execute(
-                'SELECT id, username, full_name FROM users WHERE LOWER(username) LIKE LOWER(?) OR LOWER(full_name) LIKE LOWER(?) LIMIT 1',
-                [`%${t}%`, `%${t}%`]
+                `SELECT id, username, full_name FROM users WHERE (LOWER(username) LIKE LOWER(?) OR LOWER(full_name) LIKE LOWER(?))${parentFilter} LIMIT 1`,
+                [`%${t}%`, `%${t}%`, ...parentParam]
             );
             if (partial.length) return partial[0];
         }
@@ -603,6 +610,21 @@ const executeVoiceCommand = async (req, res) => {
                 return res.status(404).json({ success: false, message: `User "${username}" not found. Please check the name and try again.` });
             }
             resolvedUserId = resolvedUserRow.id;
+        }
+
+        // ── Verify target user belongs to the logged-in admin/superadmin ──
+        const reqUser = req.user || {};
+        if (resolvedUserId && (reqUser.role === 'SUPERADMIN' || reqUser.role === 'ADMIN')) {
+            const [parentCheck] = await connection.execute(
+                'SELECT id, parent_id, username FROM users WHERE id = ? LIMIT 1', [resolvedUserId]
+            );
+            if (parentCheck.length && parentCheck[0].parent_id !== reqUser.id) {
+                await connection.rollback();
+                return res.status(403).json({
+                    success: false,
+                    message: `User "${parentCheck[0].username}" is not your trading client. You can only execute commands on your own clients.`
+                });
+            }
         }
 
         if (action === 'ADD_FUND') {

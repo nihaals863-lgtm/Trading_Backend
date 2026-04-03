@@ -53,14 +53,14 @@ const parseWithRules = (rawText) => {
     // Extract username from natural language (Hindi/Hinglish/English patterns)
     const SKIP_WORDS = ['user','id','account','fund','rupee','rupees','the','a','an','to','from','se','me','ko'];
     const extractUsername = (str) => {
-        // "popat ke account" or "popat ka account"
+        // "username ke account" or "username ka account"
         let m = str.match(/([a-z][a-z0-9_]+)\s+ke\s+account/i)
                || str.match(/([a-z][a-z0-9_]+)\s+ka\s+account/i);
         if (m && !SKIP_WORDS.includes(m[1].toLowerCase())) return m[1];
-        // "popat me" or "popat mein" — word before me/mein that isn't a keyword or number
+        // "username me" or "username mein" — word before me/mein that isn't a keyword or number
         m = str.match(/([a-z][a-z0-9_]+)\s+(?:me|mein)\b/i);
         if (m && !/^\d+$/.test(m[1]) && !SKIP_WORDS.includes(m[1].toLowerCase())) return m[1];
-        // "popat se" — word before se
+        // "username se" — word before se
         m = str.match(/([a-z][a-z0-9_]+)\s+se\b/i);
         if (m && !/^\d+$/.test(m[1]) && !SKIP_WORDS.includes(m[1].toLowerCase())) return m[1];
         // English "to [username] account" or "to [username]"
@@ -216,20 +216,20 @@ Examples:
 Input : "ID 16 me 2000 add karo"
 Output: { "action": "ADD_FUND", "userId": 16, "username": null, "amount": 2000 }
 
-Input : "popat ke account me 5000 daalo"
-Output: { "action": "ADD_FUND", "userId": null, "username": "popat", "amount": 5000 }
+Input : "username ke account me 5000 daalo"
+Output: { "action": "ADD_FUND", "userId": null, "username": "username", "amount": 5000 }
 
-Input : "popat me 5000 daalo"
-Output: { "action": "ADD_FUND", "userId": null, "username": "popat", "amount": 5000 }
+Input : "username me 5000 daalo"
+Output: { "action": "ADD_FUND", "userId": null, "username": "username", "amount": 5000 }
 
 Input : "add 3000 to john account"
 Output: { "action": "ADD_FUND", "userId": null, "username": "john", "amount": 3000 }
 
-Input : "popat ke account se 5000 nikalo"
-Output: { "action": "WITHDRAW_FUND", "userId": null, "username": "popat", "amount": 5000 }
+Input : "username ke account se 5000 nikalo"
+Output: { "action": "WITHDRAW_FUND", "userId": null, "username": "username", "amount": 5000 }
 
-Input : "popat se 2000 nikalo"
-Output: { "action": "WITHDRAW_FUND", "userId": null, "username": "popat", "amount": 2000 }
+Input : "username se 2000 nikalo"
+Output: { "action": "WITHDRAW_FUND", "userId": null, "username": "username", "amount": 2000 }
 
 Input : "withdraw 1000 from john"
 Output: { "action": "WITHDRAW_FUND", "userId": null, "username": "john", "amount": 1000 }

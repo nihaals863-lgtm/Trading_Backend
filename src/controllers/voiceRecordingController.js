@@ -107,8 +107,20 @@ exports.getRecordings = async (req, res) => {
       limit = 20
     } = req.query;
 
+    const currentUser = req.user || {};
+    const currentRole = currentUser.role || '';
+    const currentId = currentUser.id;
+
     let where = 'WHERE 1=1';
     const params = [];
+
+    // ── Scope recordings to the logged-in user's own trading clients ──
+    // SuperAdmin sees only recordings for clients whose parent_id = superadmin's id
+    // Admin sees only recordings for clients whose parent_id = admin's id
+    if (currentId && (currentRole === 'SUPERADMIN' || currentRole === 'ADMIN')) {
+      where += ' AND (vr.user_id IN (SELECT id FROM users WHERE parent_id = ?) OR vr.admin_id = ?)';
+      params.push(currentId, currentId);
+    }
 
     if (user_id) {
       // Match: exact user_id stored | parsed_command.userId | parsed_command.username | transcript contains username
@@ -156,8 +168,10 @@ exports.getRecordings = async (req, res) => {
     const sql = `
       SELECT
         vr.*,
+        u.username AS target_username,
         u.full_name AS target_user_name,
         u.email AS target_user_email,
+        a.username AS admin_username,
         a.full_name AS admin_name
       FROM voice_recordings vr
       LEFT JOIN users u ON vr.user_id = u.id
