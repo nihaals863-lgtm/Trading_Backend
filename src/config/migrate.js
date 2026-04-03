@@ -56,8 +56,7 @@ const runMigrations = async () => {
             city                 VARCHAR(100) DEFAULT NULL,
             is_demo              TINYINT(1) DEFAULT 0,
             created_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            KEY parent_id (parent_id)
+            updated_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
 
@@ -682,6 +681,40 @@ const runMigrations = async () => {
     // IP logins indexes
     await addIndex('ip_logins', 'idx_ip_logins_user_id', 'user_id');
     await addIndex('ip_logins', 'idx_ip_logins_timestamp', 'timestamp');
+
+    // ─── ENSURE AUTO_INCREMENT ──────────────────────────────────────────────────
+    console.log('\n🔧 Ensuring AUTO_INCREMENT on critical tables...');
+    const criticalTables = [
+        'users', 'ip_logins', 'trades', 'paper_positions', 'notifications',
+        'paper_orders', 'paper_trades', 'ledger', 'payment_requests',
+        'signals', 'action_ledger', 'scrip_data', 'support_tickets',
+        'ticket_messages', 'voice_recordings', 'new_client_bank'
+    ];
+
+    for (const table of criticalTables) {
+        try {
+            // 1. Check if table actually has an 'id' column
+            const [cols] = await db.execute(`SHOW COLUMNS FROM \`${table}\` LIKE 'id'`);
+            if (cols.length === 0) continue;
+
+            // 2. Check current AUTO_INCREMENT status
+            const [[info]] = await db.execute(
+                `SELECT AUTO_INCREMENT FROM information_schema.TABLES
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?`,
+                [table]
+            );
+
+            if (!info?.AUTO_INCREMENT) {
+                const [[maxRow]] = await db.execute(`SELECT MAX(id) as max_id FROM \`${table}\``);
+                const nextId = (maxRow?.max_id || 0) + 1;
+                await db.execute(`ALTER TABLE \`${table}\` MODIFY id INT AUTO_INCREMENT`);
+                await db.execute(`ALTER TABLE \`${table}\` AUTO_INCREMENT = ${nextId}`);
+                console.log(`  ✅ ${table}: AUTO_INCREMENT restored = ${nextId}`);
+            }
+        } catch (err) {
+            // Table might not exist yet — silently skip
+        }
+    }
 
     console.log('✅ DB migrations complete\n');
 };
