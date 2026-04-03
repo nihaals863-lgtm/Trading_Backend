@@ -27,24 +27,14 @@ const updateScrip = async (req, res) => {
 const getTickers = async (req, res) => {
     try {
         const userId = req.user.id;
-        const userRole = req.user.role;
 
-        // If ?all=true (admin panel), return only their created tickers
+        // If ?all=true (admin panel), return only user's created tickers
         if (req.query.all === 'true') {
-            console.log(`[getTickers] User ${userId} (${userRole}) requesting all tickers`);
+            console.log(`[getTickers] User ${userId} requesting their tickers`);
 
-            let query = 'SELECT * FROM tickers WHERE created_by = ? OR created_by IS NULL ORDER BY id DESC';
-            let params = [userId];
-
-            // For SUPERADMIN/ADMIN, also include tickers created by their children
-            if (userRole === 'SUPERADMIN' || userRole === 'ADMIN') {
-                query = `SELECT * FROM tickers
-                         WHERE created_by = ? OR created_by IN (
-                             SELECT id FROM users WHERE parent_id = ?
-                         ) OR created_by IS NULL
-                         ORDER BY id DESC`;
-                params = [userId, userId];
-            }
+            // All users see only tickers they created
+            const query = 'SELECT * FROM tickers WHERE created_by = ? ORDER BY id DESC';
+            const params = [userId];
 
             console.log(`[getTickers] Query params:`, params);
             const [rows] = await db.execute(query, params);

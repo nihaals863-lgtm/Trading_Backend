@@ -8,16 +8,17 @@ const getBannedOrders = async (req, res) => {
 
         console.log(`[getBannedOrders] User ${userId} (${userRole}) requesting banned orders`);
 
-        // Each user sees only their created banned orders
-        let query = 'SELECT * FROM banned_limit_orders WHERE created_by = ? OR created_by IS NULL ORDER BY id DESC';
+        // For SUPERADMIN - sees only their own banned orders
+        // For ADMIN - sees their own + their subordinates' orders
+        let query = 'SELECT * FROM banned_limit_orders WHERE created_by = ? ORDER BY id DESC';
         let params = [userId];
 
-        // For SUPERADMIN/ADMIN, also include orders created by their children
-        if (userRole === 'SUPERADMIN' || userRole === 'ADMIN') {
+        // For ADMIN, also include orders created by their direct children
+        if (userRole === 'ADMIN') {
             query = `SELECT * FROM banned_limit_orders
                      WHERE created_by = ? OR created_by IN (
                          SELECT id FROM users WHERE parent_id = ?
-                     ) OR created_by IS NULL
+                     )
                      ORDER BY id DESC`;
             params = [userId, userId];
         }

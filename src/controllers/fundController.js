@@ -53,7 +53,7 @@ const createFund = async (req, res) => {
 
 const getFunds = async (req, res) => {
     try {
-        const { userId, amount } = req.query;
+        const { userId, amount, fromDate, toDate } = req.query;
         const role = req.user.role;
         const loggedInId = req.user.id;
 
@@ -66,18 +66,14 @@ const getFunds = async (req, res) => {
         const params = [];
 
         // Role-based hierarchy filter
-        if (role === 'SUPERADMIN') {
-            // sees all
-        } else if (role === 'ADMIN') {
-            // sees all traders/brokers under them (any depth) via subquery
+        // SUPERADMIN/ADMIN: see only direct children's funds
+        // BROKER: see only directly assigned clients' funds
+        if (role === 'SUPERADMIN' || role === 'ADMIN') {
+            // See funds for users where they are the parent (direct children only)
             query += ` AND l.user_id IN (
                 SELECT id FROM users WHERE parent_id = ?
-                UNION
-                SELECT u2.id FROM users u2
-                JOIN users u3 ON u2.parent_id = u3.id
-                WHERE u3.parent_id = ?
             )`;
-            params.push(loggedInId, loggedInId);
+            params.push(loggedInId);
         } else {
             // BROKER — only directly assigned clients
             query += ` AND u.parent_id = ?`;
@@ -91,6 +87,14 @@ const getFunds = async (req, res) => {
         if (amount) {
             query += " AND l.amount = ?";
             params.push(amount);
+        }
+        if (fromDate) {
+            query += " AND DATE(l.created_at) >= DATE(?)";
+            params.push(fromDate);
+        }
+        if (toDate) {
+            query += " AND DATE(l.created_at) <= DATE(?)";
+            params.push(toDate);
         }
 
         query += " ORDER BY l.created_at DESC";
