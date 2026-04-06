@@ -274,6 +274,22 @@ const getTrades = async (req, res) => {
             params.push(`%${req.query.username}%`);
         }
 
+        // Filter by scrip (symbol)
+        if (req.query.scrip) {
+            query += ' AND t.symbol LIKE ?';
+            params.push(`%${req.query.scrip}%`);
+        }
+
+        // Filter by date range
+        if (req.query.fromDate) {
+            query += ' AND DATE(t.entry_time) >= ?';
+            params.push(req.query.fromDate);
+        }
+        if (req.query.toDate) {
+            query += ' AND DATE(t.entry_time) <= ?';
+            params.push(req.query.toDate);
+        }
+
         query += ' ORDER BY t.entry_time DESC';
         const [rows] = await db.execute(query, params);
         res.json(rows);
@@ -317,13 +333,15 @@ const getTradeById = async (req, res) => {
 const getGroupTrades = async (req, res) => {
     try {
         const { id, role } = req.user;
+        const { scrip, segment, fromDate, toDate } = req.query;
+
         let query = `
-            SELECT 
-                t.symbol, 
-                t.type, 
+            SELECT
+                t.symbol,
+                t.type,
                 t.market_type,
-                SUM(t.qty) as total_qty, 
-                AVG(t.entry_price) as avg_price, 
+                SUM(t.qty) as total_qty,
+                AVG(t.entry_price) as avg_price,
                 COUNT(*) as trade_count
             FROM trades t
             JOIN users u ON t.user_id = u.id
@@ -335,6 +353,28 @@ const getGroupTrades = async (req, res) => {
         if (role !== 'SUPERADMIN') {
             query += ` AND (u.id = ? OR u.parent_id = ? OR u.parent_id IN (SELECT id FROM users WHERE parent_id = ?))`;
             params.push(id, id, id);
+        }
+
+        // Filter by scrip (symbol)
+        if (scrip) {
+            query += ` AND t.symbol LIKE ?`;
+            params.push(`%${scrip}%`);
+        }
+
+        // Filter by segment (market type)
+        if (segment && segment !== 'All') {
+            query += ` AND t.market_type = ?`;
+            params.push(segment);
+        }
+
+        // Filter by date range
+        if (fromDate) {
+            query += ` AND DATE(t.entry_time) >= ?`;
+            params.push(fromDate);
+        }
+        if (toDate) {
+            query += ` AND DATE(t.entry_time) <= ?`;
+            params.push(toDate);
         }
 
         query += ` GROUP BY t.symbol, t.type, t.market_type ORDER BY t.symbol ASC`;

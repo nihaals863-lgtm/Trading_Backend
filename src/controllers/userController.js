@@ -48,11 +48,18 @@ const getUsers = async (req, res) => {
         const params = [];
 
         // Apply hierarchy filtering based on role
-        // Show clients to:
-        // 1. The creator (parent_id = current user id)
-        // 2. The assigned broker (broker_id = current user id)
-        query += ' AND (u.parent_id = ? OR cs.broker_id = ?)';
-        params.push(currentUserId, currentUserId);
+        // SUPERADMIN/ADMIN: See only clients they created (parent_id = current user id)
+        // BROKER: See only assigned clients (broker_id = current user id)
+        // OTHERS: See only their own created clients (parent_id = current user id)
+        if (currentUserRole === 'BROKER') {
+            // Brokers see only assigned clients
+            query += ' AND cs.broker_id = ?';
+            params.push(currentUserId);
+        } else {
+            // Everyone else (SUPERADMIN, ADMIN, TRADER, etc.) sees only their created clients
+            query += ' AND u.parent_id = ?';
+            params.push(currentUserId);
+        }
 
         if (role) {
             query += ' AND u.role = ?';
