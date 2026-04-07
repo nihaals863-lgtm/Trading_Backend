@@ -74,4 +74,10 @@ router.post('/ai-parse',        authMiddleware, aiParse);
 router.post('/execute-command',  authMiddleware, executeVoiceCommand);
 router.post('/voice-execute',    authMiddleware, voiceExecute);
 
+// POST /api/ai/transcribe-voice — Whisper transcription
+router.post('/transcribe-voice', authMiddleware, upload.single('audio'), transcribeVoice);
+
+// POST /api/ai/chat — AI Chat (general conversation)
+router.post('/chat', authMiddleware, chatWithAI);
+
 module.exports = router;

@@ -12,28 +12,43 @@ const logAction = async (userId, action, target, details) => {
 const getActionLedger = async (req, res) => {
     try {
         const { message, page = 1, limit = 20 } = req.query;
-        const offset = (Math.max(1, parseInt(page)) - 1) * parseInt(limit);
-        
-        let query = `SELECT al.*, u.username FROM action_ledger al
-                     LEFT JOIN users u ON al.admin_id = u.id`;
-        let countQuery = `SELECT COUNT(*) as total FROM action_ledger al`;
-        let queryParams = [];
+        const pageNum = Math.max(1, parseInt(page) || 1);
+        const limitNum = Math.max(1, parseInt(limit) || 20);
+        const offset = (pageNum - 1) * limitNum;
 
-        if (message) {
-            query += ` WHERE al.description LIKE ?`;
-            countQuery += ` WHERE al.description LIKE ?`;
-            queryParams.push(`%${message}%`);
-        }
+        // Build search filter safely
+        const hasSearch = message && message.trim();
+        const searchTerm = hasSearch ? `%${message.trim()}%` : null;
 
-        query += ` ORDER BY al.timestamp DESC LIMIT ? OFFSET ?`;
-        
-        const [rows] = await db.execute(query, [...queryParams, parseInt(limit), offset]);
-        const [[{ total }]] = await db.execute(countQuery, queryParams);
+        // Main query - always same structure, params vary
+        const mainQuery = `SELECT al.id, al.admin_id, al.action_type, al.target_table, al.description, al.timestamp, u.username
+                          FROM action_ledger al
+                          LEFT JOIN users u ON al.admin_id = u.id
+                          WHERE (? IS NULL OR al.description LIKE ?)
+                          ORDER BY al.timestamp DESC
+                          LIMIT ? OFFSET ?`;
 
-        res.json({ rows, total });
+        const mainParams = [searchTerm, searchTerm, limitNum, offset];
+
+        // Count query
+        const countQuery = `SELECT COUNT(*) as total FROM action_ledger al
+                           WHERE (? IS NULL OR al.description LIKE ?)`;
+        const countParams = [searchTerm, searchTerm];
+
+        console.log('[getActionLedger] Main params:', mainParams);
+        console.log('[getActionLedger] Count params:', countParams);
+
+        const [rows] = await db.query(mainQuery, mainParams);
+        const [[{ total }]] = await db.query(countQuery, countParams);
+
+        res.json({ rows, total, page: pageNum, limit: limitNum });
     } catch (err) {
-        console.error('[getActionLedger]', err);
-        res.status(500).json({ message: 'Server Error' });
+        console.error('[getActionLedger] Error:', {
+            message: err.message,
+            code: err.code,
+            sql: err.sql
+        });
+        res.status(500).json({ message: 'Server Error', error: err.message });
     }
 };
 

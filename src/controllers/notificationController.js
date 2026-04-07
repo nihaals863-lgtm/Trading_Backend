@@ -24,19 +24,9 @@ const getNotifications = async (req, res) => {
                 LIMIT 100
             `, [userId, userId]);
         } else if (role === 'SUPERADMIN') {
-            // SuperAdmin sees ALL notifications (they are the sender)
-            [rows] = await db.execute(`
-                SELECT
-                    n.*,
-                    CASE WHEN nr.user_id IS NOT NULL THEN 1 ELSE 0 END AS is_read
-                FROM notifications n
-                LEFT JOIN notification_reads nr
-                    ON nr.notification_id = n.id AND nr.user_id = ?
-                ORDER BY n.created_at DESC
-                LIMIT 100
-            `, [userId]);
-        } else {
-            // Other roles see notifications targeted to them only (not superadmin's)
+            // SUPERADMIN sees:
+            // 1. Notifications they CREATED (sent)
+            // 2. Notifications TARGETED to them (received)
             [rows] = await db.execute(`
                 SELECT
                     n.*,
@@ -45,12 +35,60 @@ const getNotifications = async (req, res) => {
                 LEFT JOIN notification_reads nr
                     ON nr.notification_id = n.id AND nr.user_id = ?
                 WHERE
-                    n.target_role = ?
-                    OR n.target_user_id = ?
+                    n.created_by = ?
+                    OR n.target_role = 'ALL'
+                    OR n.target_role = ?
                     OR FIND_IN_SET(?, REPLACE(n.target_user_ids, ' ', '')) > 0
                 ORDER BY n.created_at DESC
                 LIMIT 100
-            `, [userId, role, userId, String(userId)]);
+            `, [userId, userId, role, String(userId)]);
+        } else if (role === 'ADMIN') {
+            if (source === 'self') {
+                // User Notifications page — only show notifications created by this admin
+                [rows] = await db.execute(`
+                    SELECT
+                        n.*,
+                        CASE WHEN nr.user_id IS NOT NULL THEN 1 ELSE 0 END AS is_read
+                    FROM notifications n
+                    LEFT JOIN notification_reads nr
+                        ON nr.notification_id = n.id AND nr.user_id = ?
+                    WHERE n.created_by = ?
+                    ORDER BY n.created_at DESC
+                    LIMIT 100
+                `, [userId, userId]);
+            } else {
+                // Notifications page — only show notifications TARGETED to this admin
+                [rows] = await db.execute(`
+                    SELECT
+                        n.*,
+                        CASE WHEN nr.user_id IS NOT NULL THEN 1 ELSE 0 END AS is_read
+                    FROM notifications n
+                    LEFT JOIN notification_reads nr
+                        ON nr.notification_id = n.id AND nr.user_id = ?
+                    WHERE
+                        n.target_role = 'ALL'
+                        OR n.target_role = ?
+                        OR FIND_IN_SET(?, REPLACE(n.target_user_ids, ' ', '')) > 0
+                    ORDER BY n.created_at DESC
+                    LIMIT 100
+                `, [userId, role, String(userId)]);
+            }
+        } else {
+            // BROKER and TRADER see notifications targeted to them only
+            // Priority: Specific user targeting > Role-based targeting
+            [rows] = await db.execute(`
+                SELECT
+                    n.*,
+                    CASE WHEN nr.user_id IS NOT NULL THEN 1 ELSE 0 END AS is_read
+                FROM notifications n
+                LEFT JOIN notification_reads nr
+                    ON nr.notification_id = n.id AND nr.user_id = ?
+                WHERE
+                    FIND_IN_SET(?, REPLACE(n.target_user_ids, ' ', '')) > 0
+                    OR (n.target_user_ids IS NULL AND (n.target_role = ? OR n.target_role = 'ALL'))
+                ORDER BY n.created_at DESC
+                LIMIT 100
+            `, [userId, String(userId), role]);
         }
 
         res.json(rows);
@@ -153,12 +191,31 @@ const createNotification = async (req, res) => {
 const getUsersByRole = async (req, res) => {
     const { role } = req.params;
     const userId = req.user.id;
+    const userRole = req.user.role;
+
     try {
-        // Only show users created by the logged-in user (parent_id = current user)
-        const [rows] = await db.execute(
-            'SELECT id, username, full_name, email, role FROM users WHERE role = ? AND status = ? AND parent_id = ? ORDER BY full_name ASC',
-            [role, 'Active', userId]
-        );
+        let query = 'SELECT id, username, full_name, email, role FROM users WHERE role = ? AND status = ? ';
+        let params = [role, 'Active'];
+
+        // Each user sees only the users they created (parent_id = current user id)
+        if (userRole === 'SUPERADMIN') {
+            // SUPERADMIN sees only their created users of the requested role
+            query += 'AND parent_id = ?';
+            params.push(userId);
+        } else if (userRole === 'ADMIN') {
+            // ADMIN sees only their created users of the requested role
+            query += 'AND parent_id = ?';
+            params.push(userId);
+        } else if (userRole === 'BROKER') {
+            // BROKER sees only their created traders
+            query += 'AND parent_id = ?';
+            params.push(userId);
+        }
+
+        query += ' ORDER BY full_name ASC';
+        console.log('[getUsersByRole] Query:', query, 'Params:', params);
+        const [rows] = await db.execute(query, params);
+        console.log('[getUsersByRole] Returned', rows.length, 'users');
         res.json(rows);
     } catch (err) {
         console.error('getUsersByRole:', err);

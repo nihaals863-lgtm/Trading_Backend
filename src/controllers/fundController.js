@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const { logAction } = require('./systemController');
+const { invalidateCache } = require('../utils/cacheManager');
 
 const createFund = async (req, res) => {
     const { userId, amount, notes, mode } = req.body;
@@ -38,7 +39,27 @@ const createFund = async (req, res) => {
         );
 
         await connection.commit();
+
+        // Clear cache on fund transaction (Option A - immediate consistency)
+        try {
+            await invalidateCache(`users_${userId}_all`);
+            await invalidateCache(`m2m_${userId}_TRADER`);
+            await invalidateCache(`m2m_${userId}_SUPERADMIN`);
+        } catch (e) {
+            console.log(`[Cache] Clear failed but transaction completed`);
+        }
+
         res.json({ message: 'Transaction successful', newBalance });
+
+        // Invalidate funds cache for this user
+        try {
+            await invalidateCache(`funds_${userId}_*`);
+            // Also invalidate user-related caches
+            await invalidateCache(`users_${userId}_all`);
+            await invalidateCache(`users_${userId}_TRADER`);
+        } catch (e) {
+            console.log('[Cache] Invalidation failed but transaction completed');
+        }
 
         // Log the fund creation
         await logAction(req.user.id, 'CREATE_FUND', 'ledger', `${type} of ${amountNum} for user #${userId}. Notes: ${notes || 'N/A'}`);
@@ -53,9 +74,22 @@ const createFund = async (req, res) => {
 
 const getFunds = async (req, res) => {
     try {
-        const { userId, amount } = req.query;
+        const { userId, amount, fromDate, toDate } = req.query;
         const role = req.user.role;
         const loggedInId = req.user.id;
+
+        // Generate cache key based on filters
+        const cacheKey = `funds_${loggedInId}_${role}_${userId || 'all'}_${amount || 'all'}_${fromDate || 'all'}_${toDate || 'all'}`;
+
+        // Try cache first
+        try {
+            const cachedData = await getFromCache(cacheKey);
+            if (cachedData) {
+                return res.json(cachedData);
+            }
+        } catch (e) {
+            // Cache failed, continue to DB
+        }
 
         let query = `
             SELECT l.*, u.username, u.full_name
@@ -66,18 +100,14 @@ const getFunds = async (req, res) => {
         const params = [];
 
         // Role-based hierarchy filter
-        if (role === 'SUPERADMIN') {
-            // sees all
-        } else if (role === 'ADMIN') {
-            // sees all traders/brokers under them (any depth) via subquery
+        // SUPERADMIN/ADMIN: see only direct children's funds
+        // BROKER: see only directly assigned clients' funds
+        if (role === 'SUPERADMIN' || role === 'ADMIN') {
+            // See funds for users where they are the parent (direct children only)
             query += ` AND l.user_id IN (
                 SELECT id FROM users WHERE parent_id = ?
-                UNION
-                SELECT u2.id FROM users u2
-                JOIN users u3 ON u2.parent_id = u3.id
-                WHERE u3.parent_id = ?
             )`;
-            params.push(loggedInId, loggedInId);
+            params.push(loggedInId);
         } else {
             // BROKER — only directly assigned clients
             query += ` AND u.parent_id = ?`;
@@ -92,10 +122,26 @@ const getFunds = async (req, res) => {
             query += " AND l.amount = ?";
             params.push(amount);
         }
+        if (fromDate) {
+            query += " AND DATE(l.created_at) >= DATE(?)";
+            params.push(fromDate);
+        }
+        if (toDate) {
+            query += " AND DATE(l.created_at) <= DATE(?)";
+            params.push(toDate);
+        }
 
         query += " ORDER BY l.created_at DESC";
 
         const [rows] = await db.execute(query, params);
+
+        // Save to cache with 2 min TTL
+        try {
+            await saveToCache(cacheKey, rows, 120);
+        } catch (e) {
+            // Cache save failed, but data still sent
+        }
+
         res.json(rows);
     } catch (err) {
         console.error(err);
@@ -149,6 +195,15 @@ const updateFund = async (req, res) => {
         await connection.commit();
         res.json({ message: 'Fund entry updated successfully', newBalance });
 
+        // Invalidate funds cache for this user
+        try {
+            await invalidateCache(`funds_${old.user_id}_*`);
+            await invalidateCache(`users_${old.user_id}_all`);
+            await invalidateCache(`users_${old.user_id}_TRADER`);
+        } catch (e) {
+            console.log('[Cache] Invalidation failed but transaction completed');
+        }
+
         // Log the fund update
         await logAction(req.user.id, 'UPDATE_FUND', 'ledger', `Updated fund entry #${id}. New Amount: ${newAmount}, New Type: ${newType}`);
     } catch (err) {
@@ -189,6 +244,15 @@ const deleteFund = async (req, res) => {
 
         await connection.commit();
         res.json({ message: 'Fund entry deleted and balance reversed' });
+
+        // Invalidate funds cache for this user
+        try {
+            await invalidateCache(`funds_${entry.user_id}_*`);
+            await invalidateCache(`users_${entry.user_id}_all`);
+            await invalidateCache(`users_${entry.user_id}_TRADER`);
+        } catch (e) {
+            console.log('[Cache] Invalidation failed but transaction completed');
+        }
 
         // Log the fund deletion
         await logAction(req.user.id, 'DELETE_FUND', 'ledger', `Deleted fund entry #${id} for user #${entry.user_id}. Reversed amount: ${reverseAmount}`);

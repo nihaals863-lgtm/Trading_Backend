@@ -2,21 +2,25 @@ require('dotenv').config({ path: require('path').resolve(__dirname, '.env') });
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
+const compression = require('compression');
+const { initializeCache } = require('./utils/cacheManager');
 const socketManager = require('./websocket/SocketManager');
 const marketDataService = require('./services/MarketDataService');
 const paperTradingEngine = require('./trading-engine/PaperTradingEngine');
 const { setIo } = require('./config/socket');
 const runMigrations = require('./config/migrate');
 
-const app = express();
+
+
+const app = express();  
 app.set('trust proxy', true);
 const server = http.createServer(app);
 
 const ALLOWED_ORIGINS = [
-  'http://localhost:5173',
-  'http://localhost:8081',
-  'https://traderss.kiaantechnology.com',
-  process.env.FRONTEND_URL
+    'http://localhost:5173', 
+     'http://localhost:8081', 
+    'https://traderss.kiaantechnology.com', 
+    process.env.FRONTEND_URL
 ].filter(Boolean);
 
 const io = socketManager.init(server, ALLOWED_ORIGINS);
@@ -47,6 +51,10 @@ const { logIp } = require('./middleware/logger');
 
 // Middleware
 app.use(cors({ origin: ALLOWED_ORIGINS, credentials: true }));
+app.use(compression({
+    level: 6,  // Compression level (0-9, 6 is good balance)
+    threshold: 1024  // Only compress responses > 1KB
+}));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(logIp); // Log IP for every authenticated request
@@ -121,35 +129,38 @@ setIo(io);
 
 // Run DB migrations first, then start server
 runMigrations()
-  .then(async () => {
-    server.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
+    .then(async () => {
+        // Initialize Redis Cache (safe: fails gracefully if unavailable)
+        await initializeCache();
+
+        server.listen(PORT, () => {
+            console.log(`🚀 Server running on port ${PORT}`);
+        });
+
+        // Initialize Paper Trading Engine after DB is ready (if applicable)
+        paperTradingEngine.start();
+
+        // Start Expiry Square-off cron job
+        const { startExpirySquareOffJob } = require('./services/expirySquareOffService');
+        startExpirySquareOffJob();
+
+        // Initialize Market Data
+        try {
+            const db = require('./config/db');
+            const [users] = await db.execute('SELECT id FROM user_kite_sessions LIMIT 1');
+            if (users.length > 0) {
+                await marketDataService.init(users[0].id);
+            } else {
+                marketDataService.startMockEngine();
+            }
+        } catch (err) {
+            marketDataService.startMockEngine();
+        }
+    })
+    .catch((err) => {
+        console.error('❌ Migration failed, server not started:', err.message);
+        process.exit(1);
     });
-
-    // Initialize Paper Trading Engine after DB is ready (if applicable)
-    paperTradingEngine.start();
-
-    // Start Expiry Square-off cron job
-    const { startExpirySquareOffJob } = require('./services/expirySquareOffService');
-    startExpirySquareOffJob();
-
-    // Initialize Market Data
-    try {
-      const db = require('./config/db');
-      const [users] = await db.execute('SELECT id FROM user_kite_sessions LIMIT 1');
-      if (users.length > 0) {
-        await marketDataService.init(users[0].id);
-      } else {
-        marketDataService.startMockEngine();
-      }
-    } catch (err) {
-      marketDataService.startMockEngine();
-    }
-  })
-  .catch((err) => {
-    console.error('❌ Migration failed, server not started:', err.message);
-    process.exit(1);
-  });
 
 // Trigger nodemon restart
 

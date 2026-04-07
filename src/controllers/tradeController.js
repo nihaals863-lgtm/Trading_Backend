@@ -2,18 +2,36 @@ const db = require('../config/db');
 const { logAction } = require('./systemController');
 const mockEngine = require('../utils/mockEngine');
 const bcrypt = require('bcryptjs');
+const { invalidateCache } = require('../utils/cacheManager');
 
 
 /**
  * Place a New Order
  */
 const placeOrder = async (req, res) => {
+    // Safety check: ensure req.body exists
+    console.log('[placeOrder] Request received:');
+    console.log('  Method:', req.method);
+    console.log('  URL:', req.url);
+    console.log('  Content-Type:', req.headers['content-type']);
+    console.log('  Body type:', typeof req.body);
+    console.log('  Body is Array:', Array.isArray(req.body));
+    console.log('  Body keys:', req.body ? Object.keys(req.body) : 'N/A');
+    console.log('  Body:', JSON.stringify(req.body, null, 2));
+
+    if (!req.body || Object.keys(req.body).length === 0) {
+        console.error('[placeOrder] ERROR: req.body is empty or undefined!');
+        console.error('[placeOrder] Request headers:', req.headers);
+        return res.status(400).json({ message: 'Request body is empty. Please check your request format.' });
+    }
+
     const {
         symbol, type, qty, price,
         order_type = 'MARKET',
         is_pending = false,
         userId: traderId,
-        transactionPassword
+        transactionPassword,
+        exit_price
     } = req.body;
 
     const requesterId = req.user.id;
@@ -122,7 +140,7 @@ const placeOrder = async (req, res) => {
 
         // 7. Execution Price Logic
         const currentPrice = mockEngine.getPrice(symbol);
-        const executionPrice = (order_type === 'MARKET' || !price) ? currentPrice : parseFloat(price);
+        const executionPrice = price ? parseFloat(price) : (order_type === 'MARKET' ? currentPrice : 0);
         const qtyNum = parseInt(qty, 10);
 
         if (isNaN(executionPrice) || executionPrice <= 0) {
@@ -174,8 +192,8 @@ const placeOrder = async (req, res) => {
         // 8. Insert Trade
         const [result] = await db.execute(
             `INSERT INTO trades
-                (user_id, symbol, type, order_type, qty, entry_price, margin_used, is_pending, market_type, status, trade_ip)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                (user_id, symbol, type, order_type, qty, entry_price, exit_price, margin_used, is_pending, market_type, status, trade_ip)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 targetUserId,
                 sym,
@@ -183,6 +201,7 @@ const placeOrder = async (req, res) => {
                 order_type,
                 qtyNum,
                 executionPrice,
+                exit_price ? parseFloat(exit_price) : null,
                 marginRequired,
                 is_pending ? 1 : 0,
                 marketType,
@@ -249,6 +268,28 @@ const getTrades = async (req, res) => {
             params.push(req.user.id, req.user.id);
         }
 
+        // Filter by username
+        if (req.query.username) {
+            query += ' AND u.username LIKE ?';
+            params.push(`%${req.query.username}%`);
+        }
+
+        // Filter by scrip (symbol)
+        if (req.query.scrip) {
+            query += ' AND t.symbol LIKE ?';
+            params.push(`%${req.query.scrip}%`);
+        }
+
+        // Filter by date range
+        if (req.query.fromDate) {
+            query += ' AND DATE(t.entry_time) >= ?';
+            params.push(req.query.fromDate);
+        }
+        if (req.query.toDate) {
+            query += ' AND DATE(t.entry_time) <= ?';
+            params.push(req.query.toDate);
+        }
+
         query += ' ORDER BY t.entry_time DESC';
         const [rows] = await db.execute(query, params);
         res.json(rows);
@@ -258,16 +299,49 @@ const getTrades = async (req, res) => {
     }
 };
 
+/**
+ * Get Single Trade by ID
+ */
+const getTradeById = async (req, res) => {
+    try {
+        const [rows] = await db.execute(
+            `SELECT t.*, u.username, u.full_name 
+             FROM trades t 
+             JOIN users u ON t.user_id = u.id 
+             WHERE t.id = ?`,
+            [req.params.id]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ message: 'Trade not found' });
+        }
+
+        const trade = rows[0];
+
+        // Access check: Admin sees all, Others see only theirs
+        if (req.user.role !== 'SUPERADMIN' && req.user.role !== 'ADMIN' && trade.user_id !== req.user.id) {
+            return res.status(403).json({ message: 'Not authorized to view this trade' });
+        }
+
+        res.json(trade);
+    } catch (err) {
+        console.error('Get Trade by ID Error:', err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
 const getGroupTrades = async (req, res) => {
     try {
         const { id, role } = req.user;
+        const { scrip, segment, fromDate, toDate } = req.query;
+
         let query = `
-            SELECT 
-                t.symbol, 
-                t.type, 
+            SELECT
+                t.symbol,
+                t.type,
                 t.market_type,
-                SUM(t.qty) as total_qty, 
-                AVG(t.entry_price) as avg_price, 
+                SUM(t.qty) as total_qty,
+                AVG(t.entry_price) as avg_price,
                 COUNT(*) as trade_count
             FROM trades t
             JOIN users u ON t.user_id = u.id
@@ -279,6 +353,28 @@ const getGroupTrades = async (req, res) => {
         if (role !== 'SUPERADMIN') {
             query += ` AND (u.id = ? OR u.parent_id = ? OR u.parent_id IN (SELECT id FROM users WHERE parent_id = ?))`;
             params.push(id, id, id);
+        }
+
+        // Filter by scrip (symbol)
+        if (scrip) {
+            query += ` AND t.symbol LIKE ?`;
+            params.push(`%${scrip}%`);
+        }
+
+        // Filter by segment (market type)
+        if (segment && segment !== 'All') {
+            query += ` AND t.market_type = ?`;
+            params.push(segment);
+        }
+
+        // Filter by date range
+        if (fromDate) {
+            query += ` AND DATE(t.entry_time) >= ?`;
+            params.push(fromDate);
+        }
+        if (toDate) {
+            query += ` AND DATE(t.entry_time) <= ?`;
+            params.push(toDate);
         }
 
         query += ` GROUP BY t.symbol, t.type, t.market_type ORDER BY t.symbol ASC`;
@@ -325,7 +421,7 @@ const closeTrade = async (req, res) => {
         }
 
         const currentPrice = mockEngine.getPrice(trade.symbol);
-        const finalExitPrice = exitPrice || currentPrice;
+        const finalExitPrice = exitPrice || trade.exit_price || currentPrice;
 
         const pnl = trade.type === 'BUY'
             ? (finalExitPrice - trade.entry_price) * trade.qty
@@ -349,6 +445,15 @@ const closeTrade = async (req, res) => {
 
         // Log the action (Audit)
         await logAction(req.user.id || trade.user_id, 'CLOSE_TRADE', 'trades', `Closed trade ID #${trade.id} @ ${finalExitPrice}. PnL: ${pnl}`);
+
+        // Clear cache on trade close (Option A - immediate consistency)
+        try {
+            await invalidateCache(`m2m_${trade.user_id}_TRADER`);
+            await invalidateCache(`m2m_${trade.user_id}_SUPERADMIN`);
+            console.log(`[Cache] Cleared trade cache for user ${trade.user_id}`);
+        } catch (e) {
+            console.log(`[Cache] Clear failed but trade closed`);
+        }
 
         res.json({
             message: 'Trade closed successfully',
@@ -394,6 +499,14 @@ const deleteTrade = async (req, res) => {
         }
 
         await logAction(req.user.id, 'DELETE_TRADE', 'trades', `Deleted trade #${req.params.id}. Refunded margin: ${marginToRefund}, PnL: ${pnlToRefund}`);
+
+        // Clear cache on trade delete (Option A)
+        try {
+            await invalidateCache(`m2m_${trade.user_id}_TRADER`);
+            await invalidateCache(`m2m_${trade.user_id}_SUPERADMIN`);
+        } catch (e) {
+            console.log(`[Cache] Clear failed but trade deleted`);
+        }
 
         res.json({ message: 'Trade deleted and refunded', marginRefunded: marginToRefund, pnlRefunded: pnlToRefund });
     } catch (err) {
@@ -582,4 +695,4 @@ const modifyPendingOrder = async (req, res) => {
     }
 };
 
-module.exports = { placeOrder, getTrades, getGroupTrades, closeTrade, deleteTrade, updateTrade, restoreTrade, modifyPendingOrder };
+module.exports = { placeOrder, getTrades, getTradeById, getGroupTrades, closeTrade, deleteTrade, updateTrade, restoreTrade, modifyPendingOrder };

@@ -1,12 +1,29 @@
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 const { logAction } = require('./systemController');
+const { getFromCache, saveToCache, invalidateCache } = require('../utils/cacheManager');
 
 const { uploadFile, deleteFile } = require('../utils/imagekit');
 
 const getUsers = async (req, res) => {
     try {
         const { role } = req.query;
+        const currentUserId = req.user.id;
+        const currentUserRole = req.user.role;
+
+        console.log(`[getUsers] User ${currentUserId} (${currentUserRole}) requesting users with role filter: ${role || 'all'}`);
+
+        // Try to get from cache first (safe: if fails, continues to DB query)
+        const cacheKey = `users_${currentUserId}_${role || 'all'}`;
+        try {
+            const cachedData = await getFromCache(cacheKey);
+            if (cachedData) {
+                return res.json(cachedData);
+            }
+        } catch (cacheErr) {
+            console.log(`[getUsers] Cache read failed, proceeding with DB query`);
+        }
+
         let query = `
             SELECT
                 u.*,
@@ -20,7 +37,8 @@ const getUsers = async (req, res) => {
                 0.00 as swap_charges,
                 IFNULL((SELECT SUM(pnl) FROM trades WHERE user_id = u.id AND status = 'CLOSED'), 0.00) as net_pl,
                 (SELECT COUNT(*) FROM trades WHERE user_id = u.id AND status = 'OPEN') as active_trades_count,
-                cs.config_json
+                cs.config_json,
+                cs.broker_id
             FROM users u
             LEFT JOIN users p ON u.parent_id = p.id
             LEFT JOIN user_documents ud ON u.id = ud.user_id
@@ -30,9 +48,17 @@ const getUsers = async (req, res) => {
         const params = [];
 
         // Apply hierarchy filtering based on role
-        if (req.user.role !== 'SUPERADMIN') {
+        // SUPERADMIN/ADMIN: See only clients they created (parent_id = current user id)
+        // BROKER: See only assigned clients (broker_id = current user id)
+        // OTHERS: See only their own created clients (parent_id = current user id)
+        if (currentUserRole === 'BROKER') {
+            // Brokers see only assigned clients
+            query += ' AND cs.broker_id = ?';
+            params.push(currentUserId);
+        } else {
+            // Everyone else (SUPERADMIN, ADMIN, TRADER, etc.) sees only their created clients
             query += ' AND u.parent_id = ?';
-            params.push(req.user.id);
+            params.push(currentUserId);
         }
 
         if (role) {
@@ -40,7 +66,18 @@ const getUsers = async (req, res) => {
             params.push(role);
         }
 
+        console.log(`[getUsers] Executing query with params:`, params);
+
         const [rows] = await db.execute(query, params);
+        console.log(`[getUsers] Returned ${rows.length} users`);
+
+        // Save to cache (safe: if fails, response still sent)
+        try {
+            await saveToCache(cacheKey, rows, 300); // 5 min cache
+        } catch (cacheErr) {
+            console.log(`[getUsers] Cache save failed, but data sent`);
+        }
+
         res.json(rows);
     } catch (err) {
         console.error(err);
@@ -165,7 +202,7 @@ const updateUser = async (req, res) => {
         if (exposureMultiplier !== undefined){ fields.push('exposure_multiplier = ?'); values.push(exposureMultiplier); }
         if (isDemo !== undefined)           { fields.push('is_demo = ?');            values.push(isDemo ? 1 : 0); }
         if (status !== undefined)           { fields.push('status = ?');             values.push(status); }
-        if (parentId !== undefined)         { fields.push('parent_id = ?');          values.push(parentId); }
+        if (parentId !== undefined)         { fields.push('parent_id = ?');          values.push(parseInt(parentId) || null); }
 
         if (fields.length === 0) return res.status(400).json({ message: 'No fields to update' });
 
@@ -175,6 +212,16 @@ const updateUser = async (req, res) => {
         // Log the action with summary of changes
         const summary = Object.keys(req.body).join(', ');
         await logAction(req.user.id, 'UPDATE_USER', 'users', `Updated user ID ${req.params.id}: modified ${summary}`);
+
+        // Clear cache for this user (Option A - immediate consistency)
+        try {
+            await invalidateCache(`users_${req.params.id}_all`);
+            await invalidateCache(`users_${req.params.id}_TRADER`);
+            await invalidateCache(`users_${req.params.id}_BROKER`);
+            console.log(`[Cache] Cleared user ${req.params.id} cache`);
+        } catch (e) {
+            console.log(`[Cache] Clear failed but update succeeded`);
+        }
 
         res.json({ message: 'User updated successfully' });
     } catch (err) {
@@ -190,6 +237,7 @@ const updateClientSettings = async (req, res) => {
         allowFreshEntry, allowOrdersBetweenHL, tradeEquityUnits,
         autoCloseEnabled, banAllSegmentLimitOrder,
         autoClosePct, notifyPct, minProfitTime, scalpingSlEnabled,
+        brokerId,  // Broker assignment
         config  // full complex config JSON (all segment data)
     } = req.body;
 
@@ -203,8 +251,8 @@ const updateClientSettings = async (req, res) => {
             INSERT INTO client_settings
                 (user_id, allow_fresh_entry, allow_orders_between_hl, trade_equity_units,
                  auto_close_at_m2m_pct, notify_at_m2m_pct, min_time_to_book_profit,
-                 scalping_sl_enabled, ban_all_segment_limit_order, config_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 scalping_sl_enabled, ban_all_segment_limit_order, config_json, broker_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 allow_fresh_entry = VALUES(allow_fresh_entry),
                 allow_orders_between_hl = VALUES(allow_orders_between_hl),
@@ -214,7 +262,8 @@ const updateClientSettings = async (req, res) => {
                 min_time_to_book_profit = VALUES(min_time_to_book_profit),
                 scalping_sl_enabled = VALUES(scalping_sl_enabled),
                 ban_all_segment_limit_order = VALUES(ban_all_segment_limit_order),
-                config_json = VALUES(config_json)
+                config_json = VALUES(config_json),
+                broker_id = VALUES(broker_id)
         `, [
             req.params.id,
             allowFreshEntry !== undefined ? (allowFreshEntry ? 1 : 0) : 1,
@@ -225,7 +274,8 @@ const updateClientSettings = async (req, res) => {
             minProfitTime !== undefined ? minProfitTime : 120,
             scalpingSlEnabled !== undefined ? (scalpingSlEnabled === true || scalpingSlEnabled === 'Enabled' ? 1 : 0) : 0,
             banAllSegmentLimitOrder !== undefined ? (banAllSegmentLimitOrder ? 1 : 0) : 0,
-            configJson
+            configJson,
+            brokerId || null
         ]);
 
         res.json({ message: 'Client settings updated' });

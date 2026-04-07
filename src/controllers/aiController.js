@@ -333,8 +333,8 @@ const aiParse = async (req, res) => {
     }
 
     try {
-        // Use new parser
-        const parsed = await parseCommand(text.trim());
+        // Use legacy parser (aiService) which handles Hindi/Hinglish/English
+        const parsed = await legacyParseCommand(text.trim());
 
         // Add backward-compatible fields so legacy UI (VoiceModulationPage) can display summary
         const compat = { ...parsed };
@@ -501,7 +501,7 @@ const smartSearch = async (req, res) => {
 // ── POST /api/ai/execute-command (legacy) ───────────────────────────────────
 
 const executeVoiceCommand = async (req, res) => {
-    const { action, userId, amount, fromUserId, toUserId, name, email, password } = req.body;
+    const { action, userId, username, amount, fromUserId, toUserId, name, email, password } = req.body;
 
     // ── New format detection: if body has module+operation (from new parser), route through smart system
     const LEGACY_ACTIONS = ['ADD_FUND', 'BLOCK_USER', 'UNBLOCK_USER', 'CREATE_ADMIN', 'TRANSFER_FUND'];
@@ -521,46 +521,171 @@ const executeVoiceCommand = async (req, res) => {
         return res.status(400).json({ success: false, message: 'action is required' });
     }
 
+    // ── Devanagari → Latin transliteration (so Hindi speech → DB username match) ──
+    const transliterateDevanagari = (text) => {
+        const VOWEL_MOD = { 'ा':'a','ि':'i','ी':'i','ु':'u','ू':'u','े':'e','ै':'ai','ो':'o','ौ':'au','ं':'n','ः':'h','्':'' };
+        const CONSONANT = {
+            'क':'k','ख':'kh','ग':'g','घ':'gh','ङ':'ng',
+            'च':'ch','छ':'chh','ज':'j','झ':'jh','ञ':'n',
+            'ट':'t','ठ':'th','ड':'d','ढ':'dh','ण':'n',
+            'त':'t','थ':'th','द':'d','ध':'dh','न':'n',
+            'प':'p','फ':'f','ब':'b','भ':'bh','म':'m',
+            'य':'y','र':'r','ल':'l','व':'v','श':'sh',
+            'ष':'sh','स':'s','ह':'h','ळ':'l','ड़':'r','ढ़':'r',
+            'अ':'a','आ':'aa','इ':'i','ई':'i','उ':'u','ऊ':'u',
+            'ए':'e','ऐ':'ai','ओ':'o','औ':'au','ऋ':'ri',
+        };
+        const chars = [...text];
+        let result = '';
+        let i = 0;
+        while (i < chars.length) {
+            const ch = chars[i];
+            const next = chars[i + 1];
+            if (CONSONANT[ch]) {
+                result += CONSONANT[ch];
+                if (next && VOWEL_MOD[next] !== undefined) {
+                    result += VOWEL_MOD[next]; // explicit vowel modifier
+                    i += 2;
+                } else if (next && CONSONANT[next]) {
+                    result += 'a'; // inherent vowel before next consonant
+                    i++;
+                } else {
+                    i++; // final consonant — drop inherent vowel
+                }
+            } else if (VOWEL_MOD[ch] !== undefined) {
+                result += VOWEL_MOD[ch];
+                i++;
+            } else {
+                result += ch; // keep non-Devanagari as-is
+                i++;
+            }
+        }
+        return result;
+    };
+
+    // ── Smart user resolver: exact → partial username → partial full_name ──
+    // Scoped to only find users under the current admin's hierarchy (parent_id)
+    const reqUserForResolve = req.user || {};
+    const scopeParentId = (reqUserForResolve.role === 'SUPERADMIN' || reqUserForResolve.role === 'ADMIN') ? reqUserForResolve.id : null;
+
+    const resolveUserByName = async (conn, rawName) => {
+        const term = rawName.toString().trim();
+        const isDevanagari = /[\u0900-\u097F]/.test(term);
+        const latinTerm = isDevanagari ? transliterateDevanagari(term) : term;
+        const searchTerms = [...new Set([term, latinTerm])];
+
+        const parentFilter = scopeParentId ? ' AND parent_id = ?' : '';
+        const parentParam = scopeParentId ? [scopeParentId] : [];
+
+        for (const t of searchTerms) {
+            // 1. Exact username match (case-insensitive)
+            const [exact] = await conn.execute(
+                `SELECT id, username, full_name FROM users WHERE LOWER(username) = LOWER(?)${parentFilter} LIMIT 1`, [t, ...parentParam]
+            );
+            if (exact.length) return exact[0];
+        }
+        for (const t of searchTerms) {
+            // 2. Partial username OR full_name match
+            const [partial] = await conn.execute(
+                `SELECT id, username, full_name FROM users WHERE (LOWER(username) LIKE LOWER(?) OR LOWER(full_name) LIKE LOWER(?))${parentFilter} LIMIT 1`,
+                [`%${t}%`, `%${t}%`, ...parentParam]
+            );
+            if (partial.length) return partial[0];
+        }
+        return null;
+    };
+
     const connection = await db.getConnection();
 
     try {
         await connection.beginTransaction();
 
-        if (action === 'ADD_FUND') {
-            if (!userId || amount == null) {
+        // ── Resolve username → userId if username was spoken instead of numeric ID ──
+        let resolvedUserId = userId ? parseInt(userId) : null;
+        let resolvedUserRow = null;
+        if (!resolvedUserId && username) {
+            resolvedUserRow = await resolveUserByName(connection, username);
+            if (!resolvedUserRow) {
                 await connection.rollback();
-                return res.status(400).json({ success: false, message: 'userId and amount are required' });
+                return res.status(404).json({ success: false, message: `User "${username}" not found. Please check the name and try again.` });
+            }
+            resolvedUserId = resolvedUserRow.id;
+        }
+
+        // ── Verify target user belongs to the logged-in admin/superadmin ──
+        const reqUser = req.user || {};
+        if (resolvedUserId && (reqUser.role === 'SUPERADMIN' || reqUser.role === 'ADMIN')) {
+            const [parentCheck] = await connection.execute(
+                'SELECT id, parent_id, username FROM users WHERE id = ? LIMIT 1', [resolvedUserId]
+            );
+            if (parentCheck.length && parentCheck[0].parent_id !== reqUser.id) {
+                await connection.rollback();
+                return res.status(403).json({
+                    success: false,
+                    message: `User "${parentCheck[0].username}" is not your trading client. You can only execute commands on your own clients.`
+                });
+            }
+        }
+
+        if (action === 'ADD_FUND') {
+            if (!resolvedUserId || amount == null) {
+                await connection.rollback();
+                return res.status(400).json({ success: false, message: 'User (ID or username) and amount are required' });
             }
             const amt = parseFloat(amount);
             if (isNaN(amt) || amt <= 0) {
                 await connection.rollback();
                 return res.status(400).json({ success: false, message: 'amount must be positive' });
             }
-            const [rows] = await connection.execute('SELECT id, balance FROM users WHERE id = ?', [userId]);
-            if (!rows.length) { await connection.rollback(); return res.status(404).json({ success: false, message: `User ${userId} not found` }); }
+            const [rows] = await connection.execute('SELECT id, balance, username FROM users WHERE id = ?', [resolvedUserId]);
+            if (!rows.length) { await connection.rollback(); return res.status(404).json({ success: false, message: `User not found` }); }
             const newBalance = parseFloat(rows[0].balance || 0) + amt;
-            await connection.execute('UPDATE users SET balance = balance + ? WHERE id = ?', [amt, userId]);
-            await connection.execute('INSERT INTO ledger (user_id, amount, type, balance_after, remarks) VALUES (?, ?, ?, ?, ?)', [userId, amt, 'DEPOSIT', newBalance, 'Voice command: ADD_FUND']);
+            await connection.execute('UPDATE users SET balance = balance + ? WHERE id = ?', [amt, resolvedUserId]);
+            await connection.execute('INSERT INTO ledger (user_id, amount, type, balance_after, remarks) VALUES (?, ?, ?, ?, ?)', [resolvedUserId, amt, 'DEPOSIT', newBalance, 'Voice command: ADD_FUND']);
             await connection.commit();
-            return res.json({ success: true, message: 'Fund added successfully', userId, amountAdded: amt, newBalance });
+            return res.json({ success: true, message: `₹${amt} added to ${rows[0].username}'s account`, userId: resolvedUserId, username: rows[0].username, amountAdded: amt, newBalance });
+        }
+
+        if (action === 'WITHDRAW_FUND') {
+            if (!resolvedUserId || amount == null) {
+                await connection.rollback();
+                return res.status(400).json({ success: false, message: 'User (ID or username) and amount are required' });
+            }
+            const amt = parseFloat(amount);
+            if (isNaN(amt) || amt <= 0) {
+                await connection.rollback();
+                return res.status(400).json({ success: false, message: 'amount must be positive' });
+            }
+            const [rows] = await connection.execute('SELECT id, balance, username FROM users WHERE id = ?', [resolvedUserId]);
+            if (!rows.length) { await connection.rollback(); return res.status(404).json({ success: false, message: `User not found` }); }
+            const currentBal = parseFloat(rows[0].balance || 0);
+            if (currentBal < amt) {
+                await connection.rollback();
+                return res.status(400).json({ success: false, message: `Insufficient balance. ${rows[0].username} has ₹${currentBal}` });
+            }
+            const newBalance = currentBal - amt;
+            await connection.execute('UPDATE users SET balance = balance - ? WHERE id = ?', [amt, resolvedUserId]);
+            await connection.execute('INSERT INTO ledger (user_id, amount, type, balance_after, remarks) VALUES (?, ?, ?, ?, ?)', [resolvedUserId, amt, 'WITHDRAW', newBalance, 'Voice command: WITHDRAW_FUND']);
+            await connection.commit();
+            return res.json({ success: true, message: `₹${amt} withdrawn from ${rows[0].username}'s account`, userId: resolvedUserId, username: rows[0].username, amountWithdrawn: amt, newBalance });
         }
 
         if (action === 'BLOCK_USER') {
-            if (!userId) { await connection.rollback(); return res.status(400).json({ success: false, message: 'userId is required' }); }
-            const [rows] = await connection.execute('SELECT id FROM users WHERE id = ?', [userId]);
-            if (!rows.length) { await connection.rollback(); return res.status(404).json({ success: false, message: `User ${userId} not found` }); }
-            await connection.execute("UPDATE users SET status = 'Suspended' WHERE id = ?", [userId]);
+            if (!resolvedUserId) { await connection.rollback(); return res.status(400).json({ success: false, message: 'userId or username is required' }); }
+            const [rows] = await connection.execute('SELECT id, username FROM users WHERE id = ?', [resolvedUserId]);
+            if (!rows.length) { await connection.rollback(); return res.status(404).json({ success: false, message: `User not found` }); }
+            await connection.execute("UPDATE users SET status = 'Suspended' WHERE id = ?", [resolvedUserId]);
             await connection.commit();
-            return res.json({ success: true, message: `User ${userId} blocked successfully` });
+            return res.json({ success: true, message: `${rows[0].username}'s account blocked successfully` });
         }
 
         if (action === 'UNBLOCK_USER') {
-            if (!userId) { await connection.rollback(); return res.status(400).json({ success: false, message: 'userId is required' }); }
-            const [rows] = await connection.execute('SELECT id FROM users WHERE id = ?', [userId]);
-            if (!rows.length) { await connection.rollback(); return res.status(404).json({ success: false, message: `User ${userId} not found` }); }
-            await connection.execute("UPDATE users SET status = 'Active' WHERE id = ?", [userId]);
+            if (!resolvedUserId) { await connection.rollback(); return res.status(400).json({ success: false, message: 'userId or username is required' }); }
+            const [rows] = await connection.execute('SELECT id, username FROM users WHERE id = ?', [resolvedUserId]);
+            if (!rows.length) { await connection.rollback(); return res.status(404).json({ success: false, message: `User not found` }); }
+            await connection.execute("UPDATE users SET status = 'Active' WHERE id = ?", [resolvedUserId]);
             await connection.commit();
-            return res.json({ success: true, message: `User ${userId} unblocked successfully` });
+            return res.json({ success: true, message: `${rows[0].username}'s account unblocked successfully` });
         }
 
         if (action === 'CREATE_ADMIN') {
