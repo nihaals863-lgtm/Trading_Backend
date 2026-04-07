@@ -8,14 +8,15 @@ const paperTradingEngine = require('./trading-engine/PaperTradingEngine');
 const { setIo } = require('./config/socket');
 const runMigrations = require('./config/migrate');
 
-const app = express();  
+const app = express();
 app.set('trust proxy', true);
 const server = http.createServer(app);
 
 const ALLOWED_ORIGINS = [
-    'http://localhost:5173', 
-    'https://traderss.kiaantechnology.com', 
-    process.env.FRONTEND_URL
+  'http://localhost:5173',
+  'http://localhost:8081',
+  'https://traderss.kiaantechnology.com',
+  process.env.FRONTEND_URL
 ].filter(Boolean);
 
 const io = socketManager.init(server, ALLOWED_ORIGINS);
@@ -40,7 +41,7 @@ const { aiParse, executeVoiceCommand, smartCommand, masterCommand } = require('.
 const kiteRoutes = require('./routes/kiteRoutes');
 const bankRoutes = require('./routes/bankRoutes');
 const newClientBankRoutes = require('./routes/newClientBankRoutes');
-const adminRoutes        = require('./routes/adminRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const { logIp } = require('./middleware/logger');
 
@@ -95,13 +96,13 @@ io.on('connection', (socket) => {
   // Client sends { userId, role } right after connecting
   socket.on('join', ({ userId, role }) => {
     if (userId) socket.join(`user:${userId}`);
-    if (role)   socket.join(`role:${role}`);
+    if (role) socket.join(`role:${role}`);
   });
 
   socket.on('subscribe_market', (scrips) => {
     // console.log(`User ${socket.id} subscribed to:`, scrips);
     if (Array.isArray(scrips)) {
-        scrips.forEach(s => mockEngine.getPrice(s)); // Ensure mock engine starts tracking them
+      scrips.forEach(s => mockEngine.getPrice(s)); // Ensure mock engine starts tracking them
     }
   });
 
@@ -120,35 +121,35 @@ setIo(io);
 
 // Run DB migrations first, then start server
 runMigrations()
-    .then(async () => {
-        server.listen(PORT, () => {
-            console.log(`🚀 Server running on port ${PORT}`);
-        });
-
-        // Initialize Paper Trading Engine after DB is ready (if applicable)
-        paperTradingEngine.start();
-
-        // Start Expiry Square-off cron job
-        const { startExpirySquareOffJob } = require('./services/expirySquareOffService');
-        startExpirySquareOffJob();
-
-        // Initialize Market Data
-        try {
-            const db = require('./config/db');
-            const [users] = await db.execute('SELECT id FROM user_kite_sessions LIMIT 1');
-            if (users.length > 0) {
-                await marketDataService.init(users[0].id);
-            } else {
-                marketDataService.startMockEngine();
-            }
-        } catch (err) {
-            marketDataService.startMockEngine();
-        }
-    })
-    .catch((err) => {
-        console.error('❌ Migration failed, server not started:', err.message);
-        process.exit(1);
+  .then(async () => {
+    server.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
     });
+
+    // Initialize Paper Trading Engine after DB is ready (if applicable)
+    paperTradingEngine.start();
+
+    // Start Expiry Square-off cron job
+    const { startExpirySquareOffJob } = require('./services/expirySquareOffService');
+    startExpirySquareOffJob();
+
+    // Initialize Market Data
+    try {
+      const db = require('./config/db');
+      const [users] = await db.execute('SELECT id FROM user_kite_sessions LIMIT 1');
+      if (users.length > 0) {
+        await marketDataService.init(users[0].id);
+      } else {
+        marketDataService.startMockEngine();
+      }
+    } catch (err) {
+      marketDataService.startMockEngine();
+    }
+  })
+  .catch((err) => {
+    console.error('❌ Migration failed, server not started:', err.message);
+    process.exit(1);
+  });
 
 // Trigger nodemon restart
 
