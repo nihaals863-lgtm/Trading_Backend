@@ -489,10 +489,11 @@ const getBrokerClients = async (req, res) => {
              LEFT JOIN users p ON u.parent_id = p.id
              WHERE u.role = 'TRADER' AND (
                 u.parent_id = ?
+                OR cs.broker_id = ?
                 OR cs.config_json LIKE CONCAT('%"broker":"', ?, ' :%')
              )
              ORDER BY u.id ASC`,
-            [brokerId, brokerIdStr]
+            [brokerId, brokerId, brokerIdStr]
         );
         res.json(rows);
     } catch (err) {
