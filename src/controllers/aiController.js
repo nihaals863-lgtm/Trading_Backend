@@ -13,6 +13,7 @@
 const db = require('../config/db');
 const openai = require('../config/openai');
 const { parseQuery } = require('../services/aiCommandParser');
+const parseCommand = parseQuery;
 const { generateQuery } = require('../services/aiQueryGenerator');
 const { executeQuery } = require('../services/aiExecutor');
 const { loadSchema, getSchemaSummary } = require('../services/aiSchemaLoader');
