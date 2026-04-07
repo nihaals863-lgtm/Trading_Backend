@@ -10,6 +10,8 @@ const paperTradingEngine = require('./trading-engine/PaperTradingEngine');
 const { setIo } = require('./config/socket');
 const runMigrations = require('./config/migrate');
 
+
+
 const app = express();  
 app.set('trust proxy', true);
 const server = http.createServer(app);
