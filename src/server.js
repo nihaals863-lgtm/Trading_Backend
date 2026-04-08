@@ -45,7 +45,7 @@ const { aiParse, executeVoiceCommand, smartCommand, masterCommand } = require('.
 const kiteRoutes = require('./routes/kiteRoutes');
 const bankRoutes = require('./routes/bankRoutes');
 const newClientBankRoutes = require('./routes/newClientBankRoutes');
-const adminRoutes        = require('./routes/adminRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const { logIp } = require('./middleware/logger');
 
@@ -104,13 +104,13 @@ io.on('connection', (socket) => {
   // Client sends { userId, role } right after connecting
   socket.on('join', ({ userId, role }) => {
     if (userId) socket.join(`user:${userId}`);
-    if (role)   socket.join(`role:${role}`);
+    if (role) socket.join(`role:${role}`);
   });
 
   socket.on('subscribe_market', (scrips) => {
     // console.log(`User ${socket.id} subscribed to:`, scrips);
     if (Array.isArray(scrips)) {
-        scrips.forEach(s => mockEngine.getPrice(s)); // Ensure mock engine starts tracking them
+      scrips.forEach(s => mockEngine.getPrice(s)); // Ensure mock engine starts tracking them
     }
   });
 
