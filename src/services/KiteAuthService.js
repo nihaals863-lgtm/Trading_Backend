@@ -79,6 +79,28 @@ class KiteAuthService {
         }
     }
 
+    async setAccessToken(userId, accessToken) {
+        if (!accessToken) throw new Error('access_token is required');
+
+        // First check if session exists, if not create one with minimal data
+        let session = await kiteRepo.getSessionByUserId(userId);
+
+        if (!session) {
+            // Create new session with required fields (use null for missing fields)
+            await kiteRepo.saveSession(userId, {
+                api_key: API_KEY,
+                access_token: accessToken,
+                public_token: null,
+                user_id: null,
+                user_name: 'Manual Token',
+                email: null
+            });
+        } else {
+            // Update existing session
+            await kiteRepo.updateAccessToken(userId, accessToken);
+        }
+    }
+
     async disconnect(userId) {
         await kiteRepo.deleteSession(userId);
     }

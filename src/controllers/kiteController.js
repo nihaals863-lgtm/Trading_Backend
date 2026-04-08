@@ -88,6 +88,22 @@ class KiteController {
             res.status(500).json({ error: err.message });
         }
     }
+
+    setToken = async (req, res) => {
+        try {
+            const userId = req.user.id;
+            const { access_token } = req.body;
+
+            if (!access_token) {
+                return res.status(400).json({ error: 'access_token is required' });
+            }
+
+            await kiteAuthService.setAccessToken(userId, access_token);
+            res.json({ success: true, message: 'Access token set successfully' });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
 }
 
 module.exports = new KiteController();

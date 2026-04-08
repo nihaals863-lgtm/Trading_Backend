@@ -209,7 +209,31 @@ class KiteService {
         return this.makeRequest(`/quote/ltp?${query}`);
     }
 
-    async getInstruments() { return this.makeRequest('/instruments'); }
+    async getInstruments() {
+        // The /instruments endpoint returns CSV, not JSON
+        const headers = this.createHeaders();
+        const response = await fetch(`${BASE_URL}/instruments`, { method: 'GET', headers });
+
+        if (response.status === 403) {
+            throw new Error('Kite session expired (403). Please set a new access token.');
+        }
+
+        const csv = await response.text();
+        const lines = csv.trim().split('\n');
+        const headers_arr = lines[0].split(',');
+
+        const instruments = [];
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',');
+            const instrument = {};
+            headers_arr.forEach((h, idx) => {
+                instrument[h.trim()] = values[idx]?.trim();
+            });
+            instruments.push(instrument);
+        }
+
+        return instruments;
+    }
 
     async getHistoricalData(instrumentToken, interval, from, to) {
         return this.makeRequest(`/instruments/historical/${instrumentToken}/${interval}?from=${from}&to=${to}`);
