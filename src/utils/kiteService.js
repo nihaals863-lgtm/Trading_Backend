@@ -227,7 +227,10 @@ class KiteService {
             const values = lines[i].split(',');
             const instrument = {};
             headers_arr.forEach((h, idx) => {
-                instrument[h.trim()] = values[idx]?.trim();
+                let val = values[idx]?.trim() || '';
+                // Strip surrounding quotes from CSV fields
+                if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
+                instrument[h.trim()] = val;
             });
             instruments.push(instrument);
         }
