@@ -1,0 +1,6676 @@
+{
+  "timestamp": 1775658422572,
+  "data": [
+    {
+      "symbol": "BFO:BANKEX26APRFUT",
+      "name": "BANKEX",
+      "expiry": "26APR",
+      "segment": "BFO",
+      "instrument_token": "218528261"
+    },
+    {
+      "symbol": "BFO:BANKEX26MAYFUT",
+      "name": "BANKEX",
+      "expiry": "26MAY",
+      "segment": "BFO",
+      "instrument_token": "223026437"
+    },
+    {
+      "symbol": "BFO:BANKEX26JUNFUT",
+      "name": "BANKEX",
+      "expiry": "26JUN",
+      "segment": "BFO",
+      "instrument_token": "283531013"
+    },
+    {
+      "symbol": "BFO:SENSEX26APRFUT",
+      "name": "SENSEX",
+      "expiry": "26APR",
+      "segment": "BFO",
+      "instrument_token": "218263557"
+    },
+    {
+      "symbol": "BFO:SENSEX26MAYFUT",
+      "name": "SENSEX",
+      "expiry": "26MAY",
+      "segment": "BFO",
+      "instrument_token": "222776325"
+    },
+    {
+      "symbol": "BFO:SENSEX26JUNFUT",
+      "name": "SENSEX",
+      "expiry": "26JUN",
+      "segment": "BFO",
+      "instrument_token": "283100933"
+    },
+    {
+      "symbol": "CDS:EURINR26APRFUT",
+      "name": "EURINR",
+      "expiry": "26APR",
+      "segment": "CDS",
+      "instrument_token": "293635"
+    },
+    {
+      "symbol": "CDS:EURINR26MAYFUT",
+      "name": "EURINR",
+      "expiry": "26MAY",
+      "segment": "CDS",
+      "instrument_token": "806403"
+    },
+    {
+      "symbol": "CDS:EURINR26JUNFUT",
+      "name": "EURINR",
+      "expiry": "26JUN",
+      "segment": "CDS",
+      "instrument_token": "1682435"
+    },
+    {
+      "symbol": "CDS:EURINR26JULFUT",
+      "name": "EURINR",
+      "expiry": "26JUL",
+      "segment": "CDS",
+      "instrument_token": "298243"
+    },
+    {
+      "symbol": "CDS:EURINR26AUGFUT",
+      "name": "EURINR",
+      "expiry": "26AUG",
+      "segment": "CDS",
+      "instrument_token": "263171"
+    },
+    {
+      "symbol": "CDS:EURINR26SEPFUT",
+      "name": "EURINR",
+      "expiry": "26SEP",
+      "segment": "CDS",
+      "instrument_token": "451331"
+    },
+    {
+      "symbol": "CDS:EURINR26OCTFUT",
+      "name": "EURINR",
+      "expiry": "26OCT",
+      "segment": "CDS",
+      "instrument_token": "325891"
+    },
+    {
+      "symbol": "CDS:EURINR26NOVFUT",
+      "name": "EURINR",
+      "expiry": "26NOV",
+      "segment": "CDS",
+      "instrument_token": "374275"
+    },
+    {
+      "symbol": "CDS:EURINR26DECFUT",
+      "name": "EURINR",
+      "expiry": "26DEC",
+      "segment": "CDS",
+      "instrument_token": "274691"
+    },
+    {
+      "symbol": "CDS:EURINR27JANFUT",
+      "name": "EURINR",
+      "expiry": "27JAN",
+      "segment": "CDS",
+      "instrument_token": "267011"
+    },
+    {
+      "symbol": "CDS:EURINR27FEBFUT",
+      "name": "EURINR",
+      "expiry": "27FEB",
+      "segment": "CDS",
+      "instrument_token": "258819"
+    },
+    {
+      "symbol": "CDS:EURINR27MARFUT",
+      "name": "EURINR",
+      "expiry": "27MAR",
+      "segment": "CDS",
+      "instrument_token": "732931"
+    },
+    {
+      "symbol": "CDS:GBPINR26APRFUT",
+      "name": "GBPINR",
+      "expiry": "26APR",
+      "segment": "CDS",
+      "instrument_token": "297475"
+    },
+    {
+      "symbol": "CDS:GBPINR26MAYFUT",
+      "name": "GBPINR",
+      "expiry": "26MAY",
+      "segment": "CDS",
+      "instrument_token": "814083"
+    },
+    {
+      "symbol": "CDS:GBPINR26JUNFUT",
+      "name": "GBPINR",
+      "expiry": "26JUN",
+      "segment": "CDS",
+      "instrument_token": "1689091"
+    },
+    {
+      "symbol": "CDS:GBPINR26JULFUT",
+      "name": "GBPINR",
+      "expiry": "26JUL",
+      "segment": "CDS",
+      "instrument_token": "303107"
+    },
+    {
+      "symbol": "CDS:GBPINR26AUGFUT",
+      "name": "GBPINR",
+      "expiry": "26AUG",
+      "segment": "CDS",
+      "instrument_token": "278531"
+    },
+    {
+      "symbol": "CDS:GBPINR26SEPFUT",
+      "name": "GBPINR",
+      "expiry": "26SEP",
+      "segment": "CDS",
+      "instrument_token": "451843"
+    },
+    {
+      "symbol": "CDS:GBPINR26OCTFUT",
+      "name": "GBPINR",
+      "expiry": "26OCT",
+      "segment": "CDS",
+      "instrument_token": "326659"
+    },
+    {
+      "symbol": "CDS:GBPINR26NOVFUT",
+      "name": "GBPINR",
+      "expiry": "26NOV",
+      "segment": "CDS",
+      "instrument_token": "395779"
+    },
+    {
+      "symbol": "CDS:GBPINR26DECFUT",
+      "name": "GBPINR",
+      "expiry": "26DEC",
+      "segment": "CDS",
+      "instrument_token": "283907"
+    },
+    {
+      "symbol": "CDS:GBPINR27JANFUT",
+      "name": "GBPINR",
+      "expiry": "27JAN",
+      "segment": "CDS",
+      "instrument_token": "268803"
+    },
+    {
+      "symbol": "CDS:GBPINR27FEBFUT",
+      "name": "GBPINR",
+      "expiry": "27FEB",
+      "segment": "CDS",
+      "instrument_token": "260611"
+    },
+    {
+      "symbol": "CDS:GBPINR27MARFUT",
+      "name": "GBPINR",
+      "expiry": "27MAR",
+      "segment": "CDS",
+      "instrument_token": "743427"
+    },
+    {
+      "symbol": "CDS:JPYINR26APRFUT",
+      "name": "JPYINR",
+      "expiry": "26APR",
+      "segment": "CDS",
+      "instrument_token": "305923"
+    },
+    {
+      "symbol": "CDS:JPYINR26MAYFUT",
+      "name": "JPYINR",
+      "expiry": "26MAY",
+      "segment": "CDS",
+      "instrument_token": "824067"
+    },
+    {
+      "symbol": "CDS:JPYINR26JUNFUT",
+      "name": "JPYINR",
+      "expiry": "26JUN",
+      "segment": "CDS",
+      "instrument_token": "1689603"
+    },
+    {
+      "symbol": "CDS:JPYINR26JULFUT",
+      "name": "JPYINR",
+      "expiry": "26JUL",
+      "segment": "CDS",
+      "instrument_token": "322563"
+    },
+    {
+      "symbol": "CDS:JPYINR26AUGFUT",
+      "name": "JPYINR",
+      "expiry": "26AUG",
+      "segment": "CDS",
+      "instrument_token": "281859"
+    },
+    {
+      "symbol": "CDS:JPYINR26SEPFUT",
+      "name": "JPYINR",
+      "expiry": "26SEP",
+      "segment": "CDS",
+      "instrument_token": "452611"
+    },
+    {
+      "symbol": "CDS:JPYINR26OCTFUT",
+      "name": "JPYINR",
+      "expiry": "26OCT",
+      "segment": "CDS",
+      "instrument_token": "327427"
+    },
+    {
+      "symbol": "CDS:JPYINR26NOVFUT",
+      "name": "JPYINR",
+      "expiry": "26NOV",
+      "segment": "CDS",
+      "instrument_token": "403971"
+    },
+    {
+      "symbol": "CDS:JPYINR26DECFUT",
+      "name": "JPYINR",
+      "expiry": "26DEC",
+      "segment": "CDS",
+      "instrument_token": "321027"
+    },
+    {
+      "symbol": "CDS:JPYINR27JANFUT",
+      "name": "JPYINR",
+      "expiry": "27JAN",
+      "segment": "CDS",
+      "instrument_token": "271363"
+    },
+    {
+      "symbol": "CDS:JPYINR27FEBFUT",
+      "name": "JPYINR",
+      "expiry": "27FEB",
+      "segment": "CDS",
+      "instrument_token": "279555"
+    },
+    {
+      "symbol": "CDS:JPYINR27MARFUT",
+      "name": "JPYINR",
+      "expiry": "27MAR",
+      "segment": "CDS",
+      "instrument_token": "748803"
+    },
+    {
+      "symbol": "CDS:ONMIBOR26APRFUT",
+      "name": "ONMIBOR",
+      "expiry": "26APR",
+      "segment": "CDS",
+      "instrument_token": "332803"
+    },
+    {
+      "symbol": "CDS:ONMIBOR26MAYFUT",
+      "name": "ONMIBOR",
+      "expiry": "26MAY",
+      "segment": "CDS",
+      "instrument_token": "310531"
+    },
+    {
+      "symbol": "CDS:ONMIBOR26JUNFUT",
+      "name": "ONMIBOR",
+      "expiry": "26JUN",
+      "segment": "CDS",
+      "instrument_token": "258051"
+    },
+    {
+      "symbol": "CDS:ONMIBOR26SEPFUT",
+      "name": "ONMIBOR",
+      "expiry": "26SEP",
+      "segment": "CDS",
+      "instrument_token": "258563"
+    },
+    {
+      "symbol": "CDS:ONMIBOR26DECFUT",
+      "name": "ONMIBOR",
+      "expiry": "26DEC",
+      "segment": "CDS",
+      "instrument_token": "267779"
+    },
+    {
+      "symbol": "CDS:ONMIBOR27MARFUT",
+      "name": "ONMIBOR",
+      "expiry": "27MAR",
+      "segment": "CDS",
+      "instrument_token": "257027"
+    },
+    {
+      "symbol": "CDS:USDINR26APRFUT",
+      "name": "USDINR",
+      "expiry": "26APR",
+      "segment": "CDS",
+      "instrument_token": "306179"
+    },
+    {
+      "symbol": "CDS:USDINR26MAYFUT",
+      "name": "USDINR",
+      "expiry": "26MAY",
+      "segment": "CDS",
+      "instrument_token": "825603"
+    },
+    {
+      "symbol": "CDS:USDINR26JUNFUT",
+      "name": "USDINR",
+      "expiry": "26JUN",
+      "segment": "CDS",
+      "instrument_token": "1689859"
+    },
+    {
+      "symbol": "CDS:USDINR26JULFUT",
+      "name": "USDINR",
+      "expiry": "26JUL",
+      "segment": "CDS",
+      "instrument_token": "323843"
+    },
+    {
+      "symbol": "CDS:USDINR26AUGFUT",
+      "name": "USDINR",
+      "expiry": "26AUG",
+      "segment": "CDS",
+      "instrument_token": "282371"
+    },
+    {
+      "symbol": "CDS:USDINR26SEPFUT",
+      "name": "USDINR",
+      "expiry": "26SEP",
+      "segment": "CDS",
+      "instrument_token": "452867"
+    },
+    {
+      "symbol": "CDS:USDINR26OCTFUT",
+      "name": "USDINR",
+      "expiry": "26OCT",
+      "segment": "CDS",
+      "instrument_token": "328707"
+    },
+    {
+      "symbol": "CDS:USDINR26NOVFUT",
+      "name": "USDINR",
+      "expiry": "26NOV",
+      "segment": "CDS",
+      "instrument_token": "405507"
+    },
+    {
+      "symbol": "CDS:USDINR26DECFUT",
+      "name": "USDINR",
+      "expiry": "26DEC",
+      "segment": "CDS",
+      "instrument_token": "321283"
+    },
+    {
+      "symbol": "CDS:USDINR27JANFUT",
+      "name": "USDINR",
+      "expiry": "27JAN",
+      "segment": "CDS",
+      "instrument_token": "271619"
+    },
+    {
+      "symbol": "CDS:USDINR27FEBFUT",
+      "name": "USDINR",
+      "expiry": "27FEB",
+      "segment": "CDS",
+      "instrument_token": "298499"
+    },
+    {
+      "symbol": "CDS:USDINR27MARFUT",
+      "name": "USDINR",
+      "expiry": "27MAR",
+      "segment": "CDS",
+      "instrument_token": "749571"
+    },
+    {
+      "symbol": "MCX:ALUMINI26APRFUT",
+      "name": "ALUMINI",
+      "expiry": "26APR",
+      "segment": "MCX",
+      "instrument_token": "125129991"
+    },
+    {
+      "symbol": "MCX:ALUMINI26MAYFUT",
+      "name": "ALUMINI",
+      "expiry": "26MAY",
+      "segment": "MCX",
+      "instrument_token": "130681095"
+    },
+    {
+      "symbol": "MCX:ALUMINI26JUNFUT",
+      "name": "ALUMINI",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "141492999"
+    },
+    {
+      "symbol": "MCX:ALUMINI26JULFUT",
+      "name": "ALUMINI",
+      "expiry": "26JUL",
+      "segment": "MCX",
+      "instrument_token": "143883783"
+    },
+    {
+      "symbol": "MCX:ALUMINI26AUGFUT",
+      "name": "ALUMINI",
+      "expiry": "26AUG",
+      "segment": "MCX",
+      "instrument_token": "145620231"
+    },
+    {
+      "symbol": "MCX:ALUMINIUM26APRFUT",
+      "name": "ALUMINIUM",
+      "expiry": "26APR",
+      "segment": "MCX",
+      "instrument_token": "125130247"
+    },
+    {
+      "symbol": "MCX:ALUMINIUM26MAYFUT",
+      "name": "ALUMINIUM",
+      "expiry": "26MAY",
+      "segment": "MCX",
+      "instrument_token": "130680839"
+    },
+    {
+      "symbol": "MCX:ALUMINIUM26JUNFUT",
+      "name": "ALUMINIUM",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "141492743"
+    },
+    {
+      "symbol": "MCX:ALUMINIUM26JULFUT",
+      "name": "ALUMINIUM",
+      "expiry": "26JUL",
+      "segment": "MCX",
+      "instrument_token": "143884039"
+    },
+    {
+      "symbol": "MCX:ALUMINIUM26AUGFUT",
+      "name": "ALUMINIUM",
+      "expiry": "26AUG",
+      "segment": "MCX",
+      "instrument_token": "145620487"
+    },
+    {
+      "symbol": "MCX:CARDAMOM26APRFUT",
+      "name": "CARDAMOM",
+      "expiry": "26APR",
+      "segment": "MCX",
+      "instrument_token": "125132551"
+    },
+    {
+      "symbol": "MCX:CARDAMOM26MAYFUT",
+      "name": "CARDAMOM",
+      "expiry": "26MAY",
+      "segment": "MCX",
+      "instrument_token": "130683399"
+    },
+    {
+      "symbol": "MCX:CARDAMOM26JUNFUT",
+      "name": "CARDAMOM",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "141495047"
+    },
+    {
+      "symbol": "MCX:CARDAMOM26JULFUT",
+      "name": "CARDAMOM",
+      "expiry": "26JUL",
+      "segment": "MCX",
+      "instrument_token": "143887111"
+    },
+    {
+      "symbol": "MCX:CARDAMOM26AUGFUT",
+      "name": "CARDAMOM",
+      "expiry": "26AUG",
+      "segment": "MCX",
+      "instrument_token": "145623303"
+    },
+    {
+      "symbol": "MCX:COPPER26APRFUT",
+      "name": "COPPER",
+      "expiry": "26APR",
+      "segment": "MCX",
+      "instrument_token": "125130503"
+    },
+    {
+      "symbol": "MCX:COPPER26MAYFUT",
+      "name": "COPPER",
+      "expiry": "26MAY",
+      "segment": "MCX",
+      "instrument_token": "130682887"
+    },
+    {
+      "symbol": "MCX:COPPER26JUNFUT",
+      "name": "COPPER",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "141493255"
+    },
+    {
+      "symbol": "MCX:COPPER26JULFUT",
+      "name": "COPPER",
+      "expiry": "26JUL",
+      "segment": "MCX",
+      "instrument_token": "143884295"
+    },
+    {
+      "symbol": "MCX:COPPER26AUGFUT",
+      "name": "COPPER",
+      "expiry": "26AUG",
+      "segment": "MCX",
+      "instrument_token": "145620743"
+    },
+    {
+      "symbol": "MCX:COTTON26APRFUT",
+      "name": "COTTON",
+      "expiry": "26APR",
+      "segment": "MCX",
+      "instrument_token": "125132807"
+    },
+    {
+      "symbol": "MCX:COTTON26MAYFUT",
+      "name": "COTTON",
+      "expiry": "26MAY",
+      "segment": "MCX",
+      "instrument_token": "130683655"
+    },
+    {
+      "symbol": "MCX:COTTON26JUNFUT",
+      "name": "COTTON",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "141495303"
+    },
+    {
+      "symbol": "MCX:COTTON26JULFUT",
+      "name": "COTTON",
+      "expiry": "26JUL",
+      "segment": "MCX",
+      "instrument_token": "143887367"
+    },
+    {
+      "symbol": "MCX:COTTON26AUGFUT",
+      "name": "COTTON",
+      "expiry": "26AUG",
+      "segment": "MCX",
+      "instrument_token": "145623559"
+    },
+    {
+      "symbol": "MCX:COTTONOIL26APRFUT",
+      "name": "COTTONOIL",
+      "expiry": "26APR",
+      "segment": "MCX",
+      "instrument_token": "130683911"
+    },
+    {
+      "symbol": "MCX:COTTONOIL26MAYFUT",
+      "name": "COTTONOIL",
+      "expiry": "26MAY",
+      "segment": "MCX",
+      "instrument_token": "141495559"
+    },
+    {
+      "symbol": "MCX:COTTONOIL26JUNFUT",
+      "name": "COTTONOIL",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "143887623"
+    },
+    {
+      "symbol": "MCX:COTTONOIL26JULFUT",
+      "name": "COTTONOIL",
+      "expiry": "26JUL",
+      "segment": "MCX",
+      "instrument_token": "145623815"
+    },
+    {
+      "symbol": "MCX:CRUDEOIL26APRFUT",
+      "name": "CRUDEOIL",
+      "expiry": "26APR",
+      "segment": "MCX",
+      "instrument_token": "124544519"
+    },
+    {
+      "symbol": "MCX:CRUDEOIL26MAYFUT",
+      "name": "CRUDEOIL",
+      "expiry": "26MAY",
+      "segment": "MCX",
+      "instrument_token": "125002247"
+    },
+    {
+      "symbol": "MCX:CRUDEOIL26JUNFUT",
+      "name": "CRUDEOIL",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "127768327"
+    },
+    {
+      "symbol": "MCX:CRUDEOIL26JULFUT",
+      "name": "CRUDEOIL",
+      "expiry": "26JUL",
+      "segment": "MCX",
+      "instrument_token": "133299719"
+    },
+    {
+      "symbol": "MCX:CRUDEOIL26AUGFUT",
+      "name": "CRUDEOIL",
+      "expiry": "26AUG",
+      "segment": "MCX",
+      "instrument_token": "143610119"
+    },
+    {
+      "symbol": "MCX:CRUDEOIL26SEPFUT",
+      "name": "CRUDEOIL",
+      "expiry": "26SEP",
+      "segment": "MCX",
+      "instrument_token": "144870151"
+    },
+    {
+      "symbol": "MCX:CRUDEOILM26APRFUT",
+      "name": "CRUDEOILM",
+      "expiry": "26APR",
+      "segment": "MCX",
+      "instrument_token": "124544775"
+    },
+    {
+      "symbol": "MCX:CRUDEOILM26MAYFUT",
+      "name": "CRUDEOILM",
+      "expiry": "26MAY",
+      "segment": "MCX",
+      "instrument_token": "125002503"
+    },
+    {
+      "symbol": "MCX:CRUDEOILM26JUNFUT",
+      "name": "CRUDEOILM",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "127768583"
+    },
+    {
+      "symbol": "MCX:CRUDEOILM26JULFUT",
+      "name": "CRUDEOILM",
+      "expiry": "26JUL",
+      "segment": "MCX",
+      "instrument_token": "133299975"
+    },
+    {
+      "symbol": "MCX:CRUDEOILM26AUGFUT",
+      "name": "CRUDEOILM",
+      "expiry": "26AUG",
+      "segment": "MCX",
+      "instrument_token": "143610375"
+    },
+    {
+      "symbol": "MCX:CRUDEOILM26SEPFUT",
+      "name": "CRUDEOILM",
+      "expiry": "26SEP",
+      "segment": "MCX",
+      "instrument_token": "144870407"
+    },
+    {
+      "symbol": "MCX:ELECDMBL26APRFUT",
+      "name": "ELECDMBL",
+      "expiry": "26APR",
+      "segment": "MCX",
+      "instrument_token": "130683143"
+    },
+    {
+      "symbol": "MCX:ELECDMBL26MAYFUT",
+      "name": "ELECDMBL",
+      "expiry": "26MAY",
+      "segment": "MCX",
+      "instrument_token": "141498119"
+    },
+    {
+      "symbol": "MCX:ELECDMBL26JUNFUT",
+      "name": "ELECDMBL",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "143888135"
+    },
+    {
+      "symbol": "MCX:ELECDMBL26JULFUT",
+      "name": "ELECDMBL",
+      "expiry": "26JUL",
+      "segment": "MCX",
+      "instrument_token": "145624583"
+    },
+    {
+      "symbol": "MCX:GOLD26JUNFUT",
+      "name": "GOLD",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "117574919"
+    },
+    {
+      "symbol": "MCX:GOLD26AUGFUT",
+      "name": "GOLD",
+      "expiry": "26AUG",
+      "segment": "MCX",
+      "instrument_token": "119445255"
+    },
+    {
+      "symbol": "MCX:GOLD26OCTFUT",
+      "name": "GOLD",
+      "expiry": "26OCT",
+      "segment": "MCX",
+      "instrument_token": "123668231"
+    },
+    {
+      "symbol": "MCX:GOLD26DECFUT",
+      "name": "GOLD",
+      "expiry": "26DEC",
+      "segment": "MCX",
+      "instrument_token": "126774535"
+    },
+    {
+      "symbol": "MCX:GOLD27FEBFUT",
+      "name": "GOLD",
+      "expiry": "27FEB",
+      "segment": "MCX",
+      "instrument_token": "143342855"
+    },
+    {
+      "symbol": "MCX:GOLDGUINEA26APRFUT",
+      "name": "GOLDGUINEA",
+      "expiry": "26APR",
+      "segment": "MCX",
+      "instrument_token": "124841991"
+    },
+    {
+      "symbol": "MCX:GOLDGUINEA26MAYFUT",
+      "name": "GOLDGUINEA",
+      "expiry": "26MAY",
+      "segment": "MCX",
+      "instrument_token": "125128967"
+    },
+    {
+      "symbol": "MCX:GOLDGUINEA26JUNFUT",
+      "name": "GOLDGUINEA",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "130679047"
+    },
+    {
+      "symbol": "MCX:GOLDGUINEA26JULFUT",
+      "name": "GOLDGUINEA",
+      "expiry": "26JUL",
+      "segment": "MCX",
+      "instrument_token": "141496327"
+    },
+    {
+      "symbol": "MCX:GOLDGUINEA26AUGFUT",
+      "name": "GOLDGUINEA",
+      "expiry": "26AUG",
+      "segment": "MCX",
+      "instrument_token": "143886087"
+    },
+    {
+      "symbol": "MCX:GOLDGUINEA26SEPFUT",
+      "name": "GOLDGUINEA",
+      "expiry": "26SEP",
+      "segment": "MCX",
+      "instrument_token": "145622535"
+    },
+    {
+      "symbol": "MCX:GOLDM26MAYFUT",
+      "name": "GOLDM",
+      "expiry": "26MAY",
+      "segment": "MCX",
+      "instrument_token": "124881671"
+    },
+    {
+      "symbol": "MCX:GOLDM26JUNFUT",
+      "name": "GOLDM",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "125882119"
+    },
+    {
+      "symbol": "MCX:GOLDM26JULFUT",
+      "name": "GOLDM",
+      "expiry": "26JUL",
+      "segment": "MCX",
+      "instrument_token": "130755591"
+    },
+    {
+      "symbol": "MCX:GOLDM26AUGFUT",
+      "name": "GOLDM",
+      "expiry": "26AUG",
+      "segment": "MCX",
+      "instrument_token": "142316039"
+    },
+    {
+      "symbol": "MCX:GOLDM26SEPFUT",
+      "name": "GOLDM",
+      "expiry": "26SEP",
+      "segment": "MCX",
+      "instrument_token": "144370183"
+    },
+    {
+      "symbol": "MCX:GOLDM26OCTFUT",
+      "name": "GOLDM",
+      "expiry": "26OCT",
+      "segment": "MCX",
+      "instrument_token": "145664775"
+    },
+    {
+      "symbol": "MCX:GOLDPETAL26APRFUT",
+      "name": "GOLDPETAL",
+      "expiry": "26APR",
+      "segment": "MCX",
+      "instrument_token": "124842247"
+    },
+    {
+      "symbol": "MCX:GOLDPETAL26MAYFUT",
+      "name": "GOLDPETAL",
+      "expiry": "26MAY",
+      "segment": "MCX",
+      "instrument_token": "125132295"
+    },
+    {
+      "symbol": "MCX:GOLDPETAL26JUNFUT",
+      "name": "GOLDPETAL",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "130678791"
+    },
+    {
+      "symbol": "MCX:GOLDPETAL26JULFUT",
+      "name": "GOLDPETAL",
+      "expiry": "26JUL",
+      "segment": "MCX",
+      "instrument_token": "141496583"
+    },
+    {
+      "symbol": "MCX:GOLDPETAL26AUGFUT",
+      "name": "GOLDPETAL",
+      "expiry": "26AUG",
+      "segment": "MCX",
+      "instrument_token": "143886343"
+    },
+    {
+      "symbol": "MCX:GOLDPETAL26SEPFUT",
+      "name": "GOLDPETAL",
+      "expiry": "26SEP",
+      "segment": "MCX",
+      "instrument_token": "145622791"
+    },
+    {
+      "symbol": "MCX:GOLDTEN26APRFUT",
+      "name": "GOLDTEN",
+      "expiry": "26APR",
+      "segment": "MCX",
+      "instrument_token": "124842503"
+    },
+    {
+      "symbol": "MCX:GOLDTEN26MAYFUT",
+      "name": "GOLDTEN",
+      "expiry": "26MAY",
+      "segment": "MCX",
+      "instrument_token": "125129479"
+    },
+    {
+      "symbol": "MCX:GOLDTEN26JUNFUT",
+      "name": "GOLDTEN",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "130678535"
+    },
+    {
+      "symbol": "MCX:GOLDTEN26JULFUT",
+      "name": "GOLDTEN",
+      "expiry": "26JUL",
+      "segment": "MCX",
+      "instrument_token": "141496839"
+    },
+    {
+      "symbol": "MCX:GOLDTEN26AUGFUT",
+      "name": "GOLDTEN",
+      "expiry": "26AUG",
+      "segment": "MCX",
+      "instrument_token": "143886599"
+    },
+    {
+      "symbol": "MCX:GOLDTEN26SEPFUT",
+      "name": "GOLDTEN",
+      "expiry": "26SEP",
+      "segment": "MCX",
+      "instrument_token": "145623047"
+    },
+    {
+      "symbol": "MCX:KAPAS26APRFUT",
+      "name": "KAPAS",
+      "expiry": "26APR",
+      "segment": "MCX",
+      "instrument_token": "115930631"
+    },
+    {
+      "symbol": "MCX:KAPAS26NOVFUT",
+      "name": "KAPAS",
+      "expiry": "26NOV",
+      "segment": "MCX",
+      "instrument_token": "124843271"
+    },
+    {
+      "symbol": "MCX:KAPAS27FEBFUT",
+      "name": "KAPAS",
+      "expiry": "27FEB",
+      "segment": "MCX",
+      "instrument_token": "141495815"
+    },
+    {
+      "symbol": "MCX:KAPAS27APRFUT",
+      "name": "KAPAS",
+      "expiry": "27APR",
+      "segment": "MCX",
+      "instrument_token": "145624071"
+    },
+    {
+      "symbol": "MCX:LEAD26APRFUT",
+      "name": "LEAD",
+      "expiry": "26APR",
+      "segment": "MCX",
+      "instrument_token": "125130759"
+    },
+    {
+      "symbol": "MCX:LEAD26MAYFUT",
+      "name": "LEAD",
+      "expiry": "26MAY",
+      "segment": "MCX",
+      "instrument_token": "130681863"
+    },
+    {
+      "symbol": "MCX:LEAD26JUNFUT",
+      "name": "LEAD",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "141493511"
+    },
+    {
+      "symbol": "MCX:LEAD26JULFUT",
+      "name": "LEAD",
+      "expiry": "26JUL",
+      "segment": "MCX",
+      "instrument_token": "143884551"
+    },
+    {
+      "symbol": "MCX:LEAD26AUGFUT",
+      "name": "LEAD",
+      "expiry": "26AUG",
+      "segment": "MCX",
+      "instrument_token": "145621255"
+    },
+    {
+      "symbol": "MCX:LEADMINI26APRFUT",
+      "name": "LEADMINI",
+      "expiry": "26APR",
+      "segment": "MCX",
+      "instrument_token": "125131015"
+    },
+    {
+      "symbol": "MCX:LEADMINI26MAYFUT",
+      "name": "LEADMINI",
+      "expiry": "26MAY",
+      "segment": "MCX",
+      "instrument_token": "130682119"
+    },
+    {
+      "symbol": "MCX:LEADMINI26JUNFUT",
+      "name": "LEADMINI",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "141493767"
+    },
+    {
+      "symbol": "MCX:LEADMINI26JULFUT",
+      "name": "LEADMINI",
+      "expiry": "26JUL",
+      "segment": "MCX",
+      "instrument_token": "143884807"
+    },
+    {
+      "symbol": "MCX:LEADMINI26AUGFUT",
+      "name": "LEADMINI",
+      "expiry": "26AUG",
+      "segment": "MCX",
+      "instrument_token": "145620999"
+    },
+    {
+      "symbol": "MCX:MCXBULLDEX26APRFUT",
+      "name": "MCXBULLDEX",
+      "expiry": "26APR",
+      "segment": "MCX",
+      "instrument_token": "133384711"
+    },
+    {
+      "symbol": "MCX:MCXBULLDEX26MAYFUT",
+      "name": "MCXBULLDEX",
+      "expiry": "26MAY",
+      "segment": "MCX",
+      "instrument_token": "143611655"
+    },
+    {
+      "symbol": "MCX:MCXBULLDEX26JUNFUT",
+      "name": "MCXBULLDEX",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "144869895"
+    },
+    {
+      "symbol": "MCX:MCXMETLDEX26APRFUT",
+      "name": "MCXMETLDEX",
+      "expiry": "26APR",
+      "segment": "MCX",
+      "instrument_token": "132378887"
+    },
+    {
+      "symbol": "MCX:MCXMETLDEX26MAYFUT",
+      "name": "MCXMETLDEX",
+      "expiry": "26MAY",
+      "segment": "MCX",
+      "instrument_token": "143344135"
+    },
+    {
+      "symbol": "MCX:MCXMETLDEX26JUNFUT",
+      "name": "MCXMETLDEX",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "144546055"
+    },
+    {
+      "symbol": "MCX:MENTHAOIL26APRFUT",
+      "name": "MENTHAOIL",
+      "expiry": "26APR",
+      "segment": "MCX",
+      "instrument_token": "124843527"
+    },
+    {
+      "symbol": "MCX:MENTHAOIL26MAYFUT",
+      "name": "MENTHAOIL",
+      "expiry": "26MAY",
+      "segment": "MCX",
+      "instrument_token": "125133319"
+    },
+    {
+      "symbol": "MCX:MENTHAOIL26JUNFUT",
+      "name": "MENTHAOIL",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "130684167"
+    },
+    {
+      "symbol": "MCX:MENTHAOIL26JULFUT",
+      "name": "MENTHAOIL",
+      "expiry": "26JUL",
+      "segment": "MCX",
+      "instrument_token": "141496071"
+    },
+    {
+      "symbol": "MCX:MENTHAOIL26AUGFUT",
+      "name": "MENTHAOIL",
+      "expiry": "26AUG",
+      "segment": "MCX",
+      "instrument_token": "143887879"
+    },
+    {
+      "symbol": "MCX:MENTHAOIL26SEPFUT",
+      "name": "MENTHAOIL",
+      "expiry": "26SEP",
+      "segment": "MCX",
+      "instrument_token": "145624327"
+    },
+    {
+      "symbol": "MCX:NATGASMINI26APRFUT",
+      "name": "NATGASMINI",
+      "expiry": "26APR",
+      "segment": "MCX",
+      "instrument_token": "124791303"
+    },
+    {
+      "symbol": "MCX:NATGASMINI26MAYFUT",
+      "name": "NATGASMINI",
+      "expiry": "26MAY",
+      "segment": "MCX",
+      "instrument_token": "125057543"
+    },
+    {
+      "symbol": "MCX:NATGASMINI26JUNFUT",
+      "name": "NATGASMINI",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "129092103"
+    },
+    {
+      "symbol": "MCX:NATGASMINI26JULFUT",
+      "name": "NATGASMINI",
+      "expiry": "26JUL",
+      "segment": "MCX",
+      "instrument_token": "137903623"
+    },
+    {
+      "symbol": "MCX:NATGASMINI26AUGFUT",
+      "name": "NATGASMINI",
+      "expiry": "26AUG",
+      "segment": "MCX",
+      "instrument_token": "143743239"
+    },
+    {
+      "symbol": "MCX:NATGASMINI26SEPFUT",
+      "name": "NATGASMINI",
+      "expiry": "26SEP",
+      "segment": "MCX",
+      "instrument_token": "145470983"
+    },
+    {
+      "symbol": "MCX:NATURALGAS26APRFUT",
+      "name": "NATURALGAS",
+      "expiry": "26APR",
+      "segment": "MCX",
+      "instrument_token": "124791047"
+    },
+    {
+      "symbol": "MCX:NATURALGAS26MAYFUT",
+      "name": "NATURALGAS",
+      "expiry": "26MAY",
+      "segment": "MCX",
+      "instrument_token": "125057287"
+    },
+    {
+      "symbol": "MCX:NATURALGAS26JUNFUT",
+      "name": "NATURALGAS",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "129091847"
+    },
+    {
+      "symbol": "MCX:NATURALGAS26JULFUT",
+      "name": "NATURALGAS",
+      "expiry": "26JUL",
+      "segment": "MCX",
+      "instrument_token": "137903367"
+    },
+    {
+      "symbol": "MCX:NATURALGAS26AUGFUT",
+      "name": "NATURALGAS",
+      "expiry": "26AUG",
+      "segment": "MCX",
+      "instrument_token": "143742983"
+    },
+    {
+      "symbol": "MCX:NATURALGAS26SEPFUT",
+      "name": "NATURALGAS",
+      "expiry": "26SEP",
+      "segment": "MCX",
+      "instrument_token": "145470727"
+    },
+    {
+      "symbol": "MCX:NICKEL26APRFUT",
+      "name": "NICKEL",
+      "expiry": "26APR",
+      "segment": "MCX",
+      "instrument_token": "125131783"
+    },
+    {
+      "symbol": "MCX:NICKEL26MAYFUT",
+      "name": "NICKEL",
+      "expiry": "26MAY",
+      "segment": "MCX",
+      "instrument_token": "130681351"
+    },
+    {
+      "symbol": "MCX:NICKEL26JUNFUT",
+      "name": "NICKEL",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "141494791"
+    },
+    {
+      "symbol": "MCX:NICKEL26JULFUT",
+      "name": "NICKEL",
+      "expiry": "26JUL",
+      "segment": "MCX",
+      "instrument_token": "143885063"
+    },
+    {
+      "symbol": "MCX:NICKEL26AUGFUT",
+      "name": "NICKEL",
+      "expiry": "26AUG",
+      "segment": "MCX",
+      "instrument_token": "145622279"
+    },
+    {
+      "symbol": "MCX:SILVER26MAYFUT",
+      "name": "SILVER",
+      "expiry": "26MAY",
+      "segment": "MCX",
+      "instrument_token": "117128199"
+    },
+    {
+      "symbol": "MCX:SILVER26JULFUT",
+      "name": "SILVER",
+      "expiry": "26JUL",
+      "segment": "MCX",
+      "instrument_token": "118822407"
+    },
+    {
+      "symbol": "MCX:SILVER26SEPFUT",
+      "name": "SILVER",
+      "expiry": "26SEP",
+      "segment": "MCX",
+      "instrument_token": "120761607"
+    },
+    {
+      "symbol": "MCX:SILVER26DECFUT",
+      "name": "SILVER",
+      "expiry": "26DEC",
+      "segment": "MCX",
+      "instrument_token": "126774791"
+    },
+    {
+      "symbol": "MCX:SILVER27MARFUT",
+      "name": "SILVER",
+      "expiry": "27MAR",
+      "segment": "MCX",
+      "instrument_token": "144542471"
+    },
+    {
+      "symbol": "MCX:SILVERM26APRFUT",
+      "name": "SILVERM",
+      "expiry": "26APR",
+      "segment": "MCX",
+      "instrument_token": "117128455"
+    },
+    {
+      "symbol": "MCX:SILVERM26JUNFUT",
+      "name": "SILVERM",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "118822663"
+    },
+    {
+      "symbol": "MCX:SILVERM26AUGFUT",
+      "name": "SILVERM",
+      "expiry": "26AUG",
+      "segment": "MCX",
+      "instrument_token": "120761863"
+    },
+    {
+      "symbol": "MCX:SILVERM26NOVFUT",
+      "name": "SILVERM",
+      "expiry": "26NOV",
+      "segment": "MCX",
+      "instrument_token": "123668487"
+    },
+    {
+      "symbol": "MCX:SILVERM27FEBFUT",
+      "name": "SILVERM",
+      "expiry": "27FEB",
+      "segment": "MCX",
+      "instrument_token": "144542727"
+    },
+    {
+      "symbol": "MCX:SILVERMIC26APRFUT",
+      "name": "SILVERMIC",
+      "expiry": "26APR",
+      "segment": "MCX",
+      "instrument_token": "119303431"
+    },
+    {
+      "symbol": "MCX:SILVERMIC26JUNFUT",
+      "name": "SILVERMIC",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "122157319"
+    },
+    {
+      "symbol": "MCX:SILVERMIC26AUGFUT",
+      "name": "SILVERMIC",
+      "expiry": "26AUG",
+      "segment": "MCX",
+      "instrument_token": "125129735"
+    },
+    {
+      "symbol": "MCX:SILVERMIC26NOVFUT",
+      "name": "SILVERMIC",
+      "expiry": "26NOV",
+      "segment": "MCX",
+      "instrument_token": "143886855"
+    },
+    {
+      "symbol": "MCX:STEELREBAR26APRFUT",
+      "name": "STEELREBAR",
+      "expiry": "26APR",
+      "segment": "MCX",
+      "instrument_token": "125132039"
+    },
+    {
+      "symbol": "MCX:STEELREBAR26MAYFUT",
+      "name": "STEELREBAR",
+      "expiry": "26MAY",
+      "segment": "MCX",
+      "instrument_token": "130681607"
+    },
+    {
+      "symbol": "MCX:STEELREBAR26JUNFUT",
+      "name": "STEELREBAR",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "141494535"
+    },
+    {
+      "symbol": "MCX:STEELREBAR26JULFUT",
+      "name": "STEELREBAR",
+      "expiry": "26JUL",
+      "segment": "MCX",
+      "instrument_token": "143885319"
+    },
+    {
+      "symbol": "MCX:STEELREBAR26AUGFUT",
+      "name": "STEELREBAR",
+      "expiry": "26AUG",
+      "segment": "MCX",
+      "instrument_token": "145621511"
+    },
+    {
+      "symbol": "MCX:ZINC26APRFUT",
+      "name": "ZINC",
+      "expiry": "26APR",
+      "segment": "MCX",
+      "instrument_token": "125131271"
+    },
+    {
+      "symbol": "MCX:ZINC26MAYFUT",
+      "name": "ZINC",
+      "expiry": "26MAY",
+      "segment": "MCX",
+      "instrument_token": "130682375"
+    },
+    {
+      "symbol": "MCX:ZINC26JUNFUT",
+      "name": "ZINC",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "141494023"
+    },
+    {
+      "symbol": "MCX:ZINC26JULFUT",
+      "name": "ZINC",
+      "expiry": "26JUL",
+      "segment": "MCX",
+      "instrument_token": "143885575"
+    },
+    {
+      "symbol": "MCX:ZINC26AUGFUT",
+      "name": "ZINC",
+      "expiry": "26AUG",
+      "segment": "MCX",
+      "instrument_token": "145622023"
+    },
+    {
+      "symbol": "MCX:ZINCMINI26APRFUT",
+      "name": "ZINCMINI",
+      "expiry": "26APR",
+      "segment": "MCX",
+      "instrument_token": "125131527"
+    },
+    {
+      "symbol": "MCX:ZINCMINI26MAYFUT",
+      "name": "ZINCMINI",
+      "expiry": "26MAY",
+      "segment": "MCX",
+      "instrument_token": "130682631"
+    },
+    {
+      "symbol": "MCX:ZINCMINI26JUNFUT",
+      "name": "ZINCMINI",
+      "expiry": "26JUN",
+      "segment": "MCX",
+      "instrument_token": "141494279"
+    },
+    {
+      "symbol": "MCX:ZINCMINI26JULFUT",
+      "name": "ZINCMINI",
+      "expiry": "26JUL",
+      "segment": "MCX",
+      "instrument_token": "143885831"
+    },
+    {
+      "symbol": "MCX:ZINCMINI26AUGFUT",
+      "name": "ZINCMINI",
+      "expiry": "26AUG",
+      "segment": "MCX",
+      "instrument_token": "145621767"
+    },
+    {
+      "symbol": "NCO:ALUMINI26APRFUT",
+      "name": "ALUMINI",
+      "expiry": "26APR",
+      "segment": "NCO",
+      "instrument_token": "31184140"
+    },
+    {
+      "symbol": "NCO:ALUMINI26MAYFUT",
+      "name": "ALUMINI",
+      "expiry": "26MAY",
+      "segment": "NCO",
+      "instrument_token": "31283468"
+    },
+    {
+      "symbol": "NCO:ALUMINI26JUNFUT",
+      "name": "ALUMINI",
+      "expiry": "26JUN",
+      "segment": "NCO",
+      "instrument_token": "31142412"
+    },
+    {
+      "symbol": "NCO:ALUMINI26JULFUT",
+      "name": "ALUMINI",
+      "expiry": "26JUL",
+      "segment": "NCO",
+      "instrument_token": "31203852"
+    },
+    {
+      "symbol": "NCO:ALUMINI26AUGFUT",
+      "name": "ALUMINI",
+      "expiry": "26AUG",
+      "segment": "NCO",
+      "instrument_token": "31447052"
+    },
+    {
+      "symbol": "NCO:ALUMINIUM26APRFUT",
+      "name": "ALUMINIUM",
+      "expiry": "26APR",
+      "segment": "NCO",
+      "instrument_token": "31184396"
+    },
+    {
+      "symbol": "NCO:ALUMINIUM26MAYFUT",
+      "name": "ALUMINIUM",
+      "expiry": "26MAY",
+      "segment": "NCO",
+      "instrument_token": "31394828"
+    },
+    {
+      "symbol": "NCO:ALUMINIUM26JUNFUT",
+      "name": "ALUMINIUM",
+      "expiry": "26JUN",
+      "segment": "NCO",
+      "instrument_token": "31142668"
+    },
+    {
+      "symbol": "NCO:ALUMINIUM26JULFUT",
+      "name": "ALUMINIUM",
+      "expiry": "26JUL",
+      "segment": "NCO",
+      "instrument_token": "31204108"
+    },
+    {
+      "symbol": "NCO:ALUMINIUM26AUGFUT",
+      "name": "ALUMINIUM",
+      "expiry": "26AUG",
+      "segment": "NCO",
+      "instrument_token": "31447308"
+    },
+    {
+      "symbol": "NCO:COPPER26APRFUT",
+      "name": "COPPER",
+      "expiry": "26APR",
+      "segment": "NCO",
+      "instrument_token": "31186188"
+    },
+    {
+      "symbol": "NCO:COPPER26MAYFUT",
+      "name": "COPPER",
+      "expiry": "26MAY",
+      "segment": "NCO",
+      "instrument_token": "31395084"
+    },
+    {
+      "symbol": "NCO:COPPER26JUNFUT",
+      "name": "COPPER",
+      "expiry": "26JUN",
+      "segment": "NCO",
+      "instrument_token": "31195916"
+    },
+    {
+      "symbol": "NCO:COPPER26JULFUT",
+      "name": "COPPER",
+      "expiry": "26JUL",
+      "segment": "NCO",
+      "instrument_token": "31204876"
+    },
+    {
+      "symbol": "NCO:COPPER26AUGFUT",
+      "name": "COPPER",
+      "expiry": "26AUG",
+      "segment": "NCO",
+      "instrument_token": "31447564"
+    },
+    {
+      "symbol": "NCO:CRUDEOIL26APRFUT",
+      "name": "CRUDEOIL",
+      "expiry": "26APR",
+      "segment": "NCO",
+      "instrument_token": "36531980"
+    },
+    {
+      "symbol": "NCO:CRUDEOIL26MAYFUT",
+      "name": "CRUDEOIL",
+      "expiry": "26MAY",
+      "segment": "NCO",
+      "instrument_token": "31134732"
+    },
+    {
+      "symbol": "NCO:CRUDEOIL26JUNFUT",
+      "name": "CRUDEOIL",
+      "expiry": "26JUN",
+      "segment": "NCO",
+      "instrument_token": "35866892"
+    },
+    {
+      "symbol": "NCO:CRUDEOIL26JULFUT",
+      "name": "CRUDEOIL",
+      "expiry": "26JUL",
+      "segment": "NCO",
+      "instrument_token": "38265612"
+    },
+    {
+      "symbol": "NCO:CRUDEOIL26AUGFUT",
+      "name": "CRUDEOIL",
+      "expiry": "26AUG",
+      "segment": "NCO",
+      "instrument_token": "36348684"
+    },
+    {
+      "symbol": "NCO:CRUDEOIL26SEPFUT",
+      "name": "CRUDEOIL",
+      "expiry": "26SEP",
+      "segment": "NCO",
+      "instrument_token": "35080204"
+    },
+    {
+      "symbol": "NCO:CRUDEOILM26APRFUT",
+      "name": "CRUDEOILM",
+      "expiry": "26APR",
+      "segment": "NCO",
+      "instrument_token": "36532236"
+    },
+    {
+      "symbol": "NCO:CRUDEOILM26MAYFUT",
+      "name": "CRUDEOILM",
+      "expiry": "26MAY",
+      "segment": "NCO",
+      "instrument_token": "31136012"
+    },
+    {
+      "symbol": "NCO:CRUDEOILM26JUNFUT",
+      "name": "CRUDEOILM",
+      "expiry": "26JUN",
+      "segment": "NCO",
+      "instrument_token": "35867148"
+    },
+    {
+      "symbol": "NCO:CRUDEOILM26JULFUT",
+      "name": "CRUDEOILM",
+      "expiry": "26JUL",
+      "segment": "NCO",
+      "instrument_token": "38265868"
+    },
+    {
+      "symbol": "NCO:CRUDEOILM26AUGFUT",
+      "name": "CRUDEOILM",
+      "expiry": "26AUG",
+      "segment": "NCO",
+      "instrument_token": "36348940"
+    },
+    {
+      "symbol": "NCO:CRUDEOILM26SEPFUT",
+      "name": "CRUDEOILM",
+      "expiry": "26SEP",
+      "segment": "NCO",
+      "instrument_token": "35080460"
+    },
+    {
+      "symbol": "NCO:ELECMBL26APRFUT",
+      "name": "ELECMBL",
+      "expiry": "26APR",
+      "segment": "NCO",
+      "instrument_token": "31425548"
+    },
+    {
+      "symbol": "NCO:ELECMBL26MAYFUT",
+      "name": "ELECMBL",
+      "expiry": "26MAY",
+      "segment": "NCO",
+      "instrument_token": "31202828"
+    },
+    {
+      "symbol": "NCO:ELECMBL26JUNFUT",
+      "name": "ELECMBL",
+      "expiry": "26JUN",
+      "segment": "NCO",
+      "instrument_token": "31212300"
+    },
+    {
+      "symbol": "NCO:ELECMBL26JULFUT",
+      "name": "ELECMBL",
+      "expiry": "26JUL",
+      "segment": "NCO",
+      "instrument_token": "31218700"
+    },
+    {
+      "symbol": "NCO:GOLD26MAYFUT",
+      "name": "GOLD",
+      "expiry": "26MAY",
+      "segment": "NCO",
+      "instrument_token": "31188236"
+    },
+    {
+      "symbol": "NCO:GOLD26JUNFUT",
+      "name": "GOLD",
+      "expiry": "26JUN",
+      "segment": "NCO",
+      "instrument_token": "31458828"
+    },
+    {
+      "symbol": "NCO:GOLD26JULFUT",
+      "name": "GOLD",
+      "expiry": "26JUL",
+      "segment": "NCO",
+      "instrument_token": "31188492"
+    },
+    {
+      "symbol": "NCO:GOLD26AUGFUT",
+      "name": "GOLD",
+      "expiry": "26AUG",
+      "segment": "NCO",
+      "instrument_token": "31873292"
+    },
+    {
+      "symbol": "NCO:GOLD26SEPFUT",
+      "name": "GOLD",
+      "expiry": "26SEP",
+      "segment": "NCO",
+      "instrument_token": "33404684"
+    },
+    {
+      "symbol": "NCO:GOLD26OCTFUT",
+      "name": "GOLD",
+      "expiry": "26OCT",
+      "segment": "NCO",
+      "instrument_token": "34521356"
+    },
+    {
+      "symbol": "NCO:GOLD26NOVFUT",
+      "name": "GOLD",
+      "expiry": "26NOV",
+      "segment": "NCO",
+      "instrument_token": "31844876"
+    },
+    {
+      "symbol": "NCO:GOLD26DECFUT",
+      "name": "GOLD",
+      "expiry": "26DEC",
+      "segment": "NCO",
+      "instrument_token": "31596556"
+    },
+    {
+      "symbol": "NCO:GOLD27JANFUT",
+      "name": "GOLD",
+      "expiry": "27JAN",
+      "segment": "NCO",
+      "instrument_token": "33007628"
+    },
+    {
+      "symbol": "NCO:GOLD27FEBFUT",
+      "name": "GOLD",
+      "expiry": "27FEB",
+      "segment": "NCO",
+      "instrument_token": "34008076"
+    },
+    {
+      "symbol": "NCO:GOLD27MARFUT",
+      "name": "GOLD",
+      "expiry": "27MAR",
+      "segment": "NCO",
+      "instrument_token": "33354252"
+    },
+    {
+      "symbol": "NCO:GOLD27APRFUT",
+      "name": "GOLD",
+      "expiry": "27APR",
+      "segment": "NCO",
+      "instrument_token": "32432652"
+    },
+    {
+      "symbol": "NCO:GOLDGUINEA26APRFUT",
+      "name": "GOLDGUINEA",
+      "expiry": "26APR",
+      "segment": "NCO",
+      "instrument_token": "31406860"
+    },
+    {
+      "symbol": "NCO:GOLDGUINEA26MAYFUT",
+      "name": "GOLDGUINEA",
+      "expiry": "26MAY",
+      "segment": "NCO",
+      "instrument_token": "31201548"
+    },
+    {
+      "symbol": "NCO:GOLDGUINEA26JUNFUT",
+      "name": "GOLDGUINEA",
+      "expiry": "26JUN",
+      "segment": "NCO",
+      "instrument_token": "31206924"
+    },
+    {
+      "symbol": "NCO:GOLDGUINEA26JULFUT",
+      "name": "GOLDGUINEA",
+      "expiry": "26JUL",
+      "segment": "NCO",
+      "instrument_token": "31475980"
+    },
+    {
+      "symbol": "NCO:GOLDM26MAYFUT",
+      "name": "GOLDM",
+      "expiry": "26MAY",
+      "segment": "NCO",
+      "instrument_token": "34008588"
+    },
+    {
+      "symbol": "NCO:GOLDM26JUNFUT",
+      "name": "GOLDM",
+      "expiry": "26JUN",
+      "segment": "NCO",
+      "instrument_token": "33354764"
+    },
+    {
+      "symbol": "NCO:GOLDM26JULFUT",
+      "name": "GOLDM",
+      "expiry": "26JUL",
+      "segment": "NCO",
+      "instrument_token": "32433164"
+    },
+    {
+      "symbol": "NCO:LEAD26APRFUT",
+      "name": "LEAD",
+      "expiry": "26APR",
+      "segment": "NCO",
+      "instrument_token": "31186956"
+    },
+    {
+      "symbol": "NCO:LEAD26MAYFUT",
+      "name": "LEAD",
+      "expiry": "26MAY",
+      "segment": "NCO",
+      "instrument_token": "31395340"
+    },
+    {
+      "symbol": "NCO:LEAD26JUNFUT",
+      "name": "LEAD",
+      "expiry": "26JUN",
+      "segment": "NCO",
+      "instrument_token": "31197196"
+    },
+    {
+      "symbol": "NCO:LEAD26JULFUT",
+      "name": "LEAD",
+      "expiry": "26JUL",
+      "segment": "NCO",
+      "instrument_token": "31205132"
+    },
+    {
+      "symbol": "NCO:LEAD26AUGFUT",
+      "name": "LEAD",
+      "expiry": "26AUG",
+      "segment": "NCO",
+      "instrument_token": "31447820"
+    },
+    {
+      "symbol": "NCO:LEADMINI26APRFUT",
+      "name": "LEADMINI",
+      "expiry": "26APR",
+      "segment": "NCO",
+      "instrument_token": "31187212"
+    },
+    {
+      "symbol": "NCO:LEADMINI26MAYFUT",
+      "name": "LEADMINI",
+      "expiry": "26MAY",
+      "segment": "NCO",
+      "instrument_token": "31395596"
+    },
+    {
+      "symbol": "NCO:LEADMINI26JUNFUT",
+      "name": "LEADMINI",
+      "expiry": "26JUN",
+      "segment": "NCO",
+      "instrument_token": "31197452"
+    },
+    {
+      "symbol": "NCO:LEADMINI26JULFUT",
+      "name": "LEADMINI",
+      "expiry": "26JUL",
+      "segment": "NCO",
+      "instrument_token": "31205900"
+    },
+    {
+      "symbol": "NCO:LEADMINI26AUGFUT",
+      "name": "LEADMINI",
+      "expiry": "26AUG",
+      "segment": "NCO",
+      "instrument_token": "31473676"
+    },
+    {
+      "symbol": "NCO:NATGASMINI26APRFUT",
+      "name": "NATGASMINI",
+      "expiry": "26APR",
+      "segment": "NCO",
+      "instrument_token": "31166732"
+    },
+    {
+      "symbol": "NCO:NATGASMINI26MAYFUT",
+      "name": "NATGASMINI",
+      "expiry": "26MAY",
+      "segment": "NCO",
+      "instrument_token": "31133196"
+    },
+    {
+      "symbol": "NCO:NATGASMINI26JUNFUT",
+      "name": "NATGASMINI",
+      "expiry": "26JUN",
+      "segment": "NCO",
+      "instrument_token": "35429644"
+    },
+    {
+      "symbol": "NCO:NATGASMINI26JULFUT",
+      "name": "NATGASMINI",
+      "expiry": "26JUL",
+      "segment": "NCO",
+      "instrument_token": "32335372"
+    },
+    {
+      "symbol": "NCO:NATGASMINI26AUGFUT",
+      "name": "NATGASMINI",
+      "expiry": "26AUG",
+      "segment": "NCO",
+      "instrument_token": "31173644"
+    },
+    {
+      "symbol": "NCO:NATGASMINI26SEPFUT",
+      "name": "NATGASMINI",
+      "expiry": "26SEP",
+      "segment": "NCO",
+      "instrument_token": "31188748"
+    },
+    {
+      "symbol": "NCO:NATURALGAS26APRFUT",
+      "name": "NATURALGAS",
+      "expiry": "26APR",
+      "segment": "NCO",
+      "instrument_token": "31167500"
+    },
+    {
+      "symbol": "NCO:NATURALGAS26MAYFUT",
+      "name": "NATURALGAS",
+      "expiry": "26MAY",
+      "segment": "NCO",
+      "instrument_token": "31133964"
+    },
+    {
+      "symbol": "NCO:NATURALGAS26JUNFUT",
+      "name": "NATURALGAS",
+      "expiry": "26JUN",
+      "segment": "NCO",
+      "instrument_token": "35429900"
+    },
+    {
+      "symbol": "NCO:NATURALGAS26JULFUT",
+      "name": "NATURALGAS",
+      "expiry": "26JUL",
+      "segment": "NCO",
+      "instrument_token": "32337676"
+    },
+    {
+      "symbol": "NCO:NATURALGAS26AUGFUT",
+      "name": "NATURALGAS",
+      "expiry": "26AUG",
+      "segment": "NCO",
+      "instrument_token": "31173900"
+    },
+    {
+      "symbol": "NCO:NATURALGAS26SEPFUT",
+      "name": "NATURALGAS",
+      "expiry": "26SEP",
+      "segment": "NCO",
+      "instrument_token": "31189004"
+    },
+    {
+      "symbol": "NCO:NICKEL26APRFUT",
+      "name": "NICKEL",
+      "expiry": "26APR",
+      "segment": "NCO",
+      "instrument_token": "31187468"
+    },
+    {
+      "symbol": "NCO:NICKEL26MAYFUT",
+      "name": "NICKEL",
+      "expiry": "26MAY",
+      "segment": "NCO",
+      "instrument_token": "31396364"
+    },
+    {
+      "symbol": "NCO:NICKEL26JUNFUT",
+      "name": "NICKEL",
+      "expiry": "26JUN",
+      "segment": "NCO",
+      "instrument_token": "31200268"
+    },
+    {
+      "symbol": "NCO:NICKEL26JULFUT",
+      "name": "NICKEL",
+      "expiry": "26JUL",
+      "segment": "NCO",
+      "instrument_token": "31206156"
+    },
+    {
+      "symbol": "NCO:NICKEL26AUGFUT",
+      "name": "NICKEL",
+      "expiry": "26AUG",
+      "segment": "NCO",
+      "instrument_token": "31474444"
+    },
+    {
+      "symbol": "NCO:SILVER26MAYFUT",
+      "name": "SILVER",
+      "expiry": "26MAY",
+      "segment": "NCO",
+      "instrument_token": "31224332"
+    },
+    {
+      "symbol": "NCO:SILVER26JULFUT",
+      "name": "SILVER",
+      "expiry": "26JUL",
+      "segment": "NCO",
+      "instrument_token": "31180556"
+    },
+    {
+      "symbol": "NCO:SILVER26SEPFUT",
+      "name": "SILVER",
+      "expiry": "26SEP",
+      "segment": "NCO",
+      "instrument_token": "33405452"
+    },
+    {
+      "symbol": "NCO:SILVER26DECFUT",
+      "name": "SILVER",
+      "expiry": "26DEC",
+      "segment": "NCO",
+      "instrument_token": "31597324"
+    },
+    {
+      "symbol": "NCO:SILVER27MARFUT",
+      "name": "SILVER",
+      "expiry": "27MAR",
+      "segment": "NCO",
+      "instrument_token": "33355020"
+    },
+    {
+      "symbol": "NCO:SILVERM26APRFUT",
+      "name": "SILVERM",
+      "expiry": "26APR",
+      "segment": "NCO",
+      "instrument_token": "31363596"
+    },
+    {
+      "symbol": "NCO:SILVERM26MAYFUT",
+      "name": "SILVERM",
+      "expiry": "26MAY",
+      "segment": "NCO",
+      "instrument_token": "31264268"
+    },
+    {
+      "symbol": "NCO:SILVERM26JUNFUT",
+      "name": "SILVERM",
+      "expiry": "26JUN",
+      "segment": "NCO",
+      "instrument_token": "31692812"
+    },
+    {
+      "symbol": "NCO:SILVERM26JULFUT",
+      "name": "SILVERM",
+      "expiry": "26JUL",
+      "segment": "NCO",
+      "instrument_token": "31192844"
+    },
+    {
+      "symbol": "NCO:SILVERM26AUGFUT",
+      "name": "SILVERM",
+      "expiry": "26AUG",
+      "segment": "NCO",
+      "instrument_token": "31282956"
+    },
+    {
+      "symbol": "NCO:SILVERM26SEPFUT",
+      "name": "SILVERM",
+      "expiry": "26SEP",
+      "segment": "NCO",
+      "instrument_token": "33389836"
+    },
+    {
+      "symbol": "NCO:SILVERM26OCTFUT",
+      "name": "SILVERM",
+      "expiry": "26OCT",
+      "segment": "NCO",
+      "instrument_token": "31363340"
+    },
+    {
+      "symbol": "NCO:SILVERM26NOVFUT",
+      "name": "SILVERM",
+      "expiry": "26NOV",
+      "segment": "NCO",
+      "instrument_token": "31194380"
+    },
+    {
+      "symbol": "NCO:SILVERM26DECFUT",
+      "name": "SILVERM",
+      "expiry": "26DEC",
+      "segment": "NCO",
+      "instrument_token": "31425036"
+    },
+    {
+      "symbol": "NCO:SILVERM27JANFUT",
+      "name": "SILVERM",
+      "expiry": "27JAN",
+      "segment": "NCO",
+      "instrument_token": "31201804"
+    },
+    {
+      "symbol": "NCO:SILVERM27FEBFUT",
+      "name": "SILVERM",
+      "expiry": "27FEB",
+      "segment": "NCO",
+      "instrument_token": "31207180"
+    },
+    {
+      "symbol": "NCO:SILVERM27MARFUT",
+      "name": "SILVERM",
+      "expiry": "27MAR",
+      "segment": "NCO",
+      "instrument_token": "31476236"
+    },
+    {
+      "symbol": "NCO:SILVERMIC26APRFUT",
+      "name": "SILVERMIC",
+      "expiry": "26APR",
+      "segment": "NCO",
+      "instrument_token": "31363852"
+    },
+    {
+      "symbol": "NCO:SILVERMIC26MAYFUT",
+      "name": "SILVERMIC",
+      "expiry": "26MAY",
+      "segment": "NCO",
+      "instrument_token": "31713804"
+    },
+    {
+      "symbol": "NCO:SILVERMIC26JUNFUT",
+      "name": "SILVERMIC",
+      "expiry": "26JUN",
+      "segment": "NCO",
+      "instrument_token": "31693068"
+    },
+    {
+      "symbol": "NCO:SILVERMIC26JULFUT",
+      "name": "SILVERMIC",
+      "expiry": "26JUL",
+      "segment": "NCO",
+      "instrument_token": "31193612"
+    },
+    {
+      "symbol": "NCO:SILVERMIC26AUGFUT",
+      "name": "SILVERMIC",
+      "expiry": "26AUG",
+      "segment": "NCO",
+      "instrument_token": "31283212"
+    },
+    {
+      "symbol": "NCO:SILVERMIC26SEPFUT",
+      "name": "SILVERMIC",
+      "expiry": "26SEP",
+      "segment": "NCO",
+      "instrument_token": "33390092"
+    },
+    {
+      "symbol": "NCO:SILVERMIC26OCTFUT",
+      "name": "SILVERMIC",
+      "expiry": "26OCT",
+      "segment": "NCO",
+      "instrument_token": "31364108"
+    },
+    {
+      "symbol": "NCO:SILVERMIC26NOVFUT",
+      "name": "SILVERMIC",
+      "expiry": "26NOV",
+      "segment": "NCO",
+      "instrument_token": "31194636"
+    },
+    {
+      "symbol": "NCO:SILVERMIC26DECFUT",
+      "name": "SILVERMIC",
+      "expiry": "26DEC",
+      "segment": "NCO",
+      "instrument_token": "31425292"
+    },
+    {
+      "symbol": "NCO:SILVERMIC27JANFUT",
+      "name": "SILVERMIC",
+      "expiry": "27JAN",
+      "segment": "NCO",
+      "instrument_token": "31202060"
+    },
+    {
+      "symbol": "NCO:SILVERMIC27FEBFUT",
+      "name": "SILVERMIC",
+      "expiry": "27FEB",
+      "segment": "NCO",
+      "instrument_token": "31207948"
+    },
+    {
+      "symbol": "NCO:SILVERMIC27MARFUT",
+      "name": "SILVERMIC",
+      "expiry": "27MAR",
+      "segment": "NCO",
+      "instrument_token": "31476492"
+    },
+    {
+      "symbol": "NCO:ZINC26APRFUT",
+      "name": "ZINC",
+      "expiry": "26APR",
+      "segment": "NCO",
+      "instrument_token": "31187724"
+    },
+    {
+      "symbol": "NCO:ZINC26MAYFUT",
+      "name": "ZINC",
+      "expiry": "26MAY",
+      "segment": "NCO",
+      "instrument_token": "31396620"
+    },
+    {
+      "symbol": "NCO:ZINC26JUNFUT",
+      "name": "ZINC",
+      "expiry": "26JUN",
+      "segment": "NCO",
+      "instrument_token": "31201036"
+    },
+    {
+      "symbol": "NCO:ZINC26JULFUT",
+      "name": "ZINC",
+      "expiry": "26JUL",
+      "segment": "NCO",
+      "instrument_token": "31206412"
+    },
+    {
+      "symbol": "NCO:ZINC26AUGFUT",
+      "name": "ZINC",
+      "expiry": "26AUG",
+      "segment": "NCO",
+      "instrument_token": "31475212"
+    },
+    {
+      "symbol": "NCO:ZINCMINI26APRFUT",
+      "name": "ZINCMINI",
+      "expiry": "26APR",
+      "segment": "NCO",
+      "instrument_token": "31190796"
+    },
+    {
+      "symbol": "NCO:ZINCMINI26MAYFUT",
+      "name": "ZINCMINI",
+      "expiry": "26MAY",
+      "segment": "NCO",
+      "instrument_token": "31406604"
+    },
+    {
+      "symbol": "NCO:ZINCMINI26JUNFUT",
+      "name": "ZINCMINI",
+      "expiry": "26JUN",
+      "segment": "NCO",
+      "instrument_token": "31201292"
+    },
+    {
+      "symbol": "NCO:ZINCMINI26JULFUT",
+      "name": "ZINCMINI",
+      "expiry": "26JUL",
+      "segment": "NCO",
+      "instrument_token": "31206668"
+    },
+    {
+      "symbol": "NCO:ZINCMINI26AUGFUT",
+      "name": "ZINCMINI",
+      "expiry": "26AUG",
+      "segment": "NCO",
+      "instrument_token": "31475724"
+    },
+    {
+      "symbol": "NFO:NIFTY26APRFUT",
+      "name": "NIFTY",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17072898"
+    },
+    {
+      "symbol": "NFO:NIFTY26MAYFUT",
+      "name": "NIFTY",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16914178"
+    },
+    {
+      "symbol": "NFO:NIFTY26JUNFUT",
+      "name": "NIFTY",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15956226"
+    },
+    {
+      "symbol": "NFO:BANKNIFTY26APRFUT",
+      "name": "BANKNIFTY",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17072130"
+    },
+    {
+      "symbol": "NFO:BANKNIFTY26MAYFUT",
+      "name": "BANKNIFTY",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16913410"
+    },
+    {
+      "symbol": "NFO:BANKNIFTY26JUNFUT",
+      "name": "BANKNIFTY",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15955458"
+    },
+    {
+      "symbol": "NFO:ABB26APRFUT",
+      "name": "ABB",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17073666"
+    },
+    {
+      "symbol": "NFO:ABB26MAYFUT",
+      "name": "ABB",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16914946"
+    },
+    {
+      "symbol": "NFO:ABB26JUNFUT",
+      "name": "ABB",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15956994"
+    },
+    {
+      "symbol": "NFO:ABCAPITAL26APRFUT",
+      "name": "ABCAPITAL",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17073922"
+    },
+    {
+      "symbol": "NFO:ABCAPITAL26MAYFUT",
+      "name": "ABCAPITAL",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16915202"
+    },
+    {
+      "symbol": "NFO:ABCAPITAL26JUNFUT",
+      "name": "ABCAPITAL",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15957250"
+    },
+    {
+      "symbol": "NFO:ADANIENSOL26APRFUT",
+      "name": "ADANIENSOL",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17074178"
+    },
+    {
+      "symbol": "NFO:ADANIENSOL26MAYFUT",
+      "name": "ADANIENSOL",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16915458"
+    },
+    {
+      "symbol": "NFO:ADANIENSOL26JUNFUT",
+      "name": "ADANIENSOL",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15959554"
+    },
+    {
+      "symbol": "NFO:ADANIENT26APRFUT",
+      "name": "ADANIENT",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17075970"
+    },
+    {
+      "symbol": "NFO:ADANIENT26MAYFUT",
+      "name": "ADANIENT",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16915714"
+    },
+    {
+      "symbol": "NFO:ADANIENT26JUNFUT",
+      "name": "ADANIENT",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15959810"
+    },
+    {
+      "symbol": "NFO:ADANIGREEN26APRFUT",
+      "name": "ADANIGREEN",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17076226"
+    },
+    {
+      "symbol": "NFO:ADANIGREEN26MAYFUT",
+      "name": "ADANIGREEN",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16915970"
+    },
+    {
+      "symbol": "NFO:ADANIGREEN26JUNFUT",
+      "name": "ADANIGREEN",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15960066"
+    },
+    {
+      "symbol": "NFO:ADANIPORTS26APRFUT",
+      "name": "ADANIPORTS",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17076482"
+    },
+    {
+      "symbol": "NFO:ADANIPORTS26MAYFUT",
+      "name": "ADANIPORTS",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16916226"
+    },
+    {
+      "symbol": "NFO:ADANIPORTS26JUNFUT",
+      "name": "ADANIPORTS",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15960322"
+    },
+    {
+      "symbol": "NFO:ADANIPOWER26APRFUT",
+      "name": "ADANIPOWER",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "15960578"
+    },
+    {
+      "symbol": "NFO:ADANIPOWER26MAYFUT",
+      "name": "ADANIPOWER",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "15960834"
+    },
+    {
+      "symbol": "NFO:ADANIPOWER26JUNFUT",
+      "name": "ADANIPOWER",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15961090"
+    },
+    {
+      "symbol": "NFO:ALKEM26APRFUT",
+      "name": "ALKEM",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17076738"
+    },
+    {
+      "symbol": "NFO:ALKEM26MAYFUT",
+      "name": "ALKEM",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16916482"
+    },
+    {
+      "symbol": "NFO:ALKEM26JUNFUT",
+      "name": "ALKEM",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15961346"
+    },
+    {
+      "symbol": "NFO:AMBER26APRFUT",
+      "name": "AMBER",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17076994"
+    },
+    {
+      "symbol": "NFO:AMBER26MAYFUT",
+      "name": "AMBER",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16916738"
+    },
+    {
+      "symbol": "NFO:AMBER26JUNFUT",
+      "name": "AMBER",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15963906"
+    },
+    {
+      "symbol": "NFO:AMBUJACEM26APRFUT",
+      "name": "AMBUJACEM",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17077250"
+    },
+    {
+      "symbol": "NFO:AMBUJACEM26MAYFUT",
+      "name": "AMBUJACEM",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16916994"
+    },
+    {
+      "symbol": "NFO:AMBUJACEM26JUNFUT",
+      "name": "AMBUJACEM",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15964162"
+    },
+    {
+      "symbol": "NFO:ANGELONE26APRFUT",
+      "name": "ANGELONE",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17077506"
+    },
+    {
+      "symbol": "NFO:ANGELONE26MAYFUT",
+      "name": "ANGELONE",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16917250"
+    },
+    {
+      "symbol": "NFO:ANGELONE26JUNFUT",
+      "name": "ANGELONE",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15964418"
+    },
+    {
+      "symbol": "NFO:APLAPOLLO26APRFUT",
+      "name": "APLAPOLLO",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17077762"
+    },
+    {
+      "symbol": "NFO:APLAPOLLO26MAYFUT",
+      "name": "APLAPOLLO",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16917506"
+    },
+    {
+      "symbol": "NFO:APLAPOLLO26JUNFUT",
+      "name": "APLAPOLLO",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15964674"
+    },
+    {
+      "symbol": "NFO:APOLLOHOSP26APRFUT",
+      "name": "APOLLOHOSP",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17078018"
+    },
+    {
+      "symbol": "NFO:APOLLOHOSP26MAYFUT",
+      "name": "APOLLOHOSP",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16917762"
+    },
+    {
+      "symbol": "NFO:APOLLOHOSP26JUNFUT",
+      "name": "APOLLOHOSP",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15964930"
+    },
+    {
+      "symbol": "NFO:ASHOKLEY26APRFUT",
+      "name": "ASHOKLEY",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17078274"
+    },
+    {
+      "symbol": "NFO:ASHOKLEY26MAYFUT",
+      "name": "ASHOKLEY",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16918018"
+    },
+    {
+      "symbol": "NFO:ASHOKLEY26JUNFUT",
+      "name": "ASHOKLEY",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15965698"
+    },
+    {
+      "symbol": "NFO:ASIANPAINT26APRFUT",
+      "name": "ASIANPAINT",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17078530"
+    },
+    {
+      "symbol": "NFO:ASIANPAINT26MAYFUT",
+      "name": "ASIANPAINT",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16918274"
+    },
+    {
+      "symbol": "NFO:ASIANPAINT26JUNFUT",
+      "name": "ASIANPAINT",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15965954"
+    },
+    {
+      "symbol": "NFO:ASTRAL26APRFUT",
+      "name": "ASTRAL",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17078786"
+    },
+    {
+      "symbol": "NFO:ASTRAL26MAYFUT",
+      "name": "ASTRAL",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16918530"
+    },
+    {
+      "symbol": "NFO:ASTRAL26JUNFUT",
+      "name": "ASTRAL",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15966722"
+    },
+    {
+      "symbol": "NFO:AUBANK26APRFUT",
+      "name": "AUBANK",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17079042"
+    },
+    {
+      "symbol": "NFO:AUBANK26MAYFUT",
+      "name": "AUBANK",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16918786"
+    },
+    {
+      "symbol": "NFO:AUBANK26JUNFUT",
+      "name": "AUBANK",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15966978"
+    },
+    {
+      "symbol": "NFO:AUROPHARMA26APRFUT",
+      "name": "AUROPHARMA",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17079298"
+    },
+    {
+      "symbol": "NFO:AUROPHARMA26MAYFUT",
+      "name": "AUROPHARMA",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16919042"
+    },
+    {
+      "symbol": "NFO:AUROPHARMA26JUNFUT",
+      "name": "AUROPHARMA",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15967234"
+    },
+    {
+      "symbol": "NFO:AXISBANK26APRFUT",
+      "name": "AXISBANK",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17079554"
+    },
+    {
+      "symbol": "NFO:AXISBANK26MAYFUT",
+      "name": "AXISBANK",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16919298"
+    },
+    {
+      "symbol": "NFO:AXISBANK26JUNFUT",
+      "name": "AXISBANK",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15967490"
+    },
+    {
+      "symbol": "NFO:BAJAJFINSV26APRFUT",
+      "name": "BAJAJFINSV",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17080066"
+    },
+    {
+      "symbol": "NFO:BAJAJFINSV26MAYFUT",
+      "name": "BAJAJFINSV",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16919810"
+    },
+    {
+      "symbol": "NFO:BAJAJFINSV26JUNFUT",
+      "name": "BAJAJFINSV",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15968002"
+    },
+    {
+      "symbol": "NFO:BAJAJHLDNG26APRFUT",
+      "name": "BAJAJHLDNG",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17080322"
+    },
+    {
+      "symbol": "NFO:BAJAJHLDNG26MAYFUT",
+      "name": "BAJAJHLDNG",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16920066"
+    },
+    {
+      "symbol": "NFO:BAJAJHLDNG26JUNFUT",
+      "name": "BAJAJHLDNG",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15968258"
+    },
+    {
+      "symbol": "NFO:BAJFINANCE26APRFUT",
+      "name": "BAJFINANCE",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17080578"
+    },
+    {
+      "symbol": "NFO:BAJFINANCE26MAYFUT",
+      "name": "BAJFINANCE",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16920322"
+    },
+    {
+      "symbol": "NFO:BAJFINANCE26JUNFUT",
+      "name": "BAJFINANCE",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15968514"
+    },
+    {
+      "symbol": "NFO:BANDHANBNK26APRFUT",
+      "name": "BANDHANBNK",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17080834"
+    },
+    {
+      "symbol": "NFO:BANDHANBNK26MAYFUT",
+      "name": "BANDHANBNK",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16920578"
+    },
+    {
+      "symbol": "NFO:BANDHANBNK26JUNFUT",
+      "name": "BANDHANBNK",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15968770"
+    },
+    {
+      "symbol": "NFO:BANKBARODA26APRFUT",
+      "name": "BANKBARODA",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17081090"
+    },
+    {
+      "symbol": "NFO:BANKBARODA26MAYFUT",
+      "name": "BANKBARODA",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16920834"
+    },
+    {
+      "symbol": "NFO:BANKBARODA26JUNFUT",
+      "name": "BANKBARODA",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15969026"
+    },
+    {
+      "symbol": "NFO:BANKINDIA26APRFUT",
+      "name": "BANKINDIA",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17081346"
+    },
+    {
+      "symbol": "NFO:BANKINDIA26MAYFUT",
+      "name": "BANKINDIA",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16921090"
+    },
+    {
+      "symbol": "NFO:BANKINDIA26JUNFUT",
+      "name": "BANKINDIA",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15969282"
+    },
+    {
+      "symbol": "NFO:BDL26APRFUT",
+      "name": "BDL",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17081602"
+    },
+    {
+      "symbol": "NFO:BDL26MAYFUT",
+      "name": "BDL",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16921346"
+    },
+    {
+      "symbol": "NFO:BDL26JUNFUT",
+      "name": "BDL",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15969538"
+    },
+    {
+      "symbol": "NFO:BEL26APRFUT",
+      "name": "BEL",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17081858"
+    },
+    {
+      "symbol": "NFO:BEL26MAYFUT",
+      "name": "BEL",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16921602"
+    },
+    {
+      "symbol": "NFO:BEL26JUNFUT",
+      "name": "BEL",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15969794"
+    },
+    {
+      "symbol": "NFO:BHARATFORG26APRFUT",
+      "name": "BHARATFORG",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17082114"
+    },
+    {
+      "symbol": "NFO:BHARATFORG26MAYFUT",
+      "name": "BHARATFORG",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16921858"
+    },
+    {
+      "symbol": "NFO:BHARATFORG26JUNFUT",
+      "name": "BHARATFORG",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15970050"
+    },
+    {
+      "symbol": "NFO:BHARTIARTL26APRFUT",
+      "name": "BHARTIARTL",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17082370"
+    },
+    {
+      "symbol": "NFO:BHARTIARTL26MAYFUT",
+      "name": "BHARTIARTL",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16922114"
+    },
+    {
+      "symbol": "NFO:BHARTIARTL26JUNFUT",
+      "name": "BHARTIARTL",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15970306"
+    },
+    {
+      "symbol": "NFO:BHEL26APRFUT",
+      "name": "BHEL",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17082626"
+    },
+    {
+      "symbol": "NFO:BHEL26MAYFUT",
+      "name": "BHEL",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16922370"
+    },
+    {
+      "symbol": "NFO:BHEL26JUNFUT",
+      "name": "BHEL",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15970562"
+    },
+    {
+      "symbol": "NFO:BIOCON26APRFUT",
+      "name": "BIOCON",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17082882"
+    },
+    {
+      "symbol": "NFO:BIOCON26MAYFUT",
+      "name": "BIOCON",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16922626"
+    },
+    {
+      "symbol": "NFO:BIOCON26JUNFUT",
+      "name": "BIOCON",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15970818"
+    },
+    {
+      "symbol": "NFO:BLUESTARCO26APRFUT",
+      "name": "BLUESTARCO",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17083138"
+    },
+    {
+      "symbol": "NFO:BLUESTARCO26MAYFUT",
+      "name": "BLUESTARCO",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16922882"
+    },
+    {
+      "symbol": "NFO:BLUESTARCO26JUNFUT",
+      "name": "BLUESTARCO",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15971074"
+    },
+    {
+      "symbol": "NFO:BOSCHLTD26APRFUT",
+      "name": "BOSCHLTD",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17083394"
+    },
+    {
+      "symbol": "NFO:BOSCHLTD26MAYFUT",
+      "name": "BOSCHLTD",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16923138"
+    },
+    {
+      "symbol": "NFO:BOSCHLTD26JUNFUT",
+      "name": "BOSCHLTD",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15972354"
+    },
+    {
+      "symbol": "NFO:BPCL26APRFUT",
+      "name": "BPCL",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17083650"
+    },
+    {
+      "symbol": "NFO:BPCL26MAYFUT",
+      "name": "BPCL",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16923394"
+    },
+    {
+      "symbol": "NFO:BPCL26JUNFUT",
+      "name": "BPCL",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15972610"
+    },
+    {
+      "symbol": "NFO:BRITANNIA26APRFUT",
+      "name": "BRITANNIA",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17083906"
+    },
+    {
+      "symbol": "NFO:BRITANNIA26MAYFUT",
+      "name": "BRITANNIA",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16923650"
+    },
+    {
+      "symbol": "NFO:BRITANNIA26JUNFUT",
+      "name": "BRITANNIA",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15972866"
+    },
+    {
+      "symbol": "NFO:BSE26APRFUT",
+      "name": "BSE",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17084162"
+    },
+    {
+      "symbol": "NFO:BSE26MAYFUT",
+      "name": "BSE",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16923906"
+    },
+    {
+      "symbol": "NFO:BSE26JUNFUT",
+      "name": "BSE",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15973122"
+    },
+    {
+      "symbol": "NFO:CAMS26APRFUT",
+      "name": "CAMS",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17084418"
+    },
+    {
+      "symbol": "NFO:CAMS26MAYFUT",
+      "name": "CAMS",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16924162"
+    },
+    {
+      "symbol": "NFO:CAMS26JUNFUT",
+      "name": "CAMS",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15973378"
+    },
+    {
+      "symbol": "NFO:CANBK26APRFUT",
+      "name": "CANBK",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17084674"
+    },
+    {
+      "symbol": "NFO:CANBK26MAYFUT",
+      "name": "CANBK",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16924418"
+    },
+    {
+      "symbol": "NFO:CANBK26JUNFUT",
+      "name": "CANBK",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15973634"
+    },
+    {
+      "symbol": "NFO:CDSL26APRFUT",
+      "name": "CDSL",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17088258"
+    },
+    {
+      "symbol": "NFO:CDSL26MAYFUT",
+      "name": "CDSL",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16924674"
+    },
+    {
+      "symbol": "NFO:CDSL26JUNFUT",
+      "name": "CDSL",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15973890"
+    },
+    {
+      "symbol": "NFO:CGPOWER26APRFUT",
+      "name": "CGPOWER",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17088514"
+    },
+    {
+      "symbol": "NFO:CGPOWER26MAYFUT",
+      "name": "CGPOWER",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16926978"
+    },
+    {
+      "symbol": "NFO:CGPOWER26JUNFUT",
+      "name": "CGPOWER",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15975170"
+    },
+    {
+      "symbol": "NFO:CHOLAFIN26APRFUT",
+      "name": "CHOLAFIN",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17088770"
+    },
+    {
+      "symbol": "NFO:CHOLAFIN26MAYFUT",
+      "name": "CHOLAFIN",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16927234"
+    },
+    {
+      "symbol": "NFO:CHOLAFIN26JUNFUT",
+      "name": "CHOLAFIN",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15975938"
+    },
+    {
+      "symbol": "NFO:CIPLA26APRFUT",
+      "name": "CIPLA",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17094658"
+    },
+    {
+      "symbol": "NFO:CIPLA26MAYFUT",
+      "name": "CIPLA",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16928258"
+    },
+    {
+      "symbol": "NFO:CIPLA26JUNFUT",
+      "name": "CIPLA",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15976194"
+    },
+    {
+      "symbol": "NFO:COALINDIA26APRFUT",
+      "name": "COALINDIA",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17094914"
+    },
+    {
+      "symbol": "NFO:COALINDIA26MAYFUT",
+      "name": "COALINDIA",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16929794"
+    },
+    {
+      "symbol": "NFO:COALINDIA26JUNFUT",
+      "name": "COALINDIA",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15976450"
+    },
+    {
+      "symbol": "NFO:COCHINSHIP26APRFUT",
+      "name": "COCHINSHIP",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "15983106"
+    },
+    {
+      "symbol": "NFO:COCHINSHIP26MAYFUT",
+      "name": "COCHINSHIP",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "15983362"
+    },
+    {
+      "symbol": "NFO:COCHINSHIP26JUNFUT",
+      "name": "COCHINSHIP",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15983618"
+    },
+    {
+      "symbol": "NFO:COFORGE26APRFUT",
+      "name": "COFORGE",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17095170"
+    },
+    {
+      "symbol": "NFO:COFORGE26MAYFUT",
+      "name": "COFORGE",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16930050"
+    },
+    {
+      "symbol": "NFO:COFORGE26JUNFUT",
+      "name": "COFORGE",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15983874"
+    },
+    {
+      "symbol": "NFO:COLPAL26APRFUT",
+      "name": "COLPAL",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17095426"
+    },
+    {
+      "symbol": "NFO:COLPAL26MAYFUT",
+      "name": "COLPAL",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16930306"
+    },
+    {
+      "symbol": "NFO:COLPAL26JUNFUT",
+      "name": "COLPAL",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15999490"
+    },
+    {
+      "symbol": "NFO:CONCOR26APRFUT",
+      "name": "CONCOR",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17095682"
+    },
+    {
+      "symbol": "NFO:CONCOR26MAYFUT",
+      "name": "CONCOR",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16930562"
+    },
+    {
+      "symbol": "NFO:CONCOR26JUNFUT",
+      "name": "CONCOR",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15999746"
+    },
+    {
+      "symbol": "NFO:CROMPTON26APRFUT",
+      "name": "CROMPTON",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17095938"
+    },
+    {
+      "symbol": "NFO:CROMPTON26MAYFUT",
+      "name": "CROMPTON",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16930818"
+    },
+    {
+      "symbol": "NFO:CROMPTON26JUNFUT",
+      "name": "CROMPTON",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16002050"
+    },
+    {
+      "symbol": "NFO:CUMMINSIND26APRFUT",
+      "name": "CUMMINSIND",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17096706"
+    },
+    {
+      "symbol": "NFO:CUMMINSIND26MAYFUT",
+      "name": "CUMMINSIND",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16931586"
+    },
+    {
+      "symbol": "NFO:CUMMINSIND26JUNFUT",
+      "name": "CUMMINSIND",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16002306"
+    },
+    {
+      "symbol": "NFO:DABUR26APRFUT",
+      "name": "DABUR",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17096962"
+    },
+    {
+      "symbol": "NFO:DABUR26MAYFUT",
+      "name": "DABUR",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16932610"
+    },
+    {
+      "symbol": "NFO:DABUR26JUNFUT",
+      "name": "DABUR",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16014082"
+    },
+    {
+      "symbol": "NFO:DALBHARAT26APRFUT",
+      "name": "DALBHARAT",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17097218"
+    },
+    {
+      "symbol": "NFO:DALBHARAT26MAYFUT",
+      "name": "DALBHARAT",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16932866"
+    },
+    {
+      "symbol": "NFO:DALBHARAT26JUNFUT",
+      "name": "DALBHARAT",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16014338"
+    },
+    {
+      "symbol": "NFO:DELHIVERY26APRFUT",
+      "name": "DELHIVERY",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17097474"
+    },
+    {
+      "symbol": "NFO:DELHIVERY26MAYFUT",
+      "name": "DELHIVERY",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16933378"
+    },
+    {
+      "symbol": "NFO:DELHIVERY26JUNFUT",
+      "name": "DELHIVERY",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16014594"
+    },
+    {
+      "symbol": "NFO:DIVISLAB26APRFUT",
+      "name": "DIVISLAB",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17097730"
+    },
+    {
+      "symbol": "NFO:DIVISLAB26MAYFUT",
+      "name": "DIVISLAB",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16933634"
+    },
+    {
+      "symbol": "NFO:DIVISLAB26JUNFUT",
+      "name": "DIVISLAB",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16015618"
+    },
+    {
+      "symbol": "NFO:DIXON26APRFUT",
+      "name": "DIXON",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17105666"
+    },
+    {
+      "symbol": "NFO:DIXON26MAYFUT",
+      "name": "DIXON",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16933890"
+    },
+    {
+      "symbol": "NFO:DIXON26JUNFUT",
+      "name": "DIXON",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16015874"
+    },
+    {
+      "symbol": "NFO:DLF26APRFUT",
+      "name": "DLF",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17105922"
+    },
+    {
+      "symbol": "NFO:DLF26MAYFUT",
+      "name": "DLF",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16934146"
+    },
+    {
+      "symbol": "NFO:DLF26JUNFUT",
+      "name": "DLF",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16016130"
+    },
+    {
+      "symbol": "NFO:DMART26APRFUT",
+      "name": "DMART",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17106178"
+    },
+    {
+      "symbol": "NFO:DMART26MAYFUT",
+      "name": "DMART",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16935682"
+    },
+    {
+      "symbol": "NFO:DMART26JUNFUT",
+      "name": "DMART",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16016386"
+    },
+    {
+      "symbol": "NFO:DRREDDY26APRFUT",
+      "name": "DRREDDY",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17106434"
+    },
+    {
+      "symbol": "NFO:DRREDDY26MAYFUT",
+      "name": "DRREDDY",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16935938"
+    },
+    {
+      "symbol": "NFO:DRREDDY26JUNFUT",
+      "name": "DRREDDY",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16016642"
+    },
+    {
+      "symbol": "NFO:EICHERMOT26APRFUT",
+      "name": "EICHERMOT",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17106690"
+    },
+    {
+      "symbol": "NFO:EICHERMOT26MAYFUT",
+      "name": "EICHERMOT",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16936194"
+    },
+    {
+      "symbol": "NFO:EICHERMOT26JUNFUT",
+      "name": "EICHERMOT",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16016898"
+    },
+    {
+      "symbol": "NFO:ETERNAL26APRFUT",
+      "name": "ETERNAL",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17106946"
+    },
+    {
+      "symbol": "NFO:ETERNAL26MAYFUT",
+      "name": "ETERNAL",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16936450"
+    },
+    {
+      "symbol": "NFO:ETERNAL26JUNFUT",
+      "name": "ETERNAL",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16017154"
+    },
+    {
+      "symbol": "NFO:EXIDEIND26APRFUT",
+      "name": "EXIDEIND",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17107202"
+    },
+    {
+      "symbol": "NFO:EXIDEIND26MAYFUT",
+      "name": "EXIDEIND",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16936706"
+    },
+    {
+      "symbol": "NFO:EXIDEIND26JUNFUT",
+      "name": "EXIDEIND",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16017410"
+    },
+    {
+      "symbol": "NFO:FEDERALBNK26APRFUT",
+      "name": "FEDERALBNK",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17107458"
+    },
+    {
+      "symbol": "NFO:FEDERALBNK26MAYFUT",
+      "name": "FEDERALBNK",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16936962"
+    },
+    {
+      "symbol": "NFO:FEDERALBNK26JUNFUT",
+      "name": "FEDERALBNK",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16017666"
+    },
+    {
+      "symbol": "NFO:FINNIFTY26APRFUT",
+      "name": "FINNIFTY",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17072386"
+    },
+    {
+      "symbol": "NFO:FINNIFTY26MAYFUT",
+      "name": "FINNIFTY",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16913666"
+    },
+    {
+      "symbol": "NFO:FINNIFTY26JUNFUT",
+      "name": "FINNIFTY",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15955714"
+    },
+    {
+      "symbol": "NFO:FORCEMOT26APRFUT",
+      "name": "FORCEMOT",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "16017922"
+    },
+    {
+      "symbol": "NFO:FORCEMOT26MAYFUT",
+      "name": "FORCEMOT",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16018178"
+    },
+    {
+      "symbol": "NFO:FORCEMOT26JUNFUT",
+      "name": "FORCEMOT",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16018434"
+    },
+    {
+      "symbol": "NFO:FORTIS26APRFUT",
+      "name": "FORTIS",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17107714"
+    },
+    {
+      "symbol": "NFO:FORTIS26MAYFUT",
+      "name": "FORTIS",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16937218"
+    },
+    {
+      "symbol": "NFO:FORTIS26JUNFUT",
+      "name": "FORTIS",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16018946"
+    },
+    {
+      "symbol": "NFO:GAIL26APRFUT",
+      "name": "GAIL",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17109762"
+    },
+    {
+      "symbol": "NFO:GAIL26MAYFUT",
+      "name": "GAIL",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16937474"
+    },
+    {
+      "symbol": "NFO:GAIL26JUNFUT",
+      "name": "GAIL",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16019202"
+    },
+    {
+      "symbol": "NFO:GLENMARK26APRFUT",
+      "name": "GLENMARK",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17110018"
+    },
+    {
+      "symbol": "NFO:GLENMARK26MAYFUT",
+      "name": "GLENMARK",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16938242"
+    },
+    {
+      "symbol": "NFO:GLENMARK26JUNFUT",
+      "name": "GLENMARK",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16019714"
+    },
+    {
+      "symbol": "NFO:GMRAIRPORT26APRFUT",
+      "name": "GMRAIRPORT",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17110530"
+    },
+    {
+      "symbol": "NFO:GMRAIRPORT26MAYFUT",
+      "name": "GMRAIRPORT",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16938498"
+    },
+    {
+      "symbol": "NFO:GMRAIRPORT26JUNFUT",
+      "name": "GMRAIRPORT",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16019970"
+    },
+    {
+      "symbol": "NFO:GODFRYPHLP26APRFUT",
+      "name": "GODFRYPHLP",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "16020226"
+    },
+    {
+      "symbol": "NFO:GODFRYPHLP26MAYFUT",
+      "name": "GODFRYPHLP",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16020482"
+    },
+    {
+      "symbol": "NFO:GODFRYPHLP26JUNFUT",
+      "name": "GODFRYPHLP",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16020738"
+    },
+    {
+      "symbol": "NFO:GODREJCP26APRFUT",
+      "name": "GODREJCP",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17110786"
+    },
+    {
+      "symbol": "NFO:GODREJCP26MAYFUT",
+      "name": "GODREJCP",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16938754"
+    },
+    {
+      "symbol": "NFO:GODREJCP26JUNFUT",
+      "name": "GODREJCP",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16020994"
+    },
+    {
+      "symbol": "NFO:GODREJPROP26APRFUT",
+      "name": "GODREJPROP",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17111042"
+    },
+    {
+      "symbol": "NFO:GODREJPROP26MAYFUT",
+      "name": "GODREJPROP",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16939010"
+    },
+    {
+      "symbol": "NFO:GODREJPROP26JUNFUT",
+      "name": "GODREJPROP",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16022274"
+    },
+    {
+      "symbol": "NFO:GRASIM26APRFUT",
+      "name": "GRASIM",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17111298"
+    },
+    {
+      "symbol": "NFO:GRASIM26MAYFUT",
+      "name": "GRASIM",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16939266"
+    },
+    {
+      "symbol": "NFO:GRASIM26JUNFUT",
+      "name": "GRASIM",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16022530"
+    },
+    {
+      "symbol": "NFO:HAL26APRFUT",
+      "name": "HAL",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17111554"
+    },
+    {
+      "symbol": "NFO:HAL26MAYFUT",
+      "name": "HAL",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16939522"
+    },
+    {
+      "symbol": "NFO:HAL26JUNFUT",
+      "name": "HAL",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16022786"
+    },
+    {
+      "symbol": "NFO:HAVELLS26APRFUT",
+      "name": "HAVELLS",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17111810"
+    },
+    {
+      "symbol": "NFO:HAVELLS26MAYFUT",
+      "name": "HAVELLS",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16941314"
+    },
+    {
+      "symbol": "NFO:HAVELLS26JUNFUT",
+      "name": "HAVELLS",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16023042"
+    },
+    {
+      "symbol": "NFO:HCLTECH26APRFUT",
+      "name": "HCLTECH",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17112066"
+    },
+    {
+      "symbol": "NFO:HCLTECH26MAYFUT",
+      "name": "HCLTECH",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16941570"
+    },
+    {
+      "symbol": "NFO:HCLTECH26JUNFUT",
+      "name": "HCLTECH",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16023298"
+    },
+    {
+      "symbol": "NFO:HDFCAMC26APRFUT",
+      "name": "HDFCAMC",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17112322"
+    },
+    {
+      "symbol": "NFO:HDFCAMC26MAYFUT",
+      "name": "HDFCAMC",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16941826"
+    },
+    {
+      "symbol": "NFO:HDFCAMC26JUNFUT",
+      "name": "HDFCAMC",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16023554"
+    },
+    {
+      "symbol": "NFO:HDFCBANK26APRFUT",
+      "name": "HDFCBANK",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17112578"
+    },
+    {
+      "symbol": "NFO:HDFCBANK26MAYFUT",
+      "name": "HDFCBANK",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16942082"
+    },
+    {
+      "symbol": "NFO:HDFCBANK26JUNFUT",
+      "name": "HDFCBANK",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16023810"
+    },
+    {
+      "symbol": "NFO:HDFCLIFE26APRFUT",
+      "name": "HDFCLIFE",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17112834"
+    },
+    {
+      "symbol": "NFO:HDFCLIFE26MAYFUT",
+      "name": "HDFCLIFE",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16943362"
+    },
+    {
+      "symbol": "NFO:HDFCLIFE26JUNFUT",
+      "name": "HDFCLIFE",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16024066"
+    },
+    {
+      "symbol": "NFO:HEROMOTOCO26APRFUT",
+      "name": "HEROMOTOCO",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17113090"
+    },
+    {
+      "symbol": "NFO:HEROMOTOCO26MAYFUT",
+      "name": "HEROMOTOCO",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16943618"
+    },
+    {
+      "symbol": "NFO:HEROMOTOCO26JUNFUT",
+      "name": "HEROMOTOCO",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16024322"
+    },
+    {
+      "symbol": "NFO:HINDALCO26APRFUT",
+      "name": "HINDALCO",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17113346"
+    },
+    {
+      "symbol": "NFO:HINDALCO26MAYFUT",
+      "name": "HINDALCO",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16943874"
+    },
+    {
+      "symbol": "NFO:HINDALCO26JUNFUT",
+      "name": "HINDALCO",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16024578"
+    },
+    {
+      "symbol": "NFO:HINDPETRO26APRFUT",
+      "name": "HINDPETRO",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17113602"
+    },
+    {
+      "symbol": "NFO:HINDPETRO26MAYFUT",
+      "name": "HINDPETRO",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16944130"
+    },
+    {
+      "symbol": "NFO:HINDPETRO26JUNFUT",
+      "name": "HINDPETRO",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16024834"
+    },
+    {
+      "symbol": "NFO:HINDUNILVR26APRFUT",
+      "name": "HINDUNILVR",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17113858"
+    },
+    {
+      "symbol": "NFO:HINDUNILVR26MAYFUT",
+      "name": "HINDUNILVR",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16944386"
+    },
+    {
+      "symbol": "NFO:HINDUNILVR26JUNFUT",
+      "name": "HINDUNILVR",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16025090"
+    },
+    {
+      "symbol": "NFO:HINDZINC26APRFUT",
+      "name": "HINDZINC",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17114114"
+    },
+    {
+      "symbol": "NFO:HINDZINC26MAYFUT",
+      "name": "HINDZINC",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16944642"
+    },
+    {
+      "symbol": "NFO:HINDZINC26JUNFUT",
+      "name": "HINDZINC",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16025346"
+    },
+    {
+      "symbol": "NFO:HUDCO26APRFUT",
+      "name": "HUDCO",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17114370"
+    },
+    {
+      "symbol": "NFO:HYUNDAI26APRFUT",
+      "name": "HYUNDAI",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "16025602"
+    },
+    {
+      "symbol": "NFO:HYUNDAI26MAYFUT",
+      "name": "HYUNDAI",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16025858"
+    },
+    {
+      "symbol": "NFO:HYUNDAI26JUNFUT",
+      "name": "HYUNDAI",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16026114"
+    },
+    {
+      "symbol": "NFO:ICICIBANK26APRFUT",
+      "name": "ICICIBANK",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17114626"
+    },
+    {
+      "symbol": "NFO:ICICIBANK26MAYFUT",
+      "name": "ICICIBANK",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16944898"
+    },
+    {
+      "symbol": "NFO:ICICIBANK26JUNFUT",
+      "name": "ICICIBANK",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16026626"
+    },
+    {
+      "symbol": "NFO:ICICIGI26APRFUT",
+      "name": "ICICIGI",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17114882"
+    },
+    {
+      "symbol": "NFO:ICICIGI26MAYFUT",
+      "name": "ICICIGI",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16945154"
+    },
+    {
+      "symbol": "NFO:ICICIGI26JUNFUT",
+      "name": "ICICIGI",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16026882"
+    },
+    {
+      "symbol": "NFO:ICICIPRULI26APRFUT",
+      "name": "ICICIPRULI",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17115138"
+    },
+    {
+      "symbol": "NFO:ICICIPRULI26MAYFUT",
+      "name": "ICICIPRULI",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16945410"
+    },
+    {
+      "symbol": "NFO:ICICIPRULI26JUNFUT",
+      "name": "ICICIPRULI",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16027138"
+    },
+    {
+      "symbol": "NFO:IDEA26APRFUT",
+      "name": "IDEA",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17115394"
+    },
+    {
+      "symbol": "NFO:IDEA26MAYFUT",
+      "name": "IDEA",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16945666"
+    },
+    {
+      "symbol": "NFO:IDEA26JUNFUT",
+      "name": "IDEA",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16027394"
+    },
+    {
+      "symbol": "NFO:IDFCFIRSTB26APRFUT",
+      "name": "IDFCFIRSTB",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17115650"
+    },
+    {
+      "symbol": "NFO:IDFCFIRSTB26MAYFUT",
+      "name": "IDFCFIRSTB",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16945922"
+    },
+    {
+      "symbol": "NFO:IDFCFIRSTB26JUNFUT",
+      "name": "IDFCFIRSTB",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16027650"
+    },
+    {
+      "symbol": "NFO:IEX26APRFUT",
+      "name": "IEX",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17115906"
+    },
+    {
+      "symbol": "NFO:IEX26MAYFUT",
+      "name": "IEX",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16946178"
+    },
+    {
+      "symbol": "NFO:IEX26JUNFUT",
+      "name": "IEX",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16027906"
+    },
+    {
+      "symbol": "NFO:INDHOTEL26APRFUT",
+      "name": "INDHOTEL",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17116162"
+    },
+    {
+      "symbol": "NFO:INDHOTEL26MAYFUT",
+      "name": "INDHOTEL",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16946434"
+    },
+    {
+      "symbol": "NFO:INDHOTEL26JUNFUT",
+      "name": "INDHOTEL",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16029442"
+    },
+    {
+      "symbol": "NFO:INDIANB26APRFUT",
+      "name": "INDIANB",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17116418"
+    },
+    {
+      "symbol": "NFO:INDIANB26MAYFUT",
+      "name": "INDIANB",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16946690"
+    },
+    {
+      "symbol": "NFO:INDIANB26JUNFUT",
+      "name": "INDIANB",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16029698"
+    },
+    {
+      "symbol": "NFO:INDIGO26APRFUT",
+      "name": "INDIGO",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17116674"
+    },
+    {
+      "symbol": "NFO:INDIGO26MAYFUT",
+      "name": "INDIGO",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16948482"
+    },
+    {
+      "symbol": "NFO:INDIGO26JUNFUT",
+      "name": "INDIGO",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16029954"
+    },
+    {
+      "symbol": "NFO:INDUSINDBK26APRFUT",
+      "name": "INDUSINDBK",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17116930"
+    },
+    {
+      "symbol": "NFO:INDUSINDBK26MAYFUT",
+      "name": "INDUSINDBK",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16948738"
+    },
+    {
+      "symbol": "NFO:INDUSINDBK26JUNFUT",
+      "name": "INDUSINDBK",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16030210"
+    },
+    {
+      "symbol": "NFO:INDUSTOWER26APRFUT",
+      "name": "INDUSTOWER",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17117186"
+    },
+    {
+      "symbol": "NFO:INDUSTOWER26MAYFUT",
+      "name": "INDUSTOWER",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16951298"
+    },
+    {
+      "symbol": "NFO:INDUSTOWER26JUNFUT",
+      "name": "INDUSTOWER",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16030466"
+    },
+    {
+      "symbol": "NFO:INFY26APRFUT",
+      "name": "INFY",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17117442"
+    },
+    {
+      "symbol": "NFO:INFY26MAYFUT",
+      "name": "INFY",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16951554"
+    },
+    {
+      "symbol": "NFO:INFY26JUNFUT",
+      "name": "INFY",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16030722"
+    },
+    {
+      "symbol": "NFO:INOXWIND26APRFUT",
+      "name": "INOXWIND",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17117698"
+    },
+    {
+      "symbol": "NFO:INOXWIND26MAYFUT",
+      "name": "INOXWIND",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16951810"
+    },
+    {
+      "symbol": "NFO:INOXWIND26JUNFUT",
+      "name": "INOXWIND",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16030978"
+    },
+    {
+      "symbol": "NFO:IOC26APRFUT",
+      "name": "IOC",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17117954"
+    },
+    {
+      "symbol": "NFO:IOC26MAYFUT",
+      "name": "IOC",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16953858"
+    },
+    {
+      "symbol": "NFO:IOC26JUNFUT",
+      "name": "IOC",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16031234"
+    },
+    {
+      "symbol": "NFO:IREDA26APRFUT",
+      "name": "IREDA",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17118210"
+    },
+    {
+      "symbol": "NFO:IREDA26MAYFUT",
+      "name": "IREDA",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16954114"
+    },
+    {
+      "symbol": "NFO:IREDA26JUNFUT",
+      "name": "IREDA",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16031490"
+    },
+    {
+      "symbol": "NFO:IRFC26APRFUT",
+      "name": "IRFC",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17118466"
+    },
+    {
+      "symbol": "NFO:IRFC26MAYFUT",
+      "name": "IRFC",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16954370"
+    },
+    {
+      "symbol": "NFO:IRFC26JUNFUT",
+      "name": "IRFC",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16031746"
+    },
+    {
+      "symbol": "NFO:ITC26APRFUT",
+      "name": "ITC",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17118722"
+    },
+    {
+      "symbol": "NFO:ITC26MAYFUT",
+      "name": "ITC",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16954626"
+    },
+    {
+      "symbol": "NFO:ITC26JUNFUT",
+      "name": "ITC",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16032002"
+    },
+    {
+      "symbol": "NFO:JINDALSTEL26APRFUT",
+      "name": "JINDALSTEL",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17118978"
+    },
+    {
+      "symbol": "NFO:JINDALSTEL26MAYFUT",
+      "name": "JINDALSTEL",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16954882"
+    },
+    {
+      "symbol": "NFO:JINDALSTEL26JUNFUT",
+      "name": "JINDALSTEL",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16033282"
+    },
+    {
+      "symbol": "NFO:JIOFIN26APRFUT",
+      "name": "JIOFIN",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17119234"
+    },
+    {
+      "symbol": "NFO:JIOFIN26MAYFUT",
+      "name": "JIOFIN",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16956162"
+    },
+    {
+      "symbol": "NFO:JIOFIN26JUNFUT",
+      "name": "JIOFIN",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16036098"
+    },
+    {
+      "symbol": "NFO:JSWENERGY26APRFUT",
+      "name": "JSWENERGY",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17119490"
+    },
+    {
+      "symbol": "NFO:JSWENERGY26MAYFUT",
+      "name": "JSWENERGY",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16956418"
+    },
+    {
+      "symbol": "NFO:JSWENERGY26JUNFUT",
+      "name": "JSWENERGY",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16036354"
+    },
+    {
+      "symbol": "NFO:JSWSTEEL26APRFUT",
+      "name": "JSWSTEEL",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17119746"
+    },
+    {
+      "symbol": "NFO:JSWSTEEL26MAYFUT",
+      "name": "JSWSTEEL",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16959746"
+    },
+    {
+      "symbol": "NFO:JSWSTEEL26JUNFUT",
+      "name": "JSWSTEEL",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16036610"
+    },
+    {
+      "symbol": "NFO:JUBLFOOD26APRFUT",
+      "name": "JUBLFOOD",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17120002"
+    },
+    {
+      "symbol": "NFO:JUBLFOOD26MAYFUT",
+      "name": "JUBLFOOD",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16960002"
+    },
+    {
+      "symbol": "NFO:JUBLFOOD26JUNFUT",
+      "name": "JUBLFOOD",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16036866"
+    },
+    {
+      "symbol": "NFO:KALYANKJIL26APRFUT",
+      "name": "KALYANKJIL",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17120258"
+    },
+    {
+      "symbol": "NFO:KALYANKJIL26MAYFUT",
+      "name": "KALYANKJIL",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16960258"
+    },
+    {
+      "symbol": "NFO:KALYANKJIL26JUNFUT",
+      "name": "KALYANKJIL",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16037122"
+    },
+    {
+      "symbol": "NFO:KAYNES26APRFUT",
+      "name": "KAYNES",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17120514"
+    },
+    {
+      "symbol": "NFO:KAYNES26MAYFUT",
+      "name": "KAYNES",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16960514"
+    },
+    {
+      "symbol": "NFO:KAYNES26JUNFUT",
+      "name": "KAYNES",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16037378"
+    },
+    {
+      "symbol": "NFO:KEI26APRFUT",
+      "name": "KEI",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17120770"
+    },
+    {
+      "symbol": "NFO:KEI26MAYFUT",
+      "name": "KEI",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16960770"
+    },
+    {
+      "symbol": "NFO:KEI26JUNFUT",
+      "name": "KEI",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16037634"
+    },
+    {
+      "symbol": "NFO:KFINTECH26APRFUT",
+      "name": "KFINTECH",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17121026"
+    },
+    {
+      "symbol": "NFO:KFINTECH26MAYFUT",
+      "name": "KFINTECH",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16961026"
+    },
+    {
+      "symbol": "NFO:KFINTECH26JUNFUT",
+      "name": "KFINTECH",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16037890"
+    },
+    {
+      "symbol": "NFO:KOTAKBANK26APRFUT",
+      "name": "KOTAKBANK",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17121282"
+    },
+    {
+      "symbol": "NFO:KOTAKBANK26MAYFUT",
+      "name": "KOTAKBANK",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16961282"
+    },
+    {
+      "symbol": "NFO:KOTAKBANK26JUNFUT",
+      "name": "KOTAKBANK",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16040706"
+    },
+    {
+      "symbol": "NFO:KPITTECH26APRFUT",
+      "name": "KPITTECH",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17121538"
+    },
+    {
+      "symbol": "NFO:KPITTECH26MAYFUT",
+      "name": "KPITTECH",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16961538"
+    },
+    {
+      "symbol": "NFO:KPITTECH26JUNFUT",
+      "name": "KPITTECH",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16040962"
+    },
+    {
+      "symbol": "NFO:LAURUSLABS26APRFUT",
+      "name": "LAURUSLABS",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17121794"
+    },
+    {
+      "symbol": "NFO:LAURUSLABS26MAYFUT",
+      "name": "LAURUSLABS",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16962306"
+    },
+    {
+      "symbol": "NFO:LAURUSLABS26JUNFUT",
+      "name": "LAURUSLABS",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16041218"
+    },
+    {
+      "symbol": "NFO:LICHSGFIN26APRFUT",
+      "name": "LICHSGFIN",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17122050"
+    },
+    {
+      "symbol": "NFO:LICHSGFIN26MAYFUT",
+      "name": "LICHSGFIN",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16962562"
+    },
+    {
+      "symbol": "NFO:LICHSGFIN26JUNFUT",
+      "name": "LICHSGFIN",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16041474"
+    },
+    {
+      "symbol": "NFO:LICI26APRFUT",
+      "name": "LICI",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17122306"
+    },
+    {
+      "symbol": "NFO:LICI26MAYFUT",
+      "name": "LICI",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16962818"
+    },
+    {
+      "symbol": "NFO:LICI26JUNFUT",
+      "name": "LICI",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16041730"
+    },
+    {
+      "symbol": "NFO:LODHA26APRFUT",
+      "name": "LODHA",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17122562"
+    },
+    {
+      "symbol": "NFO:LODHA26MAYFUT",
+      "name": "LODHA",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16963074"
+    },
+    {
+      "symbol": "NFO:LODHA26JUNFUT",
+      "name": "LODHA",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16041986"
+    },
+    {
+      "symbol": "NFO:LT26APRFUT",
+      "name": "LT",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17122818"
+    },
+    {
+      "symbol": "NFO:LT26MAYFUT",
+      "name": "LT",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16964866"
+    },
+    {
+      "symbol": "NFO:LT26JUNFUT",
+      "name": "LT",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16042242"
+    },
+    {
+      "symbol": "NFO:LTF26APRFUT",
+      "name": "LTF",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17123074"
+    },
+    {
+      "symbol": "NFO:LTF26MAYFUT",
+      "name": "LTF",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16965122"
+    },
+    {
+      "symbol": "NFO:LTF26JUNFUT",
+      "name": "LTF",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16042498"
+    },
+    {
+      "symbol": "NFO:LTM26APRFUT",
+      "name": "LTM",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17123330"
+    },
+    {
+      "symbol": "NFO:LTM26MAYFUT",
+      "name": "LTM",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16965378"
+    },
+    {
+      "symbol": "NFO:LTM26JUNFUT",
+      "name": "LTM",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16044290"
+    },
+    {
+      "symbol": "NFO:LUPIN26APRFUT",
+      "name": "LUPIN",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17123586"
+    },
+    {
+      "symbol": "NFO:LUPIN26MAYFUT",
+      "name": "LUPIN",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16965634"
+    },
+    {
+      "symbol": "NFO:LUPIN26JUNFUT",
+      "name": "LUPIN",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16044546"
+    },
+    {
+      "symbol": "NFO:MANAPPURAM26APRFUT",
+      "name": "MANAPPURAM",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17124098"
+    },
+    {
+      "symbol": "NFO:MANAPPURAM26MAYFUT",
+      "name": "MANAPPURAM",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16966146"
+    },
+    {
+      "symbol": "NFO:MANAPPURAM26JUNFUT",
+      "name": "MANAPPURAM",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16046082"
+    },
+    {
+      "symbol": "NFO:MANKIND26APRFUT",
+      "name": "MANKIND",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17124354"
+    },
+    {
+      "symbol": "NFO:MANKIND26MAYFUT",
+      "name": "MANKIND",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16966402"
+    },
+    {
+      "symbol": "NFO:MANKIND26JUNFUT",
+      "name": "MANKIND",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16046338"
+    },
+    {
+      "symbol": "NFO:MARICO26APRFUT",
+      "name": "MARICO",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17125378"
+    },
+    {
+      "symbol": "NFO:MARICO26MAYFUT",
+      "name": "MARICO",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16966658"
+    },
+    {
+      "symbol": "NFO:MARICO26JUNFUT",
+      "name": "MARICO",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16046594"
+    },
+    {
+      "symbol": "NFO:MARUTI26APRFUT",
+      "name": "MARUTI",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17125634"
+    },
+    {
+      "symbol": "NFO:MARUTI26MAYFUT",
+      "name": "MARUTI",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16970242"
+    },
+    {
+      "symbol": "NFO:MARUTI26JUNFUT",
+      "name": "MARUTI",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16046850"
+    },
+    {
+      "symbol": "NFO:MAXHEALTH26APRFUT",
+      "name": "MAXHEALTH",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17125890"
+    },
+    {
+      "symbol": "NFO:MAXHEALTH26MAYFUT",
+      "name": "MAXHEALTH",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16970498"
+    },
+    {
+      "symbol": "NFO:MAXHEALTH26JUNFUT",
+      "name": "MAXHEALTH",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16047106"
+    },
+    {
+      "symbol": "NFO:MAZDOCK26APRFUT",
+      "name": "MAZDOCK",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17126146"
+    },
+    {
+      "symbol": "NFO:MAZDOCK26MAYFUT",
+      "name": "MAZDOCK",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16970754"
+    },
+    {
+      "symbol": "NFO:MAZDOCK26JUNFUT",
+      "name": "MAZDOCK",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16047362"
+    },
+    {
+      "symbol": "NFO:MCX26APRFUT",
+      "name": "MCX",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17126402"
+    },
+    {
+      "symbol": "NFO:MCX26MAYFUT",
+      "name": "MCX",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16971010"
+    },
+    {
+      "symbol": "NFO:MCX26JUNFUT",
+      "name": "MCX",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16047618"
+    },
+    {
+      "symbol": "NFO:MFSL26APRFUT",
+      "name": "MFSL",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17126658"
+    },
+    {
+      "symbol": "NFO:MFSL26MAYFUT",
+      "name": "MFSL",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16971266"
+    },
+    {
+      "symbol": "NFO:MFSL26JUNFUT",
+      "name": "MFSL",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16047874"
+    },
+    {
+      "symbol": "NFO:MIDCPNIFTY26APRFUT",
+      "name": "MIDCPNIFTY",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17072642"
+    },
+    {
+      "symbol": "NFO:MIDCPNIFTY26MAYFUT",
+      "name": "MIDCPNIFTY",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16913922"
+    },
+    {
+      "symbol": "NFO:MIDCPNIFTY26JUNFUT",
+      "name": "MIDCPNIFTY",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "15955970"
+    },
+    {
+      "symbol": "NFO:MOTHERSON26APRFUT",
+      "name": "MOTHERSON",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17126914"
+    },
+    {
+      "symbol": "NFO:MOTHERSON26MAYFUT",
+      "name": "MOTHERSON",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16971522"
+    },
+    {
+      "symbol": "NFO:MOTHERSON26JUNFUT",
+      "name": "MOTHERSON",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16048130"
+    },
+    {
+      "symbol": "NFO:MOTILALOFS26APRFUT",
+      "name": "MOTILALOFS",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "16048386"
+    },
+    {
+      "symbol": "NFO:MOTILALOFS26MAYFUT",
+      "name": "MOTILALOFS",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16048642"
+    },
+    {
+      "symbol": "NFO:MOTILALOFS26JUNFUT",
+      "name": "MOTILALOFS",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16049410"
+    },
+    {
+      "symbol": "NFO:MPHASIS26APRFUT",
+      "name": "MPHASIS",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17127170"
+    },
+    {
+      "symbol": "NFO:MPHASIS26MAYFUT",
+      "name": "MPHASIS",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16971778"
+    },
+    {
+      "symbol": "NFO:MPHASIS26JUNFUT",
+      "name": "MPHASIS",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16049666"
+    },
+    {
+      "symbol": "NFO:MUTHOOTFIN26APRFUT",
+      "name": "MUTHOOTFIN",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17127426"
+    },
+    {
+      "symbol": "NFO:MUTHOOTFIN26MAYFUT",
+      "name": "MUTHOOTFIN",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16972034"
+    },
+    {
+      "symbol": "NFO:MUTHOOTFIN26JUNFUT",
+      "name": "MUTHOOTFIN",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16050434"
+    },
+    {
+      "symbol": "NFO:NATIONALUM26APRFUT",
+      "name": "NATIONALUM",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17127682"
+    },
+    {
+      "symbol": "NFO:NATIONALUM26MAYFUT",
+      "name": "NATIONALUM",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16972290"
+    },
+    {
+      "symbol": "NFO:NATIONALUM26JUNFUT",
+      "name": "NATIONALUM",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16054018"
+    },
+    {
+      "symbol": "NFO:NAUKRI26APRFUT",
+      "name": "NAUKRI",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17127938"
+    },
+    {
+      "symbol": "NFO:NAUKRI26MAYFUT",
+      "name": "NAUKRI",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16972546"
+    },
+    {
+      "symbol": "NFO:NAUKRI26JUNFUT",
+      "name": "NAUKRI",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16054274"
+    },
+    {
+      "symbol": "NFO:NBCC26APRFUT",
+      "name": "NBCC",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17128194"
+    },
+    {
+      "symbol": "NFO:NBCC26MAYFUT",
+      "name": "NBCC",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16973314"
+    },
+    {
+      "symbol": "NFO:NBCC26JUNFUT",
+      "name": "NBCC",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16054530"
+    },
+    {
+      "symbol": "NFO:NESTLEIND26APRFUT",
+      "name": "NESTLEIND",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17128450"
+    },
+    {
+      "symbol": "NFO:NESTLEIND26MAYFUT",
+      "name": "NESTLEIND",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16973570"
+    },
+    {
+      "symbol": "NFO:NESTLEIND26JUNFUT",
+      "name": "NESTLEIND",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16054786"
+    },
+    {
+      "symbol": "NFO:NHPC26APRFUT",
+      "name": "NHPC",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17128706"
+    },
+    {
+      "symbol": "NFO:NHPC26MAYFUT",
+      "name": "NHPC",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16973826"
+    },
+    {
+      "symbol": "NFO:NHPC26JUNFUT",
+      "name": "NHPC",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16055042"
+    },
+    {
+      "symbol": "NFO:NMDC26APRFUT",
+      "name": "NMDC",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17138434"
+    },
+    {
+      "symbol": "NFO:NMDC26MAYFUT",
+      "name": "NMDC",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16974082"
+    },
+    {
+      "symbol": "NFO:NMDC26JUNFUT",
+      "name": "NMDC",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16055298"
+    },
+    {
+      "symbol": "NFO:NTPC26APRFUT",
+      "name": "NTPC",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17138946"
+    },
+    {
+      "symbol": "NFO:NTPC26MAYFUT",
+      "name": "NTPC",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16975874"
+    },
+    {
+      "symbol": "NFO:NTPC26JUNFUT",
+      "name": "NTPC",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16055554"
+    },
+    {
+      "symbol": "NFO:NUVAMA26APRFUT",
+      "name": "NUVAMA",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17139202"
+    },
+    {
+      "symbol": "NFO:NUVAMA26MAYFUT",
+      "name": "NUVAMA",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16976130"
+    },
+    {
+      "symbol": "NFO:NUVAMA26JUNFUT",
+      "name": "NUVAMA",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16055810"
+    },
+    {
+      "symbol": "NFO:NYKAA26APRFUT",
+      "name": "NYKAA",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17139970"
+    },
+    {
+      "symbol": "NFO:NYKAA26MAYFUT",
+      "name": "NYKAA",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16976386"
+    },
+    {
+      "symbol": "NFO:NYKAA26JUNFUT",
+      "name": "NYKAA",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16056066"
+    },
+    {
+      "symbol": "NFO:OBEROIRLTY26APRFUT",
+      "name": "OBEROIRLTY",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17140226"
+    },
+    {
+      "symbol": "NFO:OBEROIRLTY26MAYFUT",
+      "name": "OBEROIRLTY",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16976642"
+    },
+    {
+      "symbol": "NFO:OBEROIRLTY26JUNFUT",
+      "name": "OBEROIRLTY",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16059138"
+    },
+    {
+      "symbol": "NFO:OFSS26APRFUT",
+      "name": "OFSS",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17140482"
+    },
+    {
+      "symbol": "NFO:OFSS26MAYFUT",
+      "name": "OFSS",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16976898"
+    },
+    {
+      "symbol": "NFO:OFSS26JUNFUT",
+      "name": "OFSS",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16059394"
+    },
+    {
+      "symbol": "NFO:OIL26APRFUT",
+      "name": "OIL",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17141506"
+    },
+    {
+      "symbol": "NFO:OIL26MAYFUT",
+      "name": "OIL",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16977154"
+    },
+    {
+      "symbol": "NFO:OIL26JUNFUT",
+      "name": "OIL",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16060674"
+    },
+    {
+      "symbol": "NFO:ONGC26APRFUT",
+      "name": "ONGC",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17141762"
+    },
+    {
+      "symbol": "NFO:ONGC26MAYFUT",
+      "name": "ONGC",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16977410"
+    },
+    {
+      "symbol": "NFO:ONGC26JUNFUT",
+      "name": "ONGC",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16060930"
+    },
+    {
+      "symbol": "NFO:PAGEIND26APRFUT",
+      "name": "PAGEIND",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17142018"
+    },
+    {
+      "symbol": "NFO:PAGEIND26MAYFUT",
+      "name": "PAGEIND",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16977666"
+    },
+    {
+      "symbol": "NFO:PAGEIND26JUNFUT",
+      "name": "PAGEIND",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16061186"
+    },
+    {
+      "symbol": "NFO:PATANJALI26APRFUT",
+      "name": "PATANJALI",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17142274"
+    },
+    {
+      "symbol": "NFO:PATANJALI26MAYFUT",
+      "name": "PATANJALI",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16977922"
+    },
+    {
+      "symbol": "NFO:PATANJALI26JUNFUT",
+      "name": "PATANJALI",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16062466"
+    },
+    {
+      "symbol": "NFO:PAYTM26APRFUT",
+      "name": "PAYTM",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17142530"
+    },
+    {
+      "symbol": "NFO:PAYTM26MAYFUT",
+      "name": "PAYTM",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16978178"
+    },
+    {
+      "symbol": "NFO:PAYTM26JUNFUT",
+      "name": "PAYTM",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16062722"
+    },
+    {
+      "symbol": "NFO:PERSISTENT26APRFUT",
+      "name": "PERSISTENT",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17142786"
+    },
+    {
+      "symbol": "NFO:PERSISTENT26MAYFUT",
+      "name": "PERSISTENT",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16978434"
+    },
+    {
+      "symbol": "NFO:PERSISTENT26JUNFUT",
+      "name": "PERSISTENT",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16067074"
+    },
+    {
+      "symbol": "NFO:PETRONET26APRFUT",
+      "name": "PETRONET",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17143042"
+    },
+    {
+      "symbol": "NFO:PETRONET26MAYFUT",
+      "name": "PETRONET",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16978690"
+    },
+    {
+      "symbol": "NFO:PETRONET26JUNFUT",
+      "name": "PETRONET",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16067330"
+    },
+    {
+      "symbol": "NFO:PFC26APRFUT",
+      "name": "PFC",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17143298"
+    },
+    {
+      "symbol": "NFO:PFC26MAYFUT",
+      "name": "PFC",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16978946"
+    },
+    {
+      "symbol": "NFO:PFC26JUNFUT",
+      "name": "PFC",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16067586"
+    },
+    {
+      "symbol": "NFO:PGEL26APRFUT",
+      "name": "PGEL",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17143554"
+    },
+    {
+      "symbol": "NFO:PGEL26MAYFUT",
+      "name": "PGEL",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16979714"
+    },
+    {
+      "symbol": "NFO:PGEL26JUNFUT",
+      "name": "PGEL",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16067842"
+    },
+    {
+      "symbol": "NFO:PHOENIXLTD26APRFUT",
+      "name": "PHOENIXLTD",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17143810"
+    },
+    {
+      "symbol": "NFO:PHOENIXLTD26MAYFUT",
+      "name": "PHOENIXLTD",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16980482"
+    },
+    {
+      "symbol": "NFO:PHOENIXLTD26JUNFUT",
+      "name": "PHOENIXLTD",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16068098"
+    },
+    {
+      "symbol": "NFO:PIDILITIND26APRFUT",
+      "name": "PIDILITIND",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17144066"
+    },
+    {
+      "symbol": "NFO:PIDILITIND26MAYFUT",
+      "name": "PIDILITIND",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16980738"
+    },
+    {
+      "symbol": "NFO:PIDILITIND26JUNFUT",
+      "name": "PIDILITIND",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16069378"
+    },
+    {
+      "symbol": "NFO:PIIND26APRFUT",
+      "name": "PIIND",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17144322"
+    },
+    {
+      "symbol": "NFO:PIIND26MAYFUT",
+      "name": "PIIND",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16980994"
+    },
+    {
+      "symbol": "NFO:PIIND26JUNFUT",
+      "name": "PIIND",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16069634"
+    },
+    {
+      "symbol": "NFO:PNB26APRFUT",
+      "name": "PNB",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17147650"
+    },
+    {
+      "symbol": "NFO:PNB26MAYFUT",
+      "name": "PNB",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16981250"
+    },
+    {
+      "symbol": "NFO:PNB26JUNFUT",
+      "name": "PNB",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16069890"
+    },
+    {
+      "symbol": "NFO:PNBHOUSING26APRFUT",
+      "name": "PNBHOUSING",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17147906"
+    },
+    {
+      "symbol": "NFO:PNBHOUSING26MAYFUT",
+      "name": "PNBHOUSING",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16981506"
+    },
+    {
+      "symbol": "NFO:PNBHOUSING26JUNFUT",
+      "name": "PNBHOUSING",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16070914"
+    },
+    {
+      "symbol": "NFO:POLICYBZR26APRFUT",
+      "name": "POLICYBZR",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17148162"
+    },
+    {
+      "symbol": "NFO:POLICYBZR26MAYFUT",
+      "name": "POLICYBZR",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16981762"
+    },
+    {
+      "symbol": "NFO:POLICYBZR26JUNFUT",
+      "name": "POLICYBZR",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16073986"
+    },
+    {
+      "symbol": "NFO:POLYCAB26APRFUT",
+      "name": "POLYCAB",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17148418"
+    },
+    {
+      "symbol": "NFO:POLYCAB26MAYFUT",
+      "name": "POLYCAB",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16982018"
+    },
+    {
+      "symbol": "NFO:POLYCAB26JUNFUT",
+      "name": "POLYCAB",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16074242"
+    },
+    {
+      "symbol": "NFO:POWERGRID26APRFUT",
+      "name": "POWERGRID",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17148674"
+    },
+    {
+      "symbol": "NFO:POWERGRID26MAYFUT",
+      "name": "POWERGRID",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16983298"
+    },
+    {
+      "symbol": "NFO:POWERGRID26JUNFUT",
+      "name": "POWERGRID",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16074498"
+    },
+    {
+      "symbol": "NFO:POWERINDIA26APRFUT",
+      "name": "POWERINDIA",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17148930"
+    },
+    {
+      "symbol": "NFO:POWERINDIA26MAYFUT",
+      "name": "POWERINDIA",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16983554"
+    },
+    {
+      "symbol": "NFO:POWERINDIA26JUNFUT",
+      "name": "POWERINDIA",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16074754"
+    },
+    {
+      "symbol": "NFO:PPLPHARMA26APRFUT",
+      "name": "PPLPHARMA",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17151490"
+    },
+    {
+      "symbol": "NFO:PREMIERENE26APRFUT",
+      "name": "PREMIERENE",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17151746"
+    },
+    {
+      "symbol": "NFO:PREMIERENE26MAYFUT",
+      "name": "PREMIERENE",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16985858"
+    },
+    {
+      "symbol": "NFO:PREMIERENE26JUNFUT",
+      "name": "PREMIERENE",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16075010"
+    },
+    {
+      "symbol": "NFO:PRESTIGE26APRFUT",
+      "name": "PRESTIGE",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17152002"
+    },
+    {
+      "symbol": "NFO:PRESTIGE26MAYFUT",
+      "name": "PRESTIGE",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16986114"
+    },
+    {
+      "symbol": "NFO:PRESTIGE26JUNFUT",
+      "name": "PRESTIGE",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16075266"
+    },
+    {
+      "symbol": "NFO:RBLBANK26APRFUT",
+      "name": "RBLBANK",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17152258"
+    },
+    {
+      "symbol": "NFO:RBLBANK26MAYFUT",
+      "name": "RBLBANK",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16986370"
+    },
+    {
+      "symbol": "NFO:RBLBANK26JUNFUT",
+      "name": "RBLBANK",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16075522"
+    },
+    {
+      "symbol": "NFO:RECLTD26APRFUT",
+      "name": "RECLTD",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17152514"
+    },
+    {
+      "symbol": "NFO:RECLTD26MAYFUT",
+      "name": "RECLTD",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16986626"
+    },
+    {
+      "symbol": "NFO:RECLTD26JUNFUT",
+      "name": "RECLTD",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16076034"
+    },
+    {
+      "symbol": "NFO:RELIANCE26APRFUT",
+      "name": "RELIANCE",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17152770"
+    },
+    {
+      "symbol": "NFO:RELIANCE26MAYFUT",
+      "name": "RELIANCE",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16986882"
+    },
+    {
+      "symbol": "NFO:RELIANCE26JUNFUT",
+      "name": "RELIANCE",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16077314"
+    },
+    {
+      "symbol": "NFO:RVNL26APRFUT",
+      "name": "RVNL",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17153026"
+    },
+    {
+      "symbol": "NFO:RVNL26MAYFUT",
+      "name": "RVNL",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16987138"
+    },
+    {
+      "symbol": "NFO:RVNL26JUNFUT",
+      "name": "RVNL",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16077570"
+    },
+    {
+      "symbol": "NFO:SAIL26APRFUT",
+      "name": "SAIL",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17153282"
+    },
+    {
+      "symbol": "NFO:SAIL26MAYFUT",
+      "name": "SAIL",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16987394"
+    },
+    {
+      "symbol": "NFO:SAIL26JUNFUT",
+      "name": "SAIL",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16078338"
+    },
+    {
+      "symbol": "NFO:SAMMAANCAP26APRFUT",
+      "name": "SAMMAANCAP",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17153538"
+    },
+    {
+      "symbol": "NFO:SAMMAANCAP26MAYFUT",
+      "name": "SAMMAANCAP",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16987650"
+    },
+    {
+      "symbol": "NFO:SAMMAANCAP26JUNFUT",
+      "name": "SAMMAANCAP",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16078594"
+    },
+    {
+      "symbol": "NFO:SBICARD26APRFUT",
+      "name": "SBICARD",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17153794"
+    },
+    {
+      "symbol": "NFO:SBICARD26MAYFUT",
+      "name": "SBICARD",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16987906"
+    },
+    {
+      "symbol": "NFO:SBICARD26JUNFUT",
+      "name": "SBICARD",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16079362"
+    },
+    {
+      "symbol": "NFO:SBILIFE26APRFUT",
+      "name": "SBILIFE",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17154050"
+    },
+    {
+      "symbol": "NFO:SBILIFE26MAYFUT",
+      "name": "SBILIFE",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16988674"
+    },
+    {
+      "symbol": "NFO:SBILIFE26JUNFUT",
+      "name": "SBILIFE",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16079618"
+    },
+    {
+      "symbol": "NFO:SBIN26APRFUT",
+      "name": "SBIN",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17154306"
+    },
+    {
+      "symbol": "NFO:SBIN26MAYFUT",
+      "name": "SBIN",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16988930"
+    },
+    {
+      "symbol": "NFO:SBIN26JUNFUT",
+      "name": "SBIN",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16079874"
+    },
+    {
+      "symbol": "NFO:SHREECEM26APRFUT",
+      "name": "SHREECEM",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17154562"
+    },
+    {
+      "symbol": "NFO:SHREECEM26MAYFUT",
+      "name": "SHREECEM",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16989186"
+    },
+    {
+      "symbol": "NFO:SHREECEM26JUNFUT",
+      "name": "SHREECEM",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16080130"
+    },
+    {
+      "symbol": "NFO:SHRIRAMFIN26APRFUT",
+      "name": "SHRIRAMFIN",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17154818"
+    },
+    {
+      "symbol": "NFO:SHRIRAMFIN26MAYFUT",
+      "name": "SHRIRAMFIN",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16989442"
+    },
+    {
+      "symbol": "NFO:SHRIRAMFIN26JUNFUT",
+      "name": "SHRIRAMFIN",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16080898"
+    },
+    {
+      "symbol": "NFO:SIEMENS26APRFUT",
+      "name": "SIEMENS",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17155074"
+    },
+    {
+      "symbol": "NFO:SIEMENS26MAYFUT",
+      "name": "SIEMENS",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16992514"
+    },
+    {
+      "symbol": "NFO:SIEMENS26JUNFUT",
+      "name": "SIEMENS",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16083202"
+    },
+    {
+      "symbol": "NFO:SOLARINDS26APRFUT",
+      "name": "SOLARINDS",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17155330"
+    },
+    {
+      "symbol": "NFO:SOLARINDS26MAYFUT",
+      "name": "SOLARINDS",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16992770"
+    },
+    {
+      "symbol": "NFO:SOLARINDS26JUNFUT",
+      "name": "SOLARINDS",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16083458"
+    },
+    {
+      "symbol": "NFO:SONACOMS26APRFUT",
+      "name": "SONACOMS",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17155586"
+    },
+    {
+      "symbol": "NFO:SONACOMS26MAYFUT",
+      "name": "SONACOMS",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16993026"
+    },
+    {
+      "symbol": "NFO:SONACOMS26JUNFUT",
+      "name": "SONACOMS",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16083714"
+    },
+    {
+      "symbol": "NFO:SRF26APRFUT",
+      "name": "SRF",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17155842"
+    },
+    {
+      "symbol": "NFO:SRF26MAYFUT",
+      "name": "SRF",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16993282"
+    },
+    {
+      "symbol": "NFO:SRF26JUNFUT",
+      "name": "SRF",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16084482"
+    },
+    {
+      "symbol": "NFO:SUNPHARMA26APRFUT",
+      "name": "SUNPHARMA",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17156098"
+    },
+    {
+      "symbol": "NFO:SUNPHARMA26MAYFUT",
+      "name": "SUNPHARMA",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16993538"
+    },
+    {
+      "symbol": "NFO:SUNPHARMA26JUNFUT",
+      "name": "SUNPHARMA",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16086530"
+    },
+    {
+      "symbol": "NFO:SUPREMEIND26APRFUT",
+      "name": "SUPREMEIND",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17156354"
+    },
+    {
+      "symbol": "NFO:SUPREMEIND26MAYFUT",
+      "name": "SUPREMEIND",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16993794"
+    },
+    {
+      "symbol": "NFO:SUPREMEIND26JUNFUT",
+      "name": "SUPREMEIND",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16086786"
+    },
+    {
+      "symbol": "NFO:SUZLON26APRFUT",
+      "name": "SUZLON",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17156610"
+    },
+    {
+      "symbol": "NFO:SUZLON26MAYFUT",
+      "name": "SUZLON",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16994050"
+    },
+    {
+      "symbol": "NFO:SUZLON26JUNFUT",
+      "name": "SUZLON",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16087042"
+    },
+    {
+      "symbol": "NFO:SWIGGY26APRFUT",
+      "name": "SWIGGY",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17156866"
+    },
+    {
+      "symbol": "NFO:SWIGGY26MAYFUT",
+      "name": "SWIGGY",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16994306"
+    },
+    {
+      "symbol": "NFO:SWIGGY26JUNFUT",
+      "name": "SWIGGY",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16087298"
+    },
+    {
+      "symbol": "NFO:TATACONSUM26APRFUT",
+      "name": "TATACONSUM",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17157122"
+    },
+    {
+      "symbol": "NFO:TATACONSUM26MAYFUT",
+      "name": "TATACONSUM",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16994562"
+    },
+    {
+      "symbol": "NFO:TATACONSUM26JUNFUT",
+      "name": "TATACONSUM",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16087554"
+    },
+    {
+      "symbol": "NFO:TATAELXSI26APRFUT",
+      "name": "TATAELXSI",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17157378"
+    },
+    {
+      "symbol": "NFO:TATAELXSI26MAYFUT",
+      "name": "TATAELXSI",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16994818"
+    },
+    {
+      "symbol": "NFO:TATAELXSI26JUNFUT",
+      "name": "TATAELXSI",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16089090"
+    },
+    {
+      "symbol": "NFO:TATAPOWER26APRFUT",
+      "name": "TATAPOWER",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17157634"
+    },
+    {
+      "symbol": "NFO:TATAPOWER26MAYFUT",
+      "name": "TATAPOWER",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16995074"
+    },
+    {
+      "symbol": "NFO:TATAPOWER26JUNFUT",
+      "name": "TATAPOWER",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16089346"
+    },
+    {
+      "symbol": "NFO:TATASTEEL26APRFUT",
+      "name": "TATASTEEL",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17157890"
+    },
+    {
+      "symbol": "NFO:TATASTEEL26MAYFUT",
+      "name": "TATASTEEL",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16995330"
+    },
+    {
+      "symbol": "NFO:TATASTEEL26JUNFUT",
+      "name": "TATASTEEL",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16089602"
+    },
+    {
+      "symbol": "NFO:TATATECH26APRFUT",
+      "name": "TATATECH",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17158146"
+    },
+    {
+      "symbol": "NFO:TCS26APRFUT",
+      "name": "TCS",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17158402"
+    },
+    {
+      "symbol": "NFO:TCS26MAYFUT",
+      "name": "TCS",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16995586"
+    },
+    {
+      "symbol": "NFO:TCS26JUNFUT",
+      "name": "TCS",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16089858"
+    },
+    {
+      "symbol": "NFO:TECHM26APRFUT",
+      "name": "TECHM",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17158658"
+    },
+    {
+      "symbol": "NFO:TECHM26MAYFUT",
+      "name": "TECHM",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16995842"
+    },
+    {
+      "symbol": "NFO:TECHM26JUNFUT",
+      "name": "TECHM",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16090114"
+    },
+    {
+      "symbol": "NFO:TIINDIA26APRFUT",
+      "name": "TIINDIA",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17158914"
+    },
+    {
+      "symbol": "NFO:TIINDIA26MAYFUT",
+      "name": "TIINDIA",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16996098"
+    },
+    {
+      "symbol": "NFO:TIINDIA26JUNFUT",
+      "name": "TIINDIA",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16090370"
+    },
+    {
+      "symbol": "NFO:TITAN26APRFUT",
+      "name": "TITAN",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17159170"
+    },
+    {
+      "symbol": "NFO:TITAN26MAYFUT",
+      "name": "TITAN",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16996354"
+    },
+    {
+      "symbol": "NFO:TITAN26JUNFUT",
+      "name": "TITAN",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16090626"
+    },
+    {
+      "symbol": "NFO:TMPV26APRFUT",
+      "name": "TMPV",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17159426"
+    },
+    {
+      "symbol": "NFO:TMPV26MAYFUT",
+      "name": "TMPV",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16996610"
+    },
+    {
+      "symbol": "NFO:TMPV26JUNFUT",
+      "name": "TMPV",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16090882"
+    },
+    {
+      "symbol": "NFO:TORNTPHARM26APRFUT",
+      "name": "TORNTPHARM",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17159682"
+    },
+    {
+      "symbol": "NFO:TORNTPHARM26MAYFUT",
+      "name": "TORNTPHARM",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16996866"
+    },
+    {
+      "symbol": "NFO:TORNTPHARM26JUNFUT",
+      "name": "TORNTPHARM",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16091650"
+    },
+    {
+      "symbol": "NFO:TORNTPOWER26APRFUT",
+      "name": "TORNTPOWER",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17159938"
+    },
+    {
+      "symbol": "NFO:TRENT26APRFUT",
+      "name": "TRENT",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17160194"
+    },
+    {
+      "symbol": "NFO:TRENT26MAYFUT",
+      "name": "TRENT",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16997122"
+    },
+    {
+      "symbol": "NFO:TRENT26JUNFUT",
+      "name": "TRENT",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16091906"
+    },
+    {
+      "symbol": "NFO:TVSMOTOR26APRFUT",
+      "name": "TVSMOTOR",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17160450"
+    },
+    {
+      "symbol": "NFO:TVSMOTOR26MAYFUT",
+      "name": "TVSMOTOR",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16997378"
+    },
+    {
+      "symbol": "NFO:TVSMOTOR26JUNFUT",
+      "name": "TVSMOTOR",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16092162"
+    },
+    {
+      "symbol": "NFO:ULTRACEMCO26APRFUT",
+      "name": "ULTRACEMCO",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17160706"
+    },
+    {
+      "symbol": "NFO:ULTRACEMCO26MAYFUT",
+      "name": "ULTRACEMCO",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16997634"
+    },
+    {
+      "symbol": "NFO:ULTRACEMCO26JUNFUT",
+      "name": "ULTRACEMCO",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16092418"
+    },
+    {
+      "symbol": "NFO:UNIONBANK26APRFUT",
+      "name": "UNIONBANK",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17160962"
+    },
+    {
+      "symbol": "NFO:UNIONBANK26MAYFUT",
+      "name": "UNIONBANK",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16997890"
+    },
+    {
+      "symbol": "NFO:UNIONBANK26JUNFUT",
+      "name": "UNIONBANK",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16092674"
+    },
+    {
+      "symbol": "NFO:UNITDSPR26APRFUT",
+      "name": "UNITDSPR",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17161218"
+    },
+    {
+      "symbol": "NFO:UNITDSPR26MAYFUT",
+      "name": "UNITDSPR",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16998658"
+    },
+    {
+      "symbol": "NFO:UNITDSPR26JUNFUT",
+      "name": "UNITDSPR",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16092930"
+    },
+    {
+      "symbol": "NFO:UNOMINDA26APRFUT",
+      "name": "UNOMINDA",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17161474"
+    },
+    {
+      "symbol": "NFO:UNOMINDA26MAYFUT",
+      "name": "UNOMINDA",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16998914"
+    },
+    {
+      "symbol": "NFO:UNOMINDA26JUNFUT",
+      "name": "UNOMINDA",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16093186"
+    },
+    {
+      "symbol": "NFO:UPL26APRFUT",
+      "name": "UPL",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17161730"
+    },
+    {
+      "symbol": "NFO:UPL26MAYFUT",
+      "name": "UPL",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16999170"
+    },
+    {
+      "symbol": "NFO:UPL26JUNFUT",
+      "name": "UPL",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16093442"
+    },
+    {
+      "symbol": "NFO:VBL26APRFUT",
+      "name": "VBL",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17161986"
+    },
+    {
+      "symbol": "NFO:VBL26MAYFUT",
+      "name": "VBL",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16999426"
+    },
+    {
+      "symbol": "NFO:VBL26JUNFUT",
+      "name": "VBL",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16093698"
+    },
+    {
+      "symbol": "NFO:VEDL26APRFUT",
+      "name": "VEDL",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17162242"
+    },
+    {
+      "symbol": "NFO:VEDL26MAYFUT",
+      "name": "VEDL",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "17001730"
+    },
+    {
+      "symbol": "NFO:VEDL26JUNFUT",
+      "name": "VEDL",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16093954"
+    },
+    {
+      "symbol": "NFO:VMM26APRFUT",
+      "name": "VMM",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "16094210"
+    },
+    {
+      "symbol": "NFO:VMM26MAYFUT",
+      "name": "VMM",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "16094466"
+    },
+    {
+      "symbol": "NFO:VMM26JUNFUT",
+      "name": "VMM",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16094978"
+    },
+    {
+      "symbol": "NFO:VOLTAS26APRFUT",
+      "name": "VOLTAS",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17162498"
+    },
+    {
+      "symbol": "NFO:VOLTAS26MAYFUT",
+      "name": "VOLTAS",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "17001986"
+    },
+    {
+      "symbol": "NFO:VOLTAS26JUNFUT",
+      "name": "VOLTAS",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16095234"
+    },
+    {
+      "symbol": "NFO:WAAREEENER26APRFUT",
+      "name": "WAAREEENER",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17162754"
+    },
+    {
+      "symbol": "NFO:WAAREEENER26MAYFUT",
+      "name": "WAAREEENER",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "17002242"
+    },
+    {
+      "symbol": "NFO:WAAREEENER26JUNFUT",
+      "name": "WAAREEENER",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16095490"
+    },
+    {
+      "symbol": "NFO:WIPRO26APRFUT",
+      "name": "WIPRO",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17163010"
+    },
+    {
+      "symbol": "NFO:WIPRO26MAYFUT",
+      "name": "WIPRO",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "17002498"
+    },
+    {
+      "symbol": "NFO:WIPRO26JUNFUT",
+      "name": "WIPRO",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16095746"
+    },
+    {
+      "symbol": "NFO:YESBANK26APRFUT",
+      "name": "YESBANK",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17163266"
+    },
+    {
+      "symbol": "NFO:YESBANK26MAYFUT",
+      "name": "YESBANK",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "17002754"
+    },
+    {
+      "symbol": "NFO:YESBANK26JUNFUT",
+      "name": "YESBANK",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16096002"
+    },
+    {
+      "symbol": "NFO:ZYDUSLIFE26APRFUT",
+      "name": "ZYDUSLIFE",
+      "expiry": "26APR",
+      "segment": "NFO",
+      "instrument_token": "17163522"
+    },
+    {
+      "symbol": "NFO:ZYDUSLIFE26MAYFUT",
+      "name": "ZYDUSLIFE",
+      "expiry": "26MAY",
+      "segment": "NFO",
+      "instrument_token": "17003010"
+    },
+    {
+      "symbol": "NFO:ZYDUSLIFE26JUNFUT",
+      "name": "ZYDUSLIFE",
+      "expiry": "26JUN",
+      "segment": "NFO",
+      "instrument_token": "16096770"
+    }
+  ]
+}
