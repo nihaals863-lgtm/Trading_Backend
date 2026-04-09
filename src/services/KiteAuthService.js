@@ -82,21 +82,35 @@ class KiteAuthService {
     async setAccessToken(userId, accessToken) {
         if (!accessToken) throw new Error('access_token is required');
 
-        // First check if session exists, if not create one with minimal data
+        // Validate token by calling Kite API
+        const kite = new KiteConnect({ api_key: API_KEY });
+        kite.setAccessToken(accessToken);
+        let profile;
+        try {
+            profile = await kite.getProfile();
+        } catch (err) {
+            throw new Error('Invalid access token: ' + (err.message || 'Token rejected by Zerodha'));
+        }
+
+        // Token is valid — save to DB
+        await this.saveTokenToDB(userId, accessToken, profile);
+        return profile;
+    }
+
+    // Save token to DB without re-validating (used when already validated by kiteService)
+    async saveTokenToDB(userId, accessToken, profile = {}) {
         let session = await kiteRepo.getSessionByUserId(userId);
 
         if (!session) {
-            // Create new session with required fields (use null for missing fields)
             await kiteRepo.saveSession(userId, {
                 api_key: API_KEY,
                 access_token: accessToken,
                 public_token: null,
-                user_id: null,
-                user_name: 'Manual Token',
-                email: null
+                user_id: profile.user_id || null,
+                user_name: profile.user_name || 'Unknown',
+                email: profile.email || null
             });
         } else {
-            // Update existing session
             await kiteRepo.updateAccessToken(userId, accessToken);
         }
     }
