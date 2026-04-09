@@ -14,6 +14,8 @@ const {
     voiceExecute,
     chatWithAI,
     transcribeVoice,
+    tutorChat,
+    getTutorTopics,
 } = require('../controllers/aiController');
 const voiceRecCtrl = require('../controllers/voiceRecordingController');
 const { authMiddleware } = require('../middleware/auth');
@@ -79,5 +81,15 @@ router.post('/transcribe-voice', authMiddleware, upload.single('audio'), transcr
 
 // POST /api/ai/chat — AI Chat (general conversation)
 router.post('/chat', authMiddleware, chatWithAI);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EDUCATIONAL AI TUTOR ENDPOINTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+// POST /api/ai/tutor — Educational tutor chat (contextual, experience-aware)
+router.post('/tutor', authMiddleware, tutorChat);
+
+// GET /api/ai/tutor/topics — Get available tutor topic categories
+router.get('/tutor/topics', authMiddleware, getTutorTopics);
 
 module.exports = router;
