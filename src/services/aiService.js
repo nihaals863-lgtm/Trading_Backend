@@ -42,8 +42,23 @@ const parseWithRules = (rawText) => {
     };
 
     const parseAmount = (str) => {
+        const sl = str.toLowerCase();
+        // "2 peti" = 2 lakh, "3 khoka" = 3 crore
+        const petiMatch = sl.match(/(\d+)\s*(?:peti|पेटी)/i);
+        if (petiMatch) return parseInt(petiMatch[1], 10) * 100000;
+        const khokaMatch = sl.match(/(\d+)\s*(?:khoka|खोका)/i);
+        if (khokaMatch) return parseInt(khokaMatch[1], 10) * 10000000;
+        // "1 peti" without number prefix
+        if (sl.match(/\b(?:ek\s+)?(?:peti|पेटी)\b/)) return 100000;
+        if (sl.match(/\b(?:ek\s+)?(?:khoka|खोका)\b/)) return 10000000;
+        // "5k" = 5000
         const km = str.match(/(\d+)\s*k\b/i);
         if (km) return parseInt(km[1], 10) * 1000;
+        // "5 lakh" / "5 crore"
+        const lakhMatch = sl.match(/(\d+)\s*(?:lakh|lac|लाख)/i);
+        if (lakhMatch) return parseInt(lakhMatch[1], 10) * 100000;
+        const croreMatch = sl.match(/(\d+)\s*(?:crore|करोड़)/i);
+        if (croreMatch) return parseInt(croreMatch[1], 10) * 10000000;
         const nm = str.match(/(\d[\d,]{2,})/);
         if (nm) return parseFloat(nm[1].replace(/,/g, ''));
         const sm = str.match(/(\d+)/);
@@ -83,6 +98,7 @@ const parseWithRules = (rawText) => {
     const isUnblock    = /unblock|activate|chalu\s*karo|kholo/.test(tl);
     const isWithdraw   = /nikalo|nikaalo|hatao|withdraw|deduct|wapas\s*karo|minus|ghataao|ghata/.test(tl);
     const isAddWord    = /\badd\b|deposit|jama|daalo|dalo|credit|bdhao|badhao/.test(tl);
+    const hasPetiKhoka = /peti|पेटी|khoka|खोका|lakh|lac|लाख|crore|करोड़/.test(tl);
 
     // ── Priority order: most specific → least specific ────────────────────────
 
@@ -153,7 +169,7 @@ const parseWithRules = (rawText) => {
     }
 
     // 5. WITHDRAW_FUND
-    if (isWithdraw && !isTransfer) {
+    if ((isWithdraw || (hasPetiKhoka && /\bse\b/.test(tl))) && !isTransfer) {
         const userIdMatch = extractIdAfter(tl, /(?:user\s*id|user|id)/);
         const username    = !userIdMatch ? extractUsername(tl) : null;
         const stripped    = userIdMatch ? tl.replace(userIdMatch.fullMatch, '') : tl;
@@ -167,7 +183,7 @@ const parseWithRules = (rawText) => {
     }
 
     // 6. ADD_FUND (flexible parsing — ID-based and username-based)
-    if (isAddWord) {
+    if (isAddWord || (hasPetiKhoka && /\bme\b|\bmein\b/.test(tl))) {
         const userIdMatch = extractIdAfter(tl, /(?:user\s*id|user|id)/);
         const username    = !userIdMatch ? extractUsername(tl) : null;
         const stripped    = userIdMatch ? tl.replace(userIdMatch.fullMatch, '') : tl;
@@ -249,9 +265,16 @@ Output: { "action": "TRANSFER_FUND", "fromUserId": 10, "toUserId": 20, "amount":
 Input : "new admin banao naam Rahul email rahul@gmail.com"
 Output: { "action": "CREATE_ADMIN", "name": "Rahul", "email": "rahul@gmail.com", "password": "Admin@123" }
 
+Money slang:
+- "peti" / "पेटी" = 1 lakh (₹1,00,000). "2 peti" = ₹2,00,000
+- "khoka" / "खोका" = 1 crore (₹1,00,00,000). "3 khoka" = ₹3,00,00,000
+- "5k" = ₹5,000, "2 lakh" = ₹2,00,000, "1 crore" = ₹1,00,00,000
+
 Rules:
 - "ke account me / me / daalo / jama / add / deposit" → ADD_FUND
 - "ke account se / se / nikalo / hatao / withdraw / deduct" → WITHDRAW_FUND
+- "username me 2 peti daalo" → ADD_FUND with amount 200000
+- "username se 1 khoka nikalo" → WITHDRAW_FUND with amount 10000000
 - "admin banao / create admin" → always CREATE_ADMIN, never ADD_FUND
 - If user says a name (non-numeric word) → use "username" field; if numeric ID → use "userId" field
 - If dummy/fake/test/sample is mentioned for admin → generate placeholder credentials
@@ -301,7 +324,13 @@ const parseCommand = async (text) => {
 
     let result;
 
-    if (hasValidKey) {
+    // Force rule-based parser for peti/khoka/lakh/crore (OpenAI gets amounts wrong)
+    const hasSlangAmount = /peti|पेटी|khoka|खोका|lakh|lac|लाख|crore|करोड़/i.test(text);
+
+    if (hasSlangAmount) {
+        console.log('[parseCommand] Using rule-based parser (slang amount detected: peti/khoka/lakh/crore)');
+        result = parseWithRules(text);
+    } else if (hasValidKey) {
         try {
             result = await parseWithOpenAI(text);
             console.log('[parseCommand] ✅ OpenAI parser success');
