@@ -1,8 +1,8 @@
-import OpenAI from "openai";
+const OpenAI = require("openai");
 
 let openai = null;
 
-export const parseQuery = async (query, injectedSchema = null) => {
+const parseQuery = async (query, injectedSchema = null) => {
   try {
     if (!openai && process.env.OPENAI_API_KEY) {
       openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -128,4 +128,4 @@ export const parseQuery = async (query, injectedSchema = null) => {
   }
 };
 
-export default { parseQuery };
+module.exports = { parseQuery };

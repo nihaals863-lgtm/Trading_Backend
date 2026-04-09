@@ -13,7 +13,6 @@
 const db = require('../config/db');
 const openai = require('../config/openai');
 const { parseQuery } = require('../services/aiCommandParser');
-const parseCommand = parseQuery;
 const { generateQuery } = require('../services/aiQueryGenerator');
 const { executeQuery } = require('../services/aiExecutor');
 const { loadSchema, getSchemaSummary } = require('../services/aiSchemaLoader');
@@ -24,6 +23,78 @@ const { mediate } = require('../services/aiMediator');
 // Legacy imports (backward compat)
 const { parseCommand: legacyParseCommand } = require('../services/aiService');
 const { executeAction: legacyExecuteAction } = require('../services/dbService');
+
+/**
+ * Convert legacy parsed format { action, userId, amount, ... }
+ * to the structured format { module, operation, filters, data }
+ * that generateQuery() expects.
+ */
+const adaptLegacyParsed = (legacy) => {
+    const ACTION_MAP = {
+        ADD_FUND:      { module: 'funds',  operation: 'add_fund' },
+        WITHDRAW_FUND: { module: 'funds',  operation: 'withdraw' },
+        TRANSFER_FUND: { module: 'funds',  operation: 'transfer' },
+        BLOCK_USER:    { module: 'users',  operation: 'block' },
+        UNBLOCK_USER:  { module: 'users',  operation: 'unblock' },
+        CREATE_ADMIN:  { module: 'users',  operation: 'create' },
+        READ:          { module: 'users',  operation: 'read' },
+        AGGREGATE:     { module: 'users',  operation: 'aggregate' },
+        UPDATE:        { module: 'users',  operation: 'update' },
+        DELETE:        { module: 'users',  operation: 'delete' },
+    };
+
+    const mapped = ACTION_MAP[legacy.action] || { module: 'users', operation: 'read' };
+    const filters = {};
+    const data = {};
+
+    if (legacy.userId) filters.id = legacy.userId;
+    if (legacy.amount) data.amount = legacy.amount;
+    if (legacy.fromUserId) data.fromUserId = legacy.fromUserId;
+    if (legacy.toUserId) data.toUserId = legacy.toUserId;
+    if (legacy.name) data.name = legacy.name;
+    if (legacy.email) data.email = legacy.email;
+    if (legacy.password) data.password = legacy.password;
+    if (legacy.role) data.role = legacy.role;
+
+    return {
+        module: mapped.module,
+        operation: mapped.operation,
+        filters,
+        data,
+        sort: null,
+        limit: 100,
+        raw: legacy,
+    };
+};
+
+/**
+ * parseCommand — parse user text into structured intent for the smart pipeline.
+ * Uses the legacy parser (aiService) and adapts its output.
+ * If the legacy parser returns a username instead of userId, resolves it via DB lookup.
+ */
+const parseCommand = async (text) => {
+    if (typeof legacyParseCommand !== 'function') {
+        throw new Error('AI parser service not available. Please restart the server.');
+    }
+    const legacy = await legacyParseCommand(text);
+
+    // Resolve username → userId if needed
+    if (legacy.username && !legacy.userId) {
+        try {
+            const [rows] = await db.execute(
+                'SELECT id FROM users WHERE full_name = ? OR email = ? LIMIT 1',
+                [legacy.username, legacy.username]
+            );
+            if (rows.length > 0) {
+                legacy.userId = rows[0].id;
+            }
+        } catch (e) {
+            console.warn('[parseCommand] Username lookup failed:', e.message);
+        }
+    }
+
+    return adaptLegacyParsed(legacy);
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /api/ai/smart-command
@@ -54,9 +125,18 @@ const smartCommand = async (req, res) => {
         console.log('[smart-command] 📊 Loading schema...');
         await loadSchema();
 
-        // ── Step 2: Parse Command ───────────────────────────────────────────
+        // ── Step 2: Parse Command (inlined to avoid scope issues) ───────────
         console.log('[smart-command] 🤖 Parsing command...');
-        const parsed = await parseCommand(text.trim());
+        console.log('[smart-command] legacyParseCommand type:', typeof legacyParseCommand);
+        console.log('[smart-command] parseCommand type:', typeof parseCommand);
+
+        let parsed;
+        try {
+            parsed = await parseCommand(text.trim());
+        } catch (parseErr) {
+            console.error('[smart-command] Parse error:', parseErr.message, parseErr.stack);
+            throw parseErr;
+        }
         console.log('[smart-command] ✅ Parsed:', JSON.stringify(parsed, null, 2));
 
         // ── Step 3: Generate Query ──────────────────────────────────────────
@@ -90,6 +170,7 @@ const smartCommand = async (req, res) => {
 
     } catch (err) {
         console.error('[smart-command] ❌ Error:', err.message);
+        console.error('[smart-command] ❌ Stack:', err.stack);
         return res.status(500).json({
             type: 'error',
             message: err.message || 'AI command failed',
@@ -888,6 +969,238 @@ const transcribeVoice = async (req, res) => {
     }
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/ai/tutor
+// Educational AI Tutor — Contextual trading education (beginner to advanced)
+// Supports Hindi, English, Hinglish. Adapts to user's experience level.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const TUTOR_TOPICS = {
+    basics: {
+        label: 'Trading Basics',
+        keywords: ['basic', 'basics', 'beginner', 'start', 'shuru', 'शुरू', 'kaise', 'कैसे', 'what is trading', 'trading kya hai', 'ट्रेडिंग क्या'],
+    },
+    options: {
+        label: 'Options Trading',
+        keywords: ['option', 'options', 'call', 'put', 'ce', 'pe', 'strike', 'premium', 'expiry', 'ऑप्शन', 'कॉल', 'पुट'],
+    },
+    futures: {
+        label: 'Futures Trading',
+        keywords: ['future', 'futures', 'lot', 'lot size', 'contract', 'margin', 'फ्यूचर', 'लॉट', 'मार्जिन'],
+    },
+    technical: {
+        label: 'Technical Analysis',
+        keywords: ['chart', 'candle', 'candlestick', 'support', 'resistance', 'rsi', 'macd', 'moving average', 'indicator', 'pattern', 'चार्ट', 'सपोर्ट', 'रेसिस्टेंस'],
+    },
+    risk: {
+        label: 'Risk Management',
+        keywords: ['risk', 'stop loss', 'stoploss', 'sl', 'target', 'tp', 'risk reward', 'position size', 'money management', 'रिस्क', 'स्टॉप लॉस'],
+    },
+    orders: {
+        label: 'Order Types',
+        keywords: ['order', 'market order', 'limit order', 'stop order', 'gtt', 'amo', 'bracket', 'ऑर्डर', 'लिमिट', 'मार्केट'],
+    },
+    commodities: {
+        label: 'Commodities (MCX)',
+        keywords: ['commodity', 'commodities', 'mcx', 'gold', 'silver', 'crude', 'natural gas', 'copper', 'कमोडिटी', 'सोना', 'चांदी', 'क्रूड'],
+    },
+    indices: {
+        label: 'Index Trading',
+        keywords: ['index', 'indices', 'nifty', 'bank nifty', 'sensex', 'midcap', 'finnifty', 'निफ्टी', 'बैंक निफ्टी', 'सेंसेक्स'],
+    },
+    psychology: {
+        label: 'Trading Psychology',
+        keywords: ['psychology', 'emotion', 'fear', 'greed', 'discipline', 'patience', 'loss', 'mindset', 'डर', 'लालच', 'माइंडसेट'],
+    },
+    strategies: {
+        label: 'Trading Strategies',
+        keywords: ['strategy', 'strategies', 'scalping', 'intraday', 'swing', 'positional', 'hedging', 'स्ट्रेटेजी', 'इंट्राडे', 'स्विंग'],
+    },
+};
+
+const tutorChat = async (req, res) => {
+    const { message, topic, conversationHistory } = req.body;
+    const reqUser = req.user || {};
+
+    console.log('\n═══════════════════════════════════════════════════════════════');
+    console.log('[tutor] 📚 Input:', message);
+    console.log('[tutor] 📂 Topic:', topic || 'auto-detect');
+    console.log('[tutor] 👤 User:', reqUser.full_name || reqUser.id || 'anonymous');
+    console.log('═══════════════════════════════════════════════════════════════');
+
+    if (!message || !message.trim()) {
+        return res.status(400).json({
+            success: false,
+            message: 'Message is required',
+        });
+    }
+
+    try {
+        // ── Fetch user's trade stats for contextual teaching ────────────
+        let userStats = null;
+        try {
+            const userId = reqUser.id;
+            if (userId) {
+                const [tradeRows] = await db.query(
+                    `SELECT
+                        COUNT(*) as total_trades,
+                        SUM(CASE WHEN status = 'CLOSED' THEN 1 ELSE 0 END) as closed_trades,
+                        SUM(CASE WHEN status = 'OPEN' THEN 1 ELSE 0 END) as active_trades,
+                        SUM(CASE WHEN type = 'BUY' THEN 1 ELSE 0 END) as buy_trades,
+                        SUM(CASE WHEN type = 'SELL' THEN 1 ELSE 0 END) as sell_trades,
+                        SUM(CASE WHEN market_type = 'MCX' THEN 1 ELSE 0 END) as mcx_trades,
+                        SUM(CASE WHEN market_type = 'NSE' OR market_type = 'EQUITY' THEN 1 ELSE 0 END) as equity_trades,
+                        SUM(CASE WHEN market_type = 'NFO' OR market_type = 'OPTIONS' THEN 1 ELSE 0 END) as options_trades,
+                        MIN(entry_time) as first_trade_date
+                    FROM trades WHERE user_id = ?`,
+                    [userId]
+                );
+                if (tradeRows && tradeRows.length > 0) {
+                    userStats = tradeRows[0];
+                }
+            }
+        } catch (statsErr) {
+            console.warn('[tutor] ⚠️ Could not fetch user stats:', statsErr.message);
+        }
+
+        // ── Determine experience level ──────────────────────────────────
+        let experienceLevel = 'beginner';
+        let experienceContext = '';
+        if (userStats && userStats.total_trades > 0) {
+            const totalTrades = userStats.total_trades || 0;
+            if (totalTrades > 100) {
+                experienceLevel = 'advanced';
+                experienceContext = `This user is EXPERIENCED (${totalTrades} total trades, ${userStats.closed_trades} closed). They trade ${userStats.mcx_trades > 0 ? 'MCX commodities' : ''}${userStats.equity_trades > 0 ? ', Equities' : ''}${userStats.options_trades > 0 ? ', Options' : ''}. First trade: ${userStats.first_trade_date || 'unknown'}. Give them advanced insights, pro tips, and deeper analysis.`;
+            } else if (totalTrades > 20) {
+                experienceLevel = 'intermediate';
+                experienceContext = `This user is INTERMEDIATE (${totalTrades} trades so far). They are familiar with basics but still learning. Explain concepts clearly with practical examples from their trading context.`;
+            } else {
+                experienceLevel = 'beginner';
+                experienceContext = `This user is a BEGINNER (only ${totalTrades} trades). Explain everything simply, use analogies, avoid jargon or explain it when used. Be encouraging and patient.`;
+            }
+        } else {
+            experienceContext = 'This user has NO trade history yet. They are completely new. Start from absolute basics, use simple language, real-life analogies, and be very encouraging.';
+        }
+
+        // ── Detect topic from message ───────────────────────────────────
+        let detectedTopic = topic || null;
+        if (!detectedTopic) {
+            const msgLower = message.toLowerCase();
+            for (const [key, topicData] of Object.entries(TUTOR_TOPICS)) {
+                if (topicData.keywords.some(kw => msgLower.includes(kw))) {
+                    detectedTopic = key;
+                    break;
+                }
+            }
+        }
+
+        // ── Build system prompt ─────────────────────────────────────────
+        const systemPrompt = `You are an Expert Trading Tutor AI for a stock/commodity trading app called VTRKM.
+
+🎓 YOUR ROLE:
+You are a patient, knowledgeable, and friendly trading tutor. Your job is to TEACH and EDUCATE users about trading concepts — from absolute basics to advanced strategies.
+
+👤 USER CONTEXT:
+- Experience Level: ${experienceLevel.toUpperCase()}
+- ${experienceContext}
+
+🌍 LANGUAGE SUPPORT:
+- English, Hindi (हिंदी), Hinglish (mix), Marathi (मराठी)
+- ALWAYS respond in the SAME language the user used
+- If user writes in Hinglish, respond in Hinglish
+
+📚 TEACHING STYLE:
+1. **For Beginners**: Use simple language, real-life analogies (like vegetable market, cricket betting odds), step-by-step explanations, and emoji for engagement
+2. **For Intermediate**: Give practical examples with numbers, compare strategies, share common mistakes to avoid
+3. **For Advanced**: Share pro tips, advanced strategies, risk management frameworks, institutional-level insights
+
+📖 TOPICS YOU CAN TEACH:
+- Trading Basics (what is trading, how markets work, types of markets)
+- Options Trading (calls, puts, strike price, premium, Greeks, strategies)
+- Futures Trading (lot size, margin, expiry, rollover, hedging)
+- Technical Analysis (charts, candlesticks, indicators, patterns, support/resistance)
+- Risk Management (stop loss, position sizing, risk-reward ratio, money management)
+- Order Types (market, limit, stop loss, GTT, bracket, cover orders)
+- Commodities (MCX - gold, silver, crude oil, natural gas, copper)
+- Index Trading (Nifty 50, Bank Nifty, Fin Nifty, Sensex)
+- Trading Psychology (emotions, discipline, fear & greed, journaling)
+- Trading Strategies (scalping, intraday, swing, positional, hedging)
+- Fundamental Analysis (P/E ratio, EPS, market cap, sectors)
+- IPO & Mutual Funds (basics for beginners)
+
+${detectedTopic ? `🎯 DETECTED TOPIC: ${TUTOR_TOPICS[detectedTopic]?.label || detectedTopic}\nFocus your response on this topic area.` : ''}
+
+📏 RESPONSE FORMAT:
+- Keep responses concise but comprehensive (150-400 words max)
+- Use bullet points and numbered lists for clarity
+- Include a practical example with real numbers when explaining concepts
+- End with a "💡 Quick Tip" relevant to the topic
+- If the concept connects to app features, mention how to use them (e.g., "You can set a stop loss in our app when placing an order")
+- For complex topics, break into simple parts and ask "Shall I explain more about any part?"
+
+⚠️ IMPORTANT RULES:
+- NEVER give specific buy/sell advice or price predictions
+- Always say "this is for education only, not financial advice"
+- Be encouraging — trading is hard, motivate the learner
+- If asked about a topic outside trading, politely redirect: "I'm your trading tutor! Ask me anything about markets and trading."
+- Use the user's app context when relevant (e.g., "Since you trade MCX commodities...")`;
+
+        // ── Build messages array ────────────────────────────────────────
+        const messages = [
+            { role: 'system', content: systemPrompt },
+        ];
+
+        // Add conversation history if provided (for multi-turn learning)
+        if (conversationHistory && Array.isArray(conversationHistory)) {
+            const recentHistory = conversationHistory.slice(-6); // last 3 exchanges
+            for (const msg of recentHistory) {
+                if (msg.role === 'user' || msg.role === 'assistant') {
+                    messages.push({ role: msg.role, content: msg.content });
+                }
+            }
+        }
+
+        messages.push({ role: 'user', content: message.trim() });
+
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages,
+            temperature: 0.7,
+            max_tokens: 800,
+        });
+
+        const aiMessage = response.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
+
+        console.log('[tutor] ✅ Response generated | Level:', experienceLevel, '| Topic:', detectedTopic || 'general');
+        console.log('═══════════════════════════════════════════════════════════════\n');
+
+        return res.json({
+            success: true,
+            message: aiMessage,
+            experienceLevel,
+            detectedTopic: detectedTopic || null,
+            topicLabel: detectedTopic ? (TUTOR_TOPICS[detectedTopic]?.label || null) : null,
+            user: reqUser.full_name || reqUser.id || 'User',
+        });
+
+    } catch (err) {
+        console.error('[tutor] ❌ Error:', err.message);
+        return res.status(500).json({
+            success: false,
+            message: err.message || 'Failed to get tutor response',
+        });
+    }
+};
+
+// GET /api/ai/tutor/topics — Return available tutor topics for the frontend
+const getTutorTopics = (req, res) => {
+    const topics = Object.entries(TUTOR_TOPICS).map(([key, val]) => ({
+        id: key,
+        label: val.label,
+    }));
+    return res.json({ success: true, topics });
+};
+
 module.exports = {
     smartCommand,
     masterCommand,
@@ -902,4 +1215,6 @@ module.exports = {
     voiceExecute,
     chatWithAI,
     transcribeVoice,
+    tutorChat,
+    getTutorTopics,
 };
