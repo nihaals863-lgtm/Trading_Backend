@@ -88,6 +88,9 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/paper-trading', paperRoutes);
 
+const marketDataRoutes = require('./routes/marketDataRoutes');
+app.use('/api/market-data', marketDataRoutes);
+
 // ── Root-level voice AI routes (no /api prefix, no auth required for direct access)
 app.post('/ai-parse', aiParse);
 app.post('/execute-command', executeVoiceCommand);
