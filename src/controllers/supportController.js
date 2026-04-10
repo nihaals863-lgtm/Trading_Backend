@@ -18,10 +18,17 @@ const getDescendantIds = async (userId) => {
 // POST /support — create ticket + first message
 const createTicket = async (req, res) => {
     const { subject, message, priority } = req.body;
+    console.log('📩 Create ticket request:', { userId: req.user?.id, subject, priority, hasMessage: !!message });
     if (!subject || !message) {
         return res.status(400).json({ message: 'Subject and message are required' });
     }
-    const conn = await db.getConnection();
+    let conn;
+    try {
+        conn = await db.getConnection();
+    } catch (connErr) {
+        console.error('❌ DB connection failed:', connErr.message);
+        return res.status(500).json({ message: 'Database connection failed' });
+    }
     try {
         await conn.beginTransaction();
         const [result] = await conn.execute(
@@ -37,8 +44,8 @@ const createTicket = async (req, res) => {
         res.status(201).json({ message: 'Ticket raised successfully', id: ticketId });
     } catch (err) {
         await conn.rollback();
-        console.error(err);
-        res.status(500).json({ message: 'Server Error' });
+        console.error('❌ Support ticket create error:', err.message, err.code);
+        res.status(500).json({ message: err.code === 'ER_NO_SUCH_TABLE' ? 'Support tables not found. Please restart server to run migrations.' : ('Server Error: ' + err.message) });
     } finally {
         conn.release();
     }
