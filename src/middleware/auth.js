@@ -49,6 +49,10 @@ const brokerPermission = (permissionKey) => {
         return res.status(403).json({ message: 'Broker configuration not found' });
       }
       const permissions = JSON.parse(rows[0].permissions_json || '{}');
+
+      // Attach all permissions to req.user for use in controllers
+      req.user.permissions = permissions;
+
       if (permissions[permissionKey] !== 'Yes') {
         return res.status(403).json({
           message: `Permission denied: ${permissionKey} is not enabled for your account`

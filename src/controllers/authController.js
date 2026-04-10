@@ -132,14 +132,20 @@ const createUser = async (req, res) => {
     // Enforcement: Hierarchy Check
     // SUPERADMIN can create ADMIN, BROKER, or TRADER
     // ADMIN can create BROKER or TRADER (but not ADMIN or SUPERADMIN)
-    // BROKER can only create TRADER
+    // BROKER can create TRADER, or BROKER if they have subBrokerActions permission
     // TRADER cannot create anyone
 
     if (creatorRole === 'ADMIN' && (role === 'SUPERADMIN' || role === 'ADMIN')) {
         return res.status(403).json({ message: 'Admins cannot create other Admins or Superadmins' });
     }
-    if (creatorRole === 'BROKER' && role !== 'TRADER') {
-        return res.status(403).json({ message: 'Brokers can only create Traders' });
+    if (creatorRole === 'BROKER') {
+        // Broker can create TRADER or BROKER (if they have subBrokerActions permission)
+        if (role === 'BROKER' && req.user.permissions?.subBrokerActions !== 'Yes') {
+            return res.status(403).json({ message: 'Brokers can only create Brokers if they have subBrokerActions permission' });
+        }
+        if (role !== 'TRADER' && role !== 'BROKER') {
+            return res.status(403).json({ message: 'Brokers can only create Traders or Brokers' });
+        }
     }
     if (creatorRole === 'TRADER') {
         return res.status(403).json({ message: 'Traders cannot create users' });
