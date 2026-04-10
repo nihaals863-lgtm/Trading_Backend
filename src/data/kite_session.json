@@ -28,10 +28,18 @@
   "access_token": "7zy7cdBW6heIvrWJPnzSKRcy8W36Nwx3",
   "public_token": "wIAXhORFml8knoC0BQAUgsRRqVgrlgLD",
   "refresh_token": "",
+<<<<<<< HEAD
   "enctoken": "0VF38EPzg2ALo6IxRIY0/mXthBrBGRxTZzZ+6eNd6rYtV4Q1Linsx1IUjFcMkMfLmB9MpqRWNKkxBQKAnBDszxK9uiUChwaAUBQd3bF3S8XuBYpQjbib/5SYc+jAXxA=",
+=======
+  "enctoken": "qQCpVxkEXsK0Iyt0yIF7Z2olQhVQOtEQhAJzzYxsqhpxcnem300c6SFgziYg9vVUyDkjVEV0b1edWQ4Q08VTma5moHN8l5y6BLo7m8XlhU6ZsR4ig9cNcYKM5J9U5ek=",
+>>>>>>> 10c9fa4edfe0601f5d594c3e3f571f3557649cc8
   "login_time": "2026-04-10 13:19:50",
   "meta": {
     "demat_consent": "consent"
   },
+<<<<<<< HEAD
   "saved_at": "2026-04-10T08:53:46.151Z"
+=======
+  "saved_at": "2026-04-10T07:49:48.160Z"
+>>>>>>> 10c9fa4edfe0601f5d594c3e3f571f3557649cc8
 }

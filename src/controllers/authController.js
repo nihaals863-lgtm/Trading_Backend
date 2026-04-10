@@ -107,13 +107,28 @@ const login = async (req, res) => {
         console.error('IP Logging failed:', logErr);
     }
 
+    // Fetch parent role if this user has a parent
+    let parentRole = null;
+    if (user.parent_id) {
+      try {
+        const [parentRows] = await db.execute('SELECT role FROM users WHERE id = ?', [user.parent_id]);
+        if (parentRows.length > 0) {
+          parentRole = parentRows[0].role;
+        }
+      } catch (err) {
+        console.error('Error fetching parent role:', err);
+      }
+    }
+
     res.json({
       token,
       user: {
         id: user.id,
         username: user.username,
         role: user.role,
-        fullName: user.full_name
+        fullName: user.full_name,
+        parent_id: user.parent_id,
+        parentRole: parentRole
       }
     });
     
@@ -132,14 +147,20 @@ const createUser = async (req, res) => {
     // Enforcement: Hierarchy Check
     // SUPERADMIN can create ADMIN, BROKER, or TRADER
     // ADMIN can create BROKER or TRADER (but not ADMIN or SUPERADMIN)
-    // BROKER can only create TRADER
+    // BROKER can create TRADER, or BROKER if they have subBrokerActions permission
     // TRADER cannot create anyone
 
     if (creatorRole === 'ADMIN' && (role === 'SUPERADMIN' || role === 'ADMIN')) {
         return res.status(403).json({ message: 'Admins cannot create other Admins or Superadmins' });
     }
-    if (creatorRole === 'BROKER' && role !== 'TRADER') {
-        return res.status(403).json({ message: 'Brokers can only create Traders' });
+    if (creatorRole === 'BROKER') {
+        // Broker can create TRADER or BROKER (if they have subBrokerActions permission)
+        if (role === 'BROKER' && req.user.permissions?.subBrokerActions !== 'Yes') {
+            return res.status(403).json({ message: 'Brokers can only create Brokers if they have subBrokerActions permission' });
+        }
+        if (role !== 'TRADER' && role !== 'BROKER') {
+            return res.status(403).json({ message: 'Brokers can only create Traders or Brokers' });
+        }
     }
     if (creatorRole === 'TRADER') {
         return res.status(403).json({ message: 'Traders cannot create users' });
