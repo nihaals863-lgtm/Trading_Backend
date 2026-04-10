@@ -28,6 +28,7 @@ class MarketDataService extends EventEmitter {
             if (!userSession || !userSession.access_token) {
                 console.log('⚠️  Kite credentials not available for user ' + userId + ', falling back to mock engine');
                 this.startMockEngine();
+                this.isConnecting = false;
                 return;
             }
 
@@ -49,15 +50,22 @@ class MarketDataService extends EventEmitter {
             });
 
             this.ticker.on('error', (err) => {
-                console.error('Ticker Error:', err.message);
-                if (err.message?.includes('403')) {
+                console.error('⚠️  Ticker Error:', err.message);
+                // 403, 401, connection errors → switch to mock
+                if (err.message?.includes('403') || err.message?.includes('401') || err.message?.includes('connection')) {
+                    console.log('🧪 Switching to mock engine due to:', err.message);
                     this.startMockEngine();
                 }
             });
 
+            this.ticker.on('disconnect', () => {
+                console.warn('⚠️  Ticker disconnected, using mock engine');
+                this.startMockEngine();
+            });
+
             this.ticker.connect();
         } catch (err) {
-            console.error('Ticker init failed:', err.message);
+            console.error('⚠️  Ticker init failed:', err.message);
             this.startMockEngine();
         } finally {
             this.isConnecting = false;

@@ -314,12 +314,14 @@ async function sleep(ms) {
 // ── /market/dashboard — Single call, returns 3 tabs with sub-groups ──
 router.get('/market/dashboard', authMiddleware, asyncHandler(async (req, res) => {
     try {
+        const userId = req.user?.id;
+
         // Sync per-user token from DB to global kiteService if needed
-        if (!kiteService.isAuthenticated() && req.user?.id) {
+        if (!kiteService.isAuthenticated() && userId) {
             try {
-                const status = await kiteAuthService.getStatus(req.user.id);
+                const status = await kiteAuthService.getStatus(userId);
                 if (status.connected) {
-                    const session = await require('../repositories/KiteRepository').getSessionByUserId(req.user.id);
+                    const session = await require('../repositories/KiteRepository').getSessionByUserId(userId);
                     if (session?.access_token) {
                         kiteService.accessToken = session.access_token;
                         kiteService.sessionData = { access_token: session.access_token, user_name: session.user_name };
@@ -334,6 +336,10 @@ router.get('/market/dashboard', authMiddleware, asyncHandler(async (req, res) =>
         if (!kiteService.isAuthenticated()) {
             return res.status(503).json({ error: 'Kite not connected.', kite_disconnected: true });
         }
+
+        // ✅ Initialize MarketDataService for real-time WebSocket updates
+        const marketDataService = require('../services/MarketDataService');
+        marketDataService.init(userId).catch(err => console.log('MarketDataService init background:', err.message));
 
         // ── NSE: All stocks from all 4 indices (deduplicated) + index symbols ──
         const nseStocks = ALL_NSE_STOCKS.map(s => `NSE:${s}`);
@@ -430,6 +436,7 @@ router.get('/market/dashboard', authMiddleware, asyncHandler(async (req, res) =>
         const mockDataCount = Object.keys(formatted).length - realDataCount;
         console.log(`✅ Dashboard Response: Real=${realDataCount} | Mock=${mockDataCount} | Total=${Object.keys(formatted).length}`);
 
+        // Send response immediately (non-blocking)
         res.json({
             status: 'success',
             timestamp: new Date().toISOString(),
@@ -449,6 +456,10 @@ router.get('/market/dashboard', authMiddleware, asyncHandler(async (req, res) =>
             data: sections,
             groups: nseGroups
         });
+
+        // ✅ DISABLED: Frontend doesn't require subscription anymore
+        // Backend broadcasts to all clients via mock engine
+        // (removed to prevent background process issues)
     } catch (err) {
         console.error('Dashboard error:', err.message);
         // If token expired (403), clear both global and per-user session

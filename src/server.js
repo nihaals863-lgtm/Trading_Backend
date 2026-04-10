@@ -6,6 +6,7 @@ const compression = require('compression');
 const { initializeCache } = require('./utils/cacheManager');
 const socketManager = require('./websocket/SocketManager');
 const marketDataService = require('./services/MarketDataService');
+const mockEngine = require('./utils/mockEngine');
 const paperTradingEngine = require('./trading-engine/PaperTradingEngine');
 const { setIo } = require('./config/socket');
 const runMigrations = require('./config/migrate');
@@ -146,16 +147,24 @@ runMigrations()
         const { startExpirySquareOffJob } = require('./services/expirySquareOffService');
         startExpirySquareOffJob();
 
-        // Initialize Market Data
+        // Initialize Market Data (with fallback to mock engine)
         try {
             const db = require('./config/db');
             const [users] = await db.execute('SELECT id FROM user_kite_sessions LIMIT 1');
             if (users.length > 0) {
-                await marketDataService.init(users[0].id);
+                try {
+                    await marketDataService.init(users[0].id);
+                    console.log('✅ MarketDataService initialized with real Kite connection');
+                } catch (tickerErr) {
+                    console.warn('⚠️  Kite ticker failed, falling back to mock engine:', tickerErr.message);
+                    marketDataService.startMockEngine();
+                }
             } else {
+                console.log('ℹ️  No Kite sessions found, starting mock engine');
                 marketDataService.startMockEngine();
             }
         } catch (err) {
+            console.warn('Market data init failed:', err.message);
             marketDataService.startMockEngine();
         }
     })
