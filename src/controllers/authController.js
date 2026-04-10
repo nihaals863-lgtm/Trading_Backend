@@ -107,13 +107,28 @@ const login = async (req, res) => {
         console.error('IP Logging failed:', logErr);
     }
 
+    // Fetch parent role if this user has a parent
+    let parentRole = null;
+    if (user.parent_id) {
+      try {
+        const [parentRows] = await db.execute('SELECT role FROM users WHERE id = ?', [user.parent_id]);
+        if (parentRows.length > 0) {
+          parentRole = parentRows[0].role;
+        }
+      } catch (err) {
+        console.error('Error fetching parent role:', err);
+      }
+    }
+
     res.json({
       token,
       user: {
         id: user.id,
         username: user.username,
         role: user.role,
-        fullName: user.full_name
+        fullName: user.full_name,
+        parent_id: user.parent_id,
+        parentRole: parentRole
       }
     });
     

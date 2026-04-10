@@ -66,4 +66,34 @@ const brokerPermission = (permissionKey) => {
   };
 };
 
-module.exports = { authMiddleware, roleMiddleware, brokerPermission };
+// Middleware to allow brokers to update shares for their own sub-brokers
+const brokerSharesPermission = () => {
+  return async (req, res, next) => {
+    // SUPERADMIN and ADMIN can update any broker's shares
+    if (req.user.role === 'SUPERADMIN' || req.user.role === 'ADMIN') {
+      return next();
+    }
+    // BROKER can only update shares for brokers they created
+    if (req.user.role === 'BROKER') {
+      try {
+        const db = require('../config/db');
+        const targetBrokerId = req.params.id;
+        // Check if the target broker has this broker as parent
+        const [rows] = await db.execute(
+          'SELECT id FROM users WHERE id = ? AND parent_id = ? AND role = "BROKER"',
+          [targetBrokerId, req.user.id]
+        );
+        if (rows.length === 0) {
+          return res.status(403).json({ message: 'You can only update shares for your own sub-brokers' });
+        }
+        return next();
+      } catch (err) {
+        console.error('Broker shares permission check error:', err);
+        return res.status(500).json({ message: 'Permission check failed' });
+      }
+    }
+    return res.status(403).json({ message: 'Access denied' });
+  };
+};
+
+module.exports = { authMiddleware, roleMiddleware, brokerPermission, brokerSharesPermission };

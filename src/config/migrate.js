@@ -326,33 +326,69 @@ const runMigrations = async () => {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
 
-    // Seed default scrips if table is empty
-    await db.execute(`
-        INSERT IGNORE INTO scrip_data (symbol, lot_size, margin_req, market_type) VALUES
-            ('GOLD',        1, 100, 'MCX'),
-            ('GOLDM',       1, 50,  'MCX'),
-            ('SILVER',      1, 100, 'MCX'),
-            ('SILVERM',     1, 50,  'MCX'),
-            ('CRUDEOIL',    1, 100, 'MCX'),
-            ('COPPER',      1, 100, 'MCX'),
-            ('NICKEL',      1, 100, 'MCX'),
-            ('ZINC',        1, 100, 'MCX'),
-            ('LEAD',        1, 100, 'MCX'),
-            ('ALUMINIUM',   1, 100, 'MCX'),
-            ('NATURALGAS',  1, 100, 'MCX'),
-            ('MENTHAOIL',   1, 100, 'MCX'),
-            ('COTTON',      1, 100, 'MCX'),
-            ('NIFTY',       1, 50,  'EQUITY'),
-            ('BANKNIFTY',   1, 50,  'EQUITY'),
-            ('RELIANCE',    1, 50,  'EQUITY'),
-            ('TCS',         1, 50,  'EQUITY'),
-            ('HDFCBANK',    1, 50,  'EQUITY'),
-            ('INFY',        1, 50,  'EQUITY'),
-            ('ICICIBANK',   1, 50,  'EQUITY'),
-            ('SBIN',        1, 50,  'EQUITY'),
-            ('TATAMOTORS',  1, 50,  'EQUITY'),
-            ('TATASTEEL',   1, 50,  'EQUITY')
-    `);
+    // Expand market_type enum to include NFO
+    try { await db.execute(`ALTER TABLE scrip_data MODIFY COLUMN market_type ENUM('MCX','EQUITY','COMEX','FOREX','CRYPTO','NFO') DEFAULT 'MCX'`); } catch(_) {}
+
+    // Seed ALL curated scrips (NIFTY50 + BANKNIFTY + MIDCAP + FINNIFTY + MCX + NFO)
+    const seedScrips = [
+        // ── MCX Normal ──
+        ['GOLD',1,100,'MCX'],['GOLDM',1,50,'MCX'],['GOLDPETAL',1,30,'MCX'],['GOLDGUINEA',1,30,'MCX'],
+        ['SILVER',1,100,'MCX'],['SILVERM',1,50,'MCX'],['SILVERMICRO',1,25,'MCX'],
+        ['CRUDEOIL',1,100,'MCX'],['CRUDEOILM',1,50,'MCX'],
+        ['NATURALGAS',1,100,'MCX'],['NATGASMINI',1,50,'MCX'],
+        ['COPPER',1,100,'MCX'],['COPPERM',1,50,'MCX'],
+        ['ZINC',1,100,'MCX'],['ZINCMINI',1,50,'MCX'],
+        ['LEAD',1,100,'MCX'],['LEADMINI',1,50,'MCX'],
+        ['NICKEL',1,100,'MCX'],['NICKELMINI',1,50,'MCX'],
+        ['ALUMINIUM',1,100,'MCX'],['ALUMINI',1,50,'MCX'],
+        ['MENTHAOIL',1,100,'MCX'],['COTTON',1,100,'MCX'],['COTTONCNDY',1,100,'MCX'],
+        // ── NIFTY 50 (50 stocks) ──
+        ['ADANIPORTS',1,50,'EQUITY'],['APOLLOHOSP',1,50,'EQUITY'],['ASIANPAINT',1,50,'EQUITY'],
+        ['AXISBANK',1,50,'EQUITY'],['BAJAJ-AUTO',1,50,'EQUITY'],['BAJFINANCE',1,50,'EQUITY'],
+        ['BAJAJFINSV',1,50,'EQUITY'],['BEL',1,50,'EQUITY'],['BHARTIARTL',1,50,'EQUITY'],
+        ['BPCL',1,50,'EQUITY'],['BRITANNIA',1,50,'EQUITY'],['CIPLA',1,50,'EQUITY'],
+        ['COALINDIA',1,50,'EQUITY'],['DIVISLAB',1,50,'EQUITY'],['DRREDDY',1,50,'EQUITY'],
+        ['EICHERMOT',1,50,'EQUITY'],['GRASIM',1,50,'EQUITY'],['HCLTECH',1,50,'EQUITY'],
+        ['HDFCBANK',1,50,'EQUITY'],['HDFCLIFE',1,50,'EQUITY'],['HEROMOTOCO',1,50,'EQUITY'],
+        ['HINDALCO',1,50,'EQUITY'],['HINDUNILVR',1,50,'EQUITY'],['ICICIBANK',1,50,'EQUITY'],
+        ['INDUSINDBK',1,50,'EQUITY'],['INFY',1,50,'EQUITY'],['ITC',1,50,'EQUITY'],
+        ['JSWSTEEL',1,50,'EQUITY'],['KOTAKBANK',1,50,'EQUITY'],['LT',1,50,'EQUITY'],
+        ['M&M',1,50,'EQUITY'],['MARUTI',1,50,'EQUITY'],['NESTLEIND',1,50,'EQUITY'],
+        ['NTPC',1,50,'EQUITY'],['ONGC',1,50,'EQUITY'],['POWERGRID',1,50,'EQUITY'],
+        ['RELIANCE',1,50,'EQUITY'],['SBILIFE',1,50,'EQUITY'],['SBIN',1,50,'EQUITY'],
+        ['SHRIRAMFIN',1,50,'EQUITY'],['SUNPHARMA',1,50,'EQUITY'],['TATACONSUM',1,50,'EQUITY'],
+        ['TATAMOTORS',1,50,'EQUITY'],['TATASTEEL',1,50,'EQUITY'],['TCS',1,50,'EQUITY'],
+        ['TECHM',1,50,'EQUITY'],['TITAN',1,50,'EQUITY'],['TRENT',1,50,'EQUITY'],
+        ['ULTRACEMCO',1,50,'EQUITY'],['WIPRO',1,50,'EQUITY'],
+        // ── BANK NIFTY extras (not in NIFTY50) ──
+        ['BANKBARODA',1,50,'EQUITY'],['PNB',1,50,'EQUITY'],['FEDERALBNK',1,50,'EQUITY'],
+        ['IDFCFIRSTB',1,50,'EQUITY'],['BANDHANBNK',1,50,'EQUITY'],['AUBANK',1,50,'EQUITY'],
+        // ── MIDCAP SELECT extras ──
+        ['ABBOTINDIA',1,50,'EQUITY'],['ALKEM',1,50,'EQUITY'],['AUROPHARMA',1,50,'EQUITY'],
+        ['CANBK',1,50,'EQUITY'],['COFORGE',1,50,'EQUITY'],['COLPAL',1,50,'EQUITY'],
+        ['CONCOR',1,50,'EQUITY'],['CUMMINSIND',1,50,'EQUITY'],['DELHIVERY',1,50,'EQUITY'],
+        ['DIXON',1,50,'EQUITY'],['GODREJPROP',1,50,'EQUITY'],['INDHOTEL',1,50,'EQUITY'],
+        ['IRCTC',1,50,'EQUITY'],['JSPL',1,50,'EQUITY'],['JUBLFOOD',1,50,'EQUITY'],
+        ['LINDEINDIA',1,50,'EQUITY'],['LTIM',1,50,'EQUITY'],['LUPIN',1,50,'EQUITY'],
+        ['MAXHEALTH',1,50,'EQUITY'],['OBEROIRLTY',1,50,'EQUITY'],['PERSISTENT',1,50,'EQUITY'],
+        ['PIIND',1,50,'EQUITY'],['POLYCAB',1,50,'EQUITY'],['VOLTAS',1,50,'EQUITY'],
+        // ── FIN NIFTY extras ──
+        ['ICICIPRULI',1,50,'EQUITY'],['MUTHOOTFIN',1,50,'EQUITY'],['CHOLAFIN',1,50,'EQUITY'],
+        ['MANAPPURAM',1,50,'EQUITY'],['PFC',1,50,'EQUITY'],['RECLTD',1,50,'EQUITY'],
+        ['LICHSGFIN',1,50,'EQUITY'],['MFSL',1,50,'EQUITY'],['SBICARD',1,50,'EQUITY'],
+        ['M&MFIN',1,50,'EQUITY'],
+        // ── NFO Index Futures ──
+        ['NIFTY',1,50,'NFO'],['BANKNIFTY',1,50,'NFO'],['FINNIFTY',1,50,'NFO'],['MIDCPNIFTY',1,50,'NFO'],
+    ];
+
+    for (const [sym, lot, margin, mtype] of seedScrips) {
+        try {
+            await db.execute(
+                'INSERT IGNORE INTO scrip_data (symbol, lot_size, margin_req, market_type) VALUES (?, ?, ?, ?)',
+                [sym, lot, margin, mtype]
+            );
+        } catch (_) {}
+    }
 
     await db.execute(`
         CREATE TABLE IF NOT EXISTS tickers (
