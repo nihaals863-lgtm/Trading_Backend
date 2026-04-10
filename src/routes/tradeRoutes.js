@@ -14,7 +14,7 @@ router.get('/:id', authMiddleware, getTradeById);
 router.post('/', authMiddleware, brokerPermission('tradeActivityAllowed'), placeOrder);
 router.post('/place', authMiddleware, brokerPermission('tradeActivityAllowed'), placeOrder);
 
-router.put('/:id/close', authMiddleware, roleMiddleware(['SUPERADMIN', 'ADMIN', 'BROKER']), brokerPermission('tradeActivityAllowed'), closeTrade);
+router.put('/:id/close', authMiddleware, roleMiddleware(['SUPERADMIN', 'ADMIN', 'BROKER', 'TRADER']), closeTrade);
 router.put('/:id/modify', authMiddleware, modifyPendingOrder);
 router.put('/:id', authMiddleware, roleMiddleware(['SUPERADMIN', 'ADMIN']), updateTrade);
 router.put('/:id/restore', authMiddleware, roleMiddleware(['SUPERADMIN', 'ADMIN']), restoreTrade);
