@@ -578,7 +578,7 @@ router.get('/market/watchlist', authMiddleware, asyncHandler(async (req, res) =>
         for (const base of mcxFutBases) {
             const nearest = instruments
                 .filter(i => i.exchange === 'MCX' && String(i.instrument_type || '').toUpperCase() === 'FUT')
-                .filter(i => (String(i.tradingsymbol || '').toUpperCase().startsWith(base) && String(i.tradingsymbol || '').toUpperCase().endsWith('FUT')))
+                .filter(i => isExactMcxFutureForBase(i.tradingsymbol, base))
                 .filter(i => new Date(i.expiry || 0) >= today)
                 .sort((a, b) => new Date(a.expiry || 0) - new Date(b.expiry || 0))[0];
             if (!nearest?.tradingsymbol) continue;
@@ -614,7 +614,7 @@ router.get('/market/watchlist', authMiddleware, asyncHandler(async (req, res) =>
             // LTP from nearest futures
             const fut = instruments
                 .filter(i => i.exchange === 'MCX' && String(i.instrument_type || '').toUpperCase() === 'FUT')
-                .filter(i => (String(i.tradingsymbol || '').toUpperCase().startsWith(base) && String(i.tradingsymbol || '').toUpperCase().endsWith('FUT')))
+                .filter(i => isExactMcxFutureForBase(i.tradingsymbol, base))
                 .filter(i => new Date(i.expiry || 0) >= today)
                 .sort((a, b) => new Date(a.expiry || 0) - new Date(b.expiry || 0))[0];
             if (!fut?.tradingsymbol) continue;
@@ -1026,6 +1026,13 @@ function formatMcxQuote(quote) {
     };
 }
 
+function isExactMcxFutureForBase(tradingSymbol, base) {
+    const ts = String(tradingSymbol || '').toUpperCase();
+    const b = String(base || '').toUpperCase();
+    if (!ts || !b) return false;
+    return new RegExp(`^${b}\\d{1,2}[A-Z]{3}\\d{0,2}FUT$`).test(ts);
+}
+
 // ── /market/mcx-futures — Filtered MCX futures (main + mini) ──
 router.get('/market/mcx-futures', authMiddleware, asyncHandler(async (req, res) => {
     try {
@@ -1053,7 +1060,7 @@ router.get('/market/mcx-futures', authMiddleware, asyncHandler(async (req, res) 
         for (const base of allowedList) {
             const nearest = instruments
                 .filter(i => i.exchange === 'MCX' && i.instrument_type === 'FUT'
-                    && (i.tradingsymbol || '').toUpperCase().startsWith(base) && (i.tradingsymbol || '').toUpperCase().endsWith('FUT'))
+                    && isExactMcxFutureForBase(i.tradingsymbol, base))
                 .filter(i => new Date(i.expiry || 0) >= today)
                 .sort((a, b) => new Date(a.expiry || 0) - new Date(b.expiry || 0))[0];
 
@@ -1126,7 +1133,7 @@ router.get('/market/mcx-options', authMiddleware, asyncHandler(async (req, res) 
         // ── 1. Get LTP from nearest futures contract ──
         const futContract = instruments
             .filter(i => i.exchange === 'MCX' && i.instrument_type === 'FUT'
-                && (i.tradingsymbol || '').toUpperCase().startsWith(symbol) && (i.tradingsymbol || '').toUpperCase().endsWith('FUT'))
+                && isExactMcxFutureForBase(i.tradingsymbol, symbol))
             .filter(i => new Date(i.expiry || 0) >= today)
             .sort((a, b) => new Date(a.expiry || 0) - new Date(b.expiry || 0))[0];
 
