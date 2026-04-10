@@ -111,10 +111,16 @@ const MCX_BASES = [
 // ── NFO Index Futures ──
 const NFO_INDICES = ['NIFTY','BANKNIFTY','FINNIFTY','MIDCPNIFTY'];
 
+// Dashboard symbols cache (avoids rebuilding symbol lists every request)
+let dashboardSymbolsCache = null;
+let dashboardSymbolsCacheTime = 0;
+const DASHBOARD_SYMBOLS_TTL = 15000; // 15s
+
 // ── Quotes cache ──
 let quotesCache = {};
 let quotesCacheTime = 0;
 const QUOTES_TTL = 1500;
+const inFlightQuoteRequests = new Map();
 
 async function fetchQuotesBatch(symbols) {
     const quotes = {};
@@ -132,6 +138,21 @@ async function fetchQuotesBatch(symbols) {
     return quotes;
 }
 
+function getInFlightKey(symbols) {
+    return Array.from(new Set((symbols || []).filter(Boolean))).sort().join('|');
+}
+
+async function fetchQuotesBatchDedup(symbols, { fresh = false } = {}) {
+    const uniqueSymbols = Array.from(new Set((symbols || []).filter(Boolean)));
+    if (uniqueSymbols.length === 0) return {};
+    const key = `${fresh ? 'F' : 'C'}:${getInFlightKey(uniqueSymbols)}`;
+    if (inFlightQuoteRequests.has(key)) return inFlightQuoteRequests.get(key);
+    const p = (fresh ? fetchQuotesBatchFresh(uniqueSymbols) : fetchQuotesBatch(uniqueSymbols))
+        .finally(() => inFlightQuoteRequests.delete(key));
+    inFlightQuoteRequests.set(key, p);
+    return p;
+}
+
 // Fetch fresh quotes always (NO cache)
 async function fetchQuotesBatchFresh(symbols) {
     const quotes = {};
@@ -147,6 +168,25 @@ async function fetchQuotesBatchFresh(symbols) {
         if (i + batchSize < symbols.length) await sleep(80);
     }
     return quotes;
+}
+
+function getQuoteFromStream(symbol) {
+    try {
+        const marketDataService = require('../services/MarketDataService');
+        const s = marketDataService.getPrice(symbol) || marketDataService.getPrice(String(symbol).split(':').pop());
+        if (!s?.ltp) return null;
+        return {
+            last_price: Number(s.ltp || 0),
+            net_change: Number(s.change || 0),
+            volume: Number(s.volume || 0),
+            oi: Number(s.oi || 0),
+            ohlc: s.ohlc || {},
+            depth: s.depth || {},
+            timestamp: new Date().toISOString(),
+        };
+    } catch (_) {
+        return null;
+    }
 }
 
 // Generate realistic mock data for missing symbols
@@ -345,26 +385,49 @@ router.get('/market/dashboard', authMiddleware, asyncHandler(async (req, res) =>
         const nseStocks = ALL_NSE_STOCKS.map(s => `NSE:${s}`);
         const nseIndices = ['NSE:NIFTY', 'NSE:NIFTYNXT50', 'NSE:NIFTYBANK', 'NSE:NIFTYINFRA', 'NSE:NIFTYPHARMA', 'NSE:NIFTYIT'];
 
-        // ── MCX: Normal + Mini commodities - nearest 2 expiries ──
-        const mcxSymbols = await buildFutSymbols('MCX', MCX_BASES, 2);
+        // ── MCX + NFO symbols (cached for speed) ──
+        const symNow = Date.now();
+        if (!dashboardSymbolsCache || (symNow - dashboardSymbolsCacheTime) > DASHBOARD_SYMBOLS_TTL) {
+            const [mcxSymbols, nfoIndexFut, nfoStockFut] = await Promise.all([
+                buildFutSymbols('MCX', MCX_BASES, 2),
+                buildFutSymbols('NFO', NFO_INDICES, 3),
+                buildFutSymbols('NFO', NIFTY50, 1),
+            ]);
+            dashboardSymbolsCache = {
+                mcxSymbols,
+                nfoSymbols: [...nfoIndexFut, ...nfoStockFut],
+            };
+            dashboardSymbolsCacheTime = symNow;
+        }
 
-        // ── NFO: Index futures + ALL Nifty50 stock futures - nearest 2 expiries ──
-        const nfoIndexFut = await buildFutSymbols('NFO', NFO_INDICES, 3);
-        const nfoStockFut = await buildFutSymbols('NFO', NIFTY50, 1); // nearest 1 expiry per stock
-        const nfoSymbols = [...nfoIndexFut, ...nfoStockFut];
+        const mcxSymbols = dashboardSymbolsCache.mcxSymbols;
+        const nfoSymbols = dashboardSymbolsCache.nfoSymbols;
 
         const allSymbols = [...nseStocks, ...nseIndices, ...mcxSymbols, ...nfoSymbols];
         console.log(`📊 Dashboard Build: NSE ${nseStocks.length + nseIndices.length} | MCX ${mcxSymbols.length} | NFO ${nfoSymbols.length} = ${allSymbols.length} total`);
         if (mcxSymbols.length === 0) console.warn('⚠️  MCX symbols returned 0 - will use mock data');
         if (nfoSymbols.length === 0) console.warn('⚠️  NFO symbols returned 0 - will use mock data');
 
-        // Use cache if fresh
+        // Use cache if fresh (serves instantly)
         const now = Date.now();
         let rawQuotes;
         if (Object.keys(quotesCache).length > 0 && (now - quotesCacheTime) < QUOTES_TTL) {
             rawQuotes = quotesCache;
         } else {
-            rawQuotes = await fetchQuotesBatch(allSymbols);
+            // Stream-cache-first: fill from websocket cache, fetch only missing via REST
+            rawQuotes = {};
+            const missing = [];
+            for (const sym of allSymbols) {
+                const q = getQuoteFromStream(sym);
+                if (q) rawQuotes[sym] = q;
+                else missing.push(sym);
+            }
+
+            if (missing.length > 0) {
+                const fetched = await fetchQuotesBatchDedup(missing);
+                Object.assign(rawQuotes, fetched);
+            }
+
             quotesCache = rawQuotes;
             quotesCacheTime = now;
         }
