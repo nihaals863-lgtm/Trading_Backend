@@ -1,11 +1,83 @@
 const db = require('../config/db');
+const kiteService = require('../utils/kiteService');
+
+// Cache for Kite instruments (so we don't fetch every time)
+let kiteScripCache = null;
+let kiteScripCacheTime = 0;
+const CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours
 
 const getAllScrips = async (req, res) => {
     try {
-        const [rows] = await db.execute('SELECT * FROM scrip_data');
-        res.json(rows);
+        // 1. Get DB scrips (for lot_size, margin_req, status overrides)
+        const [dbRows] = await db.execute('SELECT * FROM scrip_data');
+        const dbMap = {};
+        for (const row of dbRows) dbMap[row.symbol] = row;
+
+        // 2. Try to get Kite instruments (dynamic, all symbols)
+        let kiteSymbols = [];
+        try {
+            const now = Date.now();
+            if (kiteScripCache && (now - kiteScripCacheTime) < CACHE_TTL) {
+                kiteSymbols = kiteScripCache;
+            } else if (kiteService.isAuthenticated()) {
+                const instruments = await kiteService.getInstruments();
+                // Pick unique tradingsymbols for NSE EQ + MCX FUT + NFO FUT
+                const seen = new Set();
+                kiteSymbols = instruments
+                    .filter(i => {
+                        if (i.exchange === 'NSE' && i.instrument_type === 'EQ') return true;
+                        if (i.exchange === 'MCX' && i.instrument_type === 'FUT') return true;
+                        if (i.exchange === 'NFO' && i.instrument_type === 'FUT') return true;
+                        return false;
+                    })
+                    .map(i => {
+                        // NSE EQ: use tradingsymbol (RELIANCE, TCS)
+                        // MCX/NFO FUT: use name field (GOLD, SILVER, NIFTY) — strip expiry+FUT
+                        const isEQ = i.instrument_type === 'EQ';
+                        const cleanSymbol = isEQ ? i.tradingsymbol : (i.name || i.tradingsymbol);
+                        return {
+                            symbol: cleanSymbol,
+                            name: i.name || i.tradingsymbol,
+                            exchange: i.exchange,
+                            instrument_type: i.instrument_type,
+                            lot_size: parseInt(i.lot_size) || 1,
+                        };
+                    })
+                    .filter(i => {
+                        // Deduplicate by exchange:symbol
+                        const key = `${i.exchange}:${i.symbol}`;
+                        if (seen.has(key)) return false;
+                        seen.add(key);
+                        return true;
+                    });
+                kiteScripCache = kiteSymbols;
+                kiteScripCacheTime = now;
+            }
+        } catch (kiteErr) {
+            console.warn('Kite instruments fetch failed, using DB only:', kiteErr.message);
+        }
+
+        // 3. Merge: Kite data + DB overrides
+        if (kiteSymbols.length > 0) {
+            const result = kiteSymbols.map(k => {
+                const dbOverride = dbMap[k.symbol];
+                return {
+                    symbol: k.symbol,
+                    name: k.name,
+                    exchange: k.exchange,
+                    lot_size: dbOverride?.lot_size || k.lot_size,
+                    margin_req: dbOverride?.margin_req || 50,
+                    market_type: k.exchange === 'MCX' ? 'MCX' : k.exchange === 'NFO' ? 'NFO' : 'EQUITY',
+                    status: dbOverride?.status || 'OPEN',
+                };
+            });
+            return res.json(result);
+        }
+
+        // 4. Fallback: DB only (if Kite not connected)
+        res.json(dbRows);
     } catch (err) {
-        console.error(err);
+        console.error('getScrips error:', err);
         res.status(500).send('Server Error');
     }
 };

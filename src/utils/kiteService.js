@@ -22,12 +22,7 @@ class KiteService {
         // Load existing session if available
         this.loadSession();
 
-        // Auto-load from .env if no session loaded
-        if (!this.accessToken && process.env.KITE_ACCESS_TOKEN) {
-            this.accessToken = process.env.KITE_ACCESS_TOKEN;
-            this.sessionData = { access_token: process.env.KITE_ACCESS_TOKEN };
-            console.log('🔑 Kite access token loaded from .env');
-        }
+        // Token is now managed via Zerodha login or manual paste — no .env fallback needed
     }
 
     // ─── SESSION MANAGEMENT ───────────────────────────────
@@ -227,7 +222,10 @@ class KiteService {
             const values = lines[i].split(',');
             const instrument = {};
             headers_arr.forEach((h, idx) => {
-                instrument[h.trim()] = values[idx]?.trim();
+                let val = values[idx]?.trim() || '';
+                // Strip surrounding quotes from CSV fields
+                if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
+                instrument[h.trim()] = val;
             });
             instruments.push(instrument);
         }
