@@ -108,17 +108,20 @@ function buildResponse(rawData, type) {
     return result;
 }
 
+// ── REST endpoints — serve from MarketDataService cache (no fresh API call) ──
+const marketDataService = require('../services/MarketDataService');
+
 // ── GET /api/market-data/crypto ──
 router.get('/crypto', authMiddleware, async (req, res) => {
     try {
+        // Serve from MarketDataService in-memory cache (populated by background intervals)
+        const cached = marketDataService.getCryptoPrices();
+        if (cached.length > 0) {
+            return res.json({ status: 'success', type: 'crypto', count: cached.length, timestamp: new Date().toISOString(), data: cached });
+        }
+        // Fallback: direct fetch if service hasn't populated yet
         const data = await fetchTwelveData(CRYPTO_SYMBOLS, 'crypto');
-        res.json({
-            status: 'success',
-            type: 'crypto',
-            count: Object.keys(data).length,
-            timestamp: new Date().toISOString(),
-            data: buildResponse(data, 'crypto'),
-        });
+        res.json({ status: 'success', type: 'crypto', count: Object.keys(data).length, timestamp: new Date().toISOString(), data: buildResponse(data, 'crypto') });
     } catch (err) {
         res.status(500).json({ status: 'error', message: err.message });
     }
@@ -127,14 +130,12 @@ router.get('/crypto', authMiddleware, async (req, res) => {
 // ── GET /api/market-data/forex ──
 router.get('/forex', authMiddleware, async (req, res) => {
     try {
+        const cached = marketDataService.getForexPrices();
+        if (cached.length > 0) {
+            return res.json({ status: 'success', type: 'forex', count: cached.length, timestamp: new Date().toISOString(), data: cached });
+        }
         const data = await fetchTwelveData(FOREX_SYMBOLS, 'forex');
-        res.json({
-            status: 'success',
-            type: 'forex',
-            count: Object.keys(data).length,
-            timestamp: new Date().toISOString(),
-            data: buildResponse(data, 'forex'),
-        });
+        res.json({ status: 'success', type: 'forex', count: Object.keys(data).length, timestamp: new Date().toISOString(), data: buildResponse(data, 'forex') });
     } catch (err) {
         res.status(500).json({ status: 'error', message: err.message });
     }
@@ -143,16 +144,17 @@ router.get('/forex', authMiddleware, async (req, res) => {
 // ── GET /api/market-data/all — Both in one call ──
 router.get('/all', authMiddleware, async (req, res) => {
     try {
-        const [crypto, forex] = await Promise.all([
+        const crypto = marketDataService.getCryptoPrices();
+        const forex = marketDataService.getForexPrices();
+        if (crypto.length > 0 || forex.length > 0) {
+            return res.json({ status: 'success', timestamp: new Date().toISOString(), crypto, forex });
+        }
+        // Fallback
+        const [c, f] = await Promise.all([
             fetchTwelveData(CRYPTO_SYMBOLS, 'crypto'),
             fetchTwelveData(FOREX_SYMBOLS, 'forex'),
         ]);
-        res.json({
-            status: 'success',
-            timestamp: new Date().toISOString(),
-            crypto: buildResponse(crypto, 'crypto'),
-            forex: buildResponse(forex, 'forex'),
-        });
+        res.json({ status: 'success', timestamp: new Date().toISOString(), crypto: buildResponse(c, 'crypto'), forex: buildResponse(f, 'forex') });
     } catch (err) {
         res.status(500).json({ status: 'error', message: err.message });
     }
