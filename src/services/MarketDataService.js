@@ -3,9 +3,40 @@ const kiteAuthService = require('./KiteAuthService');
 const socketManager = require('../websocket/SocketManager');
 const EventEmitter = require('events');
 
+// ── Twelve Data config for Crypto + Forex ──
+const TWELVE_DATA_KEY = process.env.TWELVE_DATA_API_KEY || 'demo';
+const TWELVE_BASE = 'https://api.twelvedata.com';
+
+const CRYPTO_SYMBOLS = 'BTC/USD,ETH/USD,BNB/USD,SOL/USD,XRP/USD,ADA/USD,DOGE/USD,DOT/USD,MATIC/USD,AVAX/USD';
+const FOREX_SYMBOLS = 'XAU/USD,XAG/USD,USD/INR,EUR/INR,GBP/USD,USD/JPY,USD/CHF,AUD/CAD,EUR/USD,GBP/INR';
+
+const SYMBOL_META = {
+    'BTC/USD': { name: 'Bitcoin', category: 'crypto' },
+    'ETH/USD': { name: 'Ethereum', category: 'crypto' },
+    'BNB/USD': { name: 'BNB', category: 'crypto' },
+    'SOL/USD': { name: 'Solana', category: 'crypto' },
+    'XRP/USD': { name: 'Ripple', category: 'crypto' },
+    'ADA/USD': { name: 'Cardano', category: 'crypto' },
+    'DOGE/USD': { name: 'Dogecoin', category: 'crypto' },
+    'DOT/USD': { name: 'Polkadot', category: 'crypto' },
+    'MATIC/USD': { name: 'Polygon', category: 'crypto' },
+    'AVAX/USD': { name: 'Avalanche', category: 'crypto' },
+    'XAU/USD': { name: 'Gold', category: 'commodity' },
+    'XAG/USD': { name: 'Silver', category: 'commodity' },
+    'USD/INR': { name: 'USD/INR', category: 'forex' },
+    'EUR/INR': { name: 'EUR/INR', category: 'forex' },
+    'GBP/USD': { name: 'GBP/USD', category: 'forex' },
+    'USD/JPY': { name: 'USD/JPY', category: 'forex' },
+    'USD/CHF': { name: 'USD/CHF', category: 'forex' },
+    'AUD/CAD': { name: 'AUD/CAD', category: 'forex' },
+    'EUR/USD': { name: 'EUR/USD', category: 'forex' },
+    'GBP/INR': { name: 'GBP/INR', category: 'forex' },
+};
+
 /**
- * Service to manage real-time market data from Zerodha.
+ * Service to manage real-time market data from Zerodha + Twelve Data.
  * Handles single master connection or per-user connection if needed.
+ * Broadcasts all price updates via Socket.IO.
  */
 class MarketDataService extends EventEmitter {
     constructor() {
@@ -15,6 +46,12 @@ class MarketDataService extends EventEmitter {
         this.subscribedTokens = new Set();
         this.instrumentMap = {}; // token -> symbol
         this.isConnecting = false;
+
+        // Crypto + Forex state
+        this.cryptoPrices = {};
+        this.forexPrices = {};
+        this.cryptoInterval = null;
+        this.forexInterval = null;
     }
 
     async init(userId) {
@@ -173,7 +210,93 @@ class MarketDataService extends EventEmitter {
             this.ticker = null;
             console.log('📉 Ticker Shutdown');
         }
+        this.stopCryptoForex();
     }
+
+    // ══════════════════════════════════════════════════════
+    //   CRYPTO + FOREX (Twelve Data) — separate intervals
+    // ══════════════════════════════════════════════════════
+
+    startCryptoForex() {
+        if (this.cryptoInterval) return;
+        console.log('🌐 Starting Crypto + Forex data feeds');
+
+        // Crypto: fetch every 3 seconds
+        this.cryptoInterval = setInterval(() => this._fetchTwelveData(CRYPTO_SYMBOLS, 'crypto'), 3000);
+        // Forex: fetch every 5 seconds
+        this.forexInterval = setInterval(() => this._fetchTwelveData(FOREX_SYMBOLS, 'forex'), 5000);
+
+        // Immediate first fetch
+        this._fetchTwelveData(CRYPTO_SYMBOLS, 'crypto');
+        this._fetchTwelveData(FOREX_SYMBOLS, 'forex');
+    }
+
+    stopCryptoForex() {
+        if (this.cryptoInterval) { clearInterval(this.cryptoInterval); this.cryptoInterval = null; }
+        if (this.forexInterval) { clearInterval(this.forexInterval); this.forexInterval = null; }
+    }
+
+    async _fetchTwelveData(symbols, type) {
+        try {
+            const url = `${TWELVE_BASE}/price?symbol=${symbols}&apikey=${TWELVE_DATA_KEY}`;
+            const response = await fetch(url);
+            const data = await response.json();
+
+            const io = socketManager.getIo();
+            const updates = {};
+            const store = type === 'crypto' ? this.cryptoPrices : this.forexPrices;
+
+            // Parse response — multi-symbol returns { "BTC/USD": { price: "..." } }
+            if (data.price) {
+                // Single symbol
+                const sym = symbols.split(',')[0];
+                const price = parseFloat(data.price);
+                const prev = store[sym]?.ltp || price;
+                const change = price - prev;
+                const meta = SYMBOL_META[sym] || { name: sym, category: type };
+
+                const entry = {
+                    symbol: sym, name: meta.name, category: meta.category, type,
+                    ltp: price, change: parseFloat(change.toFixed(6)),
+                    chg_pct: prev ? ((change / prev) * 100).toFixed(4) : '0.00',
+                    direction: change > 0 ? 'up' : change < 0 ? 'down' : 'neutral',
+                };
+                store[sym] = entry;
+                updates[`${type}:${sym}`] = entry;
+            } else {
+                for (const [sym, val] of Object.entries(data)) {
+                    if (!val || !val.price) continue;
+                    const price = parseFloat(val.price);
+                    const prev = store[sym]?.ltp || price;
+                    const change = price - prev;
+                    const meta = SYMBOL_META[sym] || { name: sym, category: type };
+
+                    const entry = {
+                        symbol: sym, name: meta.name, category: meta.category, type,
+                        ltp: price, change: parseFloat(change.toFixed(6)),
+                        chg_pct: prev ? ((change / prev) * 100).toFixed(4) : '0.00',
+                        direction: change > 0 ? 'up' : change < 0 ? 'down' : 'neutral',
+                    };
+                    store[sym] = entry;
+                    updates[`${type}:${sym}`] = entry;
+                }
+            }
+
+            // Broadcast via same WebSocket event
+            if (io && Object.keys(updates).length > 0) {
+                io.emit('market_data_update', { type, data: Object.values(updates), timestamp: new Date().toISOString() });
+            }
+        } catch (err) {
+            // Silent fail — don't spam console on rate limits
+            if (!err.message?.includes('429')) {
+                console.warn(`Twelve Data (${type}) error:`, err.message);
+            }
+        }
+    }
+
+    // Get cached crypto/forex data (for REST fallback)
+    getCryptoPrices() { return Object.values(this.cryptoPrices); }
+    getForexPrices() { return Object.values(this.forexPrices); }
 }
 
 module.exports = new MarketDataService();

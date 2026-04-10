@@ -89,6 +89,9 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/paper-trading', paperRoutes);
 
+const marketDataRoutes = require('./routes/marketDataRoutes');
+app.use('/api/market-data', marketDataRoutes);
+
 // ── Root-level voice AI routes (no /api prefix, no auth required for direct access)
 app.post('/ai-parse', aiParse);
 app.post('/execute-command', executeVoiceCommand);
@@ -166,6 +169,14 @@ runMigrations()
         } catch (err) {
             console.warn('Market data init failed:', err.message);
             marketDataService.startMockEngine();
+        }
+
+        // Start Crypto + Forex feeds (Twelve Data) — independent of Kite
+        try {
+            marketDataService.startCryptoForex();
+            console.log('✅ Crypto + Forex feeds started');
+        } catch (cfErr) {
+            console.warn('Crypto/Forex feeds failed:', cfErr.message);
         }
     })
     .catch((err) => {
