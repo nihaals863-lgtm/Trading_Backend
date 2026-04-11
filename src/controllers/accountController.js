@@ -66,9 +66,11 @@ const getHierarchyAccounts = async (req, res) => {
                     fullName: broker.full_name || '',
                     clientPL: '0.00',
                     clientBrokerage: '0.00',
+                    clientSwap: '0.00',
                     clientNet: '0.00',
                     plShare: '0.00',
                     brokerageShare: '0.00',
+                    swapShare: '0.00',
                     netShare: '0.00',
                     receivablePayable: 'Receivable',
                 });
@@ -78,11 +80,12 @@ const getHierarchyAccounts = async (req, res) => {
             const clientIds = clients.map(c => c.id);
             const placeholders = clientIds.map(() => '?').join(',');
 
-            // Sum of closed trades PnL for all clients of this broker
+            // Sum of closed trades PnL, Brokerage, and Swap for all clients of this broker
             const [plRows] = await db.execute(
                 `SELECT
                     COALESCE(SUM(t.pnl), 0) AS total_pnl,
-                    COALESCE(SUM(t.brokerage), 0) AS total_brokerage
+                    COALESCE(SUM(t.brokerage), 0) AS total_brokerage,
+                    COALESCE(SUM(t.swap), 0) AS total_swap
                  FROM trades t
                  WHERE t.user_id IN (${placeholders}) AND ${dateFilter}`,
                 [...clientIds, ...dateParams]
@@ -90,14 +93,17 @@ const getHierarchyAccounts = async (req, res) => {
 
             const clientPL = parseFloat(plRows[0]?.total_pnl || 0);
             const clientBrokerage = parseFloat(plRows[0]?.total_brokerage || 0);
-            const clientNet = clientPL - clientBrokerage;
+            const clientSwap = parseFloat(plRows[0]?.total_swap || 0);
+            const clientNet = clientPL - clientBrokerage - clientSwap;
 
             const plSharePct = parseFloat(broker.share_pl_pct || 0) / 100;
             const brokerageSharePct = parseFloat(broker.share_brokerage_pct || 0) / 100;
+            const swapSharePct = parseFloat(broker.share_swap_pct || 0) / 100;
 
             const plShare = clientPL * plSharePct;
             const brokerageShare = clientBrokerage * brokerageSharePct;
-            const netShare = plShare - brokerageShare;
+            const swapShare = clientSwap * swapSharePct;
+            const netShare = plShare + brokerageShare + swapShare;
 
             // Receivable = broker owes admin (client lost money, admin profit)
             // Payable    = admin owes broker (client made money, broker gets share)
@@ -108,9 +114,11 @@ const getHierarchyAccounts = async (req, res) => {
                 fullName: broker.full_name || '',
                 clientPL: clientPL.toFixed(2),
                 clientBrokerage: clientBrokerage.toFixed(2),
+                clientSwap: clientSwap.toFixed(2),
                 clientNet: clientNet.toFixed(2),
                 plShare: plShare.toFixed(2),
                 brokerageShare: brokerageShare.toFixed(2),
+                swapShare: swapShare.toFixed(2),
                 netShare: netShare.toFixed(2),
                 receivablePayable,
             });

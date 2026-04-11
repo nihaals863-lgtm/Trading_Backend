@@ -122,6 +122,7 @@ const runMigrations = async () => {
 
     await addColumn('broker_shares', 'permissions_json', 'TEXT DEFAULT NULL');
     await addColumn('broker_shares', 'segments_json',    'TEXT DEFAULT NULL');
+    await addColumn('broker_shares', 'swap_rate',        'DECIMAL(8,2) DEFAULT 5.00');
 
     // ─── 5. USER SEGMENTS ──────────────────────────────────────────────────────
 
@@ -200,6 +201,7 @@ const runMigrations = async () => {
     // Add market_type to trades & scrip_data for existing DBs
     await addColumn('trades', 'market_type', "ENUM('MCX','EQUITY','COMEX','FOREX','CRYPTO') DEFAULT 'MCX' AFTER is_pending");
     await addColumn('trades', 'brokerage', "DECIMAL(18,4) DEFAULT 0 AFTER pnl");
+    await addColumn('trades', 'swap', "DECIMAL(18,4) DEFAULT 0 AFTER brokerage");
     await addColumn('scrip_data', 'market_type', "ENUM('MCX','EQUITY','COMEX','FOREX','CRYPTO') DEFAULT 'MCX' AFTER margin_req");
     await addColumn('scrip_data', 'expiry_date', "DATE DEFAULT NULL AFTER market_type");
 

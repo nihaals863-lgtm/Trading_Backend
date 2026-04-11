@@ -367,7 +367,7 @@ const getBrokerShares = async (req, res) => {
 const updateBrokerShares = async (req, res) => {
     const {
         sharePL, shareBrokerage, shareSwap, brokerageType,
-        tradingClientsLimit, subBrokersLimit, permissions, segments
+        tradingClientsLimit, subBrokersLimit, permissions, segments, swapRate
     } = req.body;
 
     try {
@@ -375,8 +375,8 @@ const updateBrokerShares = async (req, res) => {
             INSERT INTO broker_shares
                 (user_id, share_pl_pct, share_brokerage_pct, share_swap_pct,
                  brokerage_type, trading_clients_limit, sub_brokers_limit,
-                 permissions_json, segments_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 permissions_json, segments_json, swap_rate)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 share_pl_pct = VALUES(share_pl_pct),
                 share_brokerage_pct = VALUES(share_brokerage_pct),
@@ -385,7 +385,8 @@ const updateBrokerShares = async (req, res) => {
                 trading_clients_limit = VALUES(trading_clients_limit),
                 sub_brokers_limit = VALUES(sub_brokers_limit),
                 permissions_json = VALUES(permissions_json),
-                segments_json = VALUES(segments_json)
+                segments_json = VALUES(segments_json),
+                swap_rate = VALUES(swap_rate)
         `, [
             req.params.id,
             sharePL || 0,
@@ -395,7 +396,8 @@ const updateBrokerShares = async (req, res) => {
             tradingClientsLimit || 10,
             subBrokersLimit || 3,
             permissions ? JSON.stringify(permissions) : null,
-            segments ? JSON.stringify(segments) : null
+            segments ? JSON.stringify(segments) : null,
+            swapRate || 5  // Default ₹5 per lot per day
         ]);
 
         res.json({ message: 'Broker shares updated' });
