@@ -857,8 +857,8 @@ const placeOrder = async (req, res) => {
         // 8. Insert Trade
         const [result] = await db.execute(
             `INSERT INTO trades
-                (user_id, symbol, type, order_type, qty, entry_price, exit_price, margin_used, is_pending, market_type, status, trade_ip)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                (user_id, symbol, type, order_type, qty, entry_price, exit_price, margin_used, is_pending, market_type, status, trade_ip, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 targetUserId,
                 sym,
@@ -871,7 +871,8 @@ const placeOrder = async (req, res) => {
                 is_pending ? 1 : 0,
                 marketType,
                 'OPEN',
-                tradeIp
+                tradeIp,
+                requesterId
             ]
         );
 
@@ -927,10 +928,23 @@ const getTrades = async (req, res) => {
         if (user_id) {
             query += ' AND t.user_id = ?';
             params.push(user_id);
-        } else if (req.user.role !== 'SUPERADMIN') {
-            // Apply role hierarchy filtering only when not filtering by specific user
-            query += ' AND (u.id = ? OR u.parent_id = ?)';
-            params.push(req.user.id, req.user.id);
+            
+            // Even if user_id is provided, non-traders should only see trades they created for that user
+            if (req.user.role !== 'TRADER') {
+                query += ' AND t.created_by = ?';
+                params.push(req.user.id);
+            }
+        } else {
+            // Role-based visibility logic: "Jisme jo trade banai usko vahi dikhe"
+            if (req.user.role === 'TRADER') {
+                // Traders see their own trades
+                query += ' AND t.user_id = ?';
+                params.push(req.user.id);
+            } else {
+                // Admins, Brokers, Superadmins see only trades THEY created
+                query += ' AND t.created_by = ?';
+                params.push(req.user.id);
+            }
         }
 
         // Filter by username
@@ -985,9 +999,14 @@ const getTradeById = async (req, res) => {
         }
 
         const trade = rows[0];
+        const { id: requesterId } = req.user;
+        
+        // Access check: "Jisme jo trade banai usko vahi dikhe"
+        // Target user (Trader) can see their own trades OR Creator can see trades they placed
+        const isTargetUser = trade.user_id === requesterId;
+        const isCreator = trade.created_by === requesterId;
 
-        // Access check: Admin sees all, Others see only theirs
-        if (req.user.role !== 'SUPERADMIN' && req.user.role !== 'ADMIN' && trade.user_id !== req.user.id) {
+        if (!isTargetUser && !isCreator) {
             return res.status(403).json({ message: 'Not authorized to view this trade' });
         }
 
@@ -1017,11 +1036,17 @@ const getGroupTrades = async (req, res) => {
         `;
         const params = [];
 
-        // Hierarchy Isolation: Superadmin sees everything, others see only their downline
-        if (role !== 'SUPERADMIN') {
-            query += ` AND (u.id = ? OR u.parent_id = ? OR u.parent_id IN (SELECT id FROM users WHERE parent_id = ?))`;
-            params.push(id, id, id);
+        // Hierarchy Isolation: "Jisme jo trade banai usko vahi dikhe"
+        if (role === 'TRADER') {
+            query += ` AND t.user_id = ?`;
+            params.push(id);
+        } else {
+            // For others, only show groups of trades THEY created
+            query += ` AND t.created_by = ?`;
+            params.push(id);
         }
+        // Note: Joining users table is kept if needed for future filters, 
+        // though currently we filter by trade.user_id/created_by directly where possible.
 
         // Filter by scrip (symbol)
         if (scrip) {

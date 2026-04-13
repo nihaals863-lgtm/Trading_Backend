@@ -202,6 +202,7 @@ const runMigrations = async () => {
     await addColumn('trades', 'market_type', "ENUM('MCX','EQUITY','COMEX','FOREX','CRYPTO') DEFAULT 'MCX' AFTER is_pending");
     await addColumn('trades', 'brokerage', "DECIMAL(18,4) DEFAULT 0 AFTER pnl");
     await addColumn('trades', 'swap', "DECIMAL(18,4) DEFAULT 0 AFTER brokerage");
+    await addColumn('trades', 'created_by', "INT DEFAULT NULL AFTER trade_ip");
     await addColumn('scrip_data', 'market_type', "ENUM('MCX','EQUITY','COMEX','FOREX','CRYPTO') DEFAULT 'MCX' AFTER margin_req");
     await addColumn('scrip_data', 'expiry_date', "DATE DEFAULT NULL AFTER market_type");
 
@@ -701,6 +702,7 @@ const runMigrations = async () => {
     await addIndex('trades', 'idx_trades_created_at', 'created_at');
     await addIndex('trades', 'idx_trades_user_status', 'user_id, status');
     await addIndex('trades', 'idx_trades_symbol', 'symbol');
+    await addIndex('trades', 'idx_trades_created_by', 'created_by');
 
     // Ledger table indexes
     await addIndex('ledger', 'idx_ledger_user_id', 'user_id');
