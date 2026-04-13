@@ -60,7 +60,7 @@ KEY MAPPINGS:
    - DELETE: "trade 5 delete karo" → UPDATE status='DELETED' WHERE id=5
 
 3. FUNDS / LEDGER (money management)
-   - ADD_FUND: "ID 16 me 5000 add karo" → UPDATE users balance + INSERT ledger
+   - ADD_FUND: "ID 16 me 5001 add karo" → UPDATE users balance + INSERT ledger
    - WITHDRAW: "ID 16 se 3000 hatao" → UPDATE users balance + INSERT ledger
    - TRANSFER: "ID 10 se ID 20 me 500 bhejo" → UPDATE both + INSERT 2 ledger
 
@@ -108,7 +108,7 @@ KEY MAPPINGS:
 
 6. ADD_FUND (deposit money)
    Keywords: add, deposit, jama, credit, bdhao
-   Example: "ID 16 me 5000 add karo" → ADD_FUND with amount=5000
+   Example: "ID 16 me 5001 add karo" → ADD_FUND with amount=5001
 
 7. WITHDRAW (deduct money)
    Keywords: withdraw, hatao, nikalo, debit
@@ -159,8 +159,8 @@ DATE RANGE:
 - "pichle mahine" (last month) → dateRange for month
 
 AMOUNT:
-- "5000" → {amount: 5000}
-- "5k" → {amount: 5000}
+- "5001" → {amount: 5001}
+- "5k" → {amount: 5001}
 - "10,000" → {amount: 10000}
 
 ════════════════════════════════════════════════════════════════════════════════
@@ -261,20 +261,20 @@ ALWAYS return this exact structure (no extra text, pure JSON):
         "step": 2,
         "description": "Update balance",
         "sql": "UPDATE users SET balance = balance + ? WHERE id = ?",
-        "params": [5000, 16]
+        "params": [5001, 16]
       },
       {
         "step": 3,
         "description": "Insert ledger",
         "sql": "INSERT INTO ledger (user_id, amount, type, balance_after, remarks) VALUES (?, ?, ?, ?, ?)",
-        "params": [16, 5000, "DEPOSIT", 15000, "AI Command: Fund added"]
+        "params": [16, 5001, "DEPOSIT", 15001, "AI Command: Fund added"]
       }
     ]
   },
 
   "data": {
     "userId": 16,
-    "amount": 5000,
+    "amount": 5001,
     "name": "Rahul",
     "email": "rahul@example.com",
     "role": "ADMIN",
@@ -304,7 +304,7 @@ ALWAYS return this exact structure (no extra text, pure JSON):
 INPUT: "trading clients dikhao"
 → SELECT * FROM users WHERE role = 'TRADER'
 
-INPUT: "ID 16 me 5000 add karo"
+INPUT: "ID 16 me 5001 add karo"
 → 3-step: validate user → update balance → insert ledger
 
 INPUT: "blocked users dikhao"
@@ -327,7 +327,7 @@ INPUT: "GOLD buy trades open"
 ════════════════════════════════════════════════════════════════════════════════
 
 - DO NOT keyword match — understand INTENT
-- Hindi "16 number ID pe 5000 jama karo" == English "add 5000 to user ID 16"
+- Hindi "16 number ID pe 5001 jama karo" == English "add 5001 to user ID 16"
 - Hindi "16 id se paise nikalo" == "withdraw from user 16"
 - "kitne traders" means COUNT, not SELECT *
 - "kal ke trades" needs DATE filter, not just trades
@@ -347,70 +347,70 @@ INPUT: "GOLD buy trades open"
  * @returns {Promise<object>} Execution-ready JSON
  */
 const processMasterCommand = async (text, userContext = {}) => {
-    if (!text || !text.trim()) {
-        return {
-            success: false,
-            error: 'Command text is required',
-        };
-    }
+  if (!text || !text.trim()) {
+    return {
+      success: false,
+      error: 'Command text is required',
+    };
+  }
 
-    const hasValidKey =
-        process.env.OPENAI_API_KEY &&
-        process.env.OPENAI_API_KEY.length > 30 &&
-        !process.env.OPENAI_API_KEY.startsWith('sk-your') &&
-        !process.env.OPENAI_API_KEY.includes('placeholder');
+  const hasValidKey =
+    process.env.OPENAI_API_KEY &&
+    process.env.OPENAI_API_KEY.length > 30 &&
+    !process.env.OPENAI_API_KEY.startsWith('sk-your') &&
+    !process.env.OPENAI_API_KEY.includes('placeholder');
 
-    if (!hasValidKey) {
-        return {
-            success: false,
-            error: 'OpenAI API key not configured',
-        };
-    }
+  if (!hasValidKey) {
+    return {
+      success: false,
+      error: 'OpenAI API key not configured',
+    };
+  }
 
-    try {
-        // 1. Load schema for context
-        const schema = await getSchemaSummary();
+  try {
+    // 1. Load schema for context
+    const schema = await getSchemaSummary();
 
-        // 2. Build master prompt
-        const masterPrompt = buildMasterPrompt(schema);
+    // 2. Build master prompt
+    const masterPrompt = buildMasterPrompt(schema);
 
-        // 3. Call OpenAI
-        const OpenAI = require('openai');
-        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    // 3. Call OpenAI
+    const OpenAI = require('openai');
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-        const completion = await openai.chat.completions.create({
-            model: 'gpt-4o',  // Latest & most powerful model
-            messages: [
-                {
-                    role: 'system',
-                    content: masterPrompt,
-                },
-                {
-                    role: 'user',
-                    content: `User Role: ${userContext.role || 'ADMIN'}\nUser: ${userContext.full_name || 'Admin'}\n\nCommand: ${text}`,
-                },
-            ],
-            temperature: 0,
-            response_format: { type: 'json_object' },
-        });
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',  // Latest & most powerful model
+      messages: [
+        {
+          role: 'system',
+          content: masterPrompt,
+        },
+        {
+          role: 'user',
+          content: `User Role: ${userContext.role || 'ADMIN'}\nUser: ${userContext.full_name || 'Admin'}\n\nCommand: ${text}`,
+        },
+      ],
+      temperature: 0,
+      response_format: { type: 'json_object' },
+    });
 
-        const result = JSON.parse(completion.choices[0].message.content);
+    const result = JSON.parse(completion.choices[0].message.content);
 
-        console.log('[aiMasterPrompt] ✅ Processed:', JSON.stringify({
-            module: result.intent?.module,
-            operation: result.intent?.operation,
-            confidence: result.intent?.confidence,
-        }));
+    console.log('[aiMasterPrompt] ✅ Processed:', JSON.stringify({
+      module: result.intent?.module,
+      operation: result.intent?.operation,
+      confidence: result.intent?.confidence,
+    }));
 
-        return result;
+    return result;
 
-    } catch (err) {
-        console.error('[aiMasterPrompt] ❌ Error:', err.message);
-        return {
-            success: false,
-            error: err.message || 'Master command processing failed',
-        };
-    }
+  } catch (err) {
+    console.error('[aiMasterPrompt] ❌ Error:', err.message);
+    return {
+      success: false,
+      error: err.message || 'Master command processing failed',
+    };
+  }
 };
 
 module.exports = { processMasterCommand, buildMasterPrompt };

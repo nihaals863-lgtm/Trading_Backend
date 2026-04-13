@@ -1,10 +1,10 @@
 const pool = require('./src/config/db');
 
 const sampleScrips = [
-    { symbol: 'CRUDEOIL', lot_size: 1, margin_req: 50000 },
+    { symbol: 'CRUDEOIL', lot_size: 1, margin_req: 50010 },
     { symbol: 'GOLD', lot_size: 1, margin_req: 100000 },
     { symbol: 'SILVER', lot_size: 1, margin_req: 80000 },
-    { symbol: 'NIFTY', lot_size: 50, margin_req: 150000 },
+    { symbol: 'NIFTY', lot_size: 50, margin_req: 150010 },
     { symbol: 'BANKNIFTY', lot_size: 25, margin_req: 130000 },
     { symbol: 'RELIANCE', lot_size: 250, margin_req: 200000 },
     { symbol: 'TCS', lot_size: 175, margin_req: 210000 },

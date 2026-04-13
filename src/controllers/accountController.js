@@ -30,11 +30,12 @@ const getHierarchyAccounts = async (req, res) => {
         // Get users under logged-in user
         // roleFilter='BROKER' for BrokerAccountsPage (only brokers)
         // roleFilter=null for AccountsPage (all roles)
+        // For BROKER viewing AccountsPage: show own account + clients
         let query = `SELECT u.id, u.username, u.full_name, u.role, bs.share_pl_pct, bs.share_brokerage_pct
                      FROM users u
                      LEFT JOIN broker_shares bs ON bs.user_id = u.id
-                     WHERE u.parent_id = ?`;
-        let queryParams = [loggedInId];
+                     WHERE (u.parent_id = ? OR u.id = ?)`;
+        let queryParams = [loggedInId, loggedInId];
 
         if (roleFilter === 'BROKER') {
             query += " AND u.role = 'BROKER'";
@@ -49,9 +50,14 @@ const getHierarchyAccounts = async (req, res) => {
 
         for (const broker of brokers) {
             // Get all clients under this broker
+            // Clients can be assigned to broker in two ways:
+            // 1. parent_id = broker.id (created directly by broker)
+            // 2. broker_id in client_settings (assigned by admin/superadmin)
             const [clients] = await db.execute(
-                'SELECT id FROM users WHERE parent_id = ? AND role = ?',
-                [broker.id, 'TRADER']
+                `SELECT DISTINCT u.id FROM users u
+                 LEFT JOIN client_settings cs ON cs.user_id = u.id
+                 WHERE u.role = ? AND (u.parent_id = ? OR cs.broker_id = ?)`,
+                ['TRADER', broker.id, broker.id]
             );
 
             if (!clients.length) {

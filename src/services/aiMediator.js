@@ -3,9 +3,9 @@ const db = require('../config/db');
 
 let openai = null;
 if (process.env.OPENAI_API_KEY) {
-    openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 } else {
-    console.warn("⚠️  OPENAI_API_KEY missing in .env — Universal AI Mediator feature will be disabled.");
+  console.warn("⚠️  OPENAI_API_KEY missing in .env — Universal AI Mediator feature will be disabled.");
 }
 
 
@@ -70,12 +70,12 @@ const tools = [
           },
           params: {
             type: 'array',
-            description: 'Array of parameters to bind. Example: [5000, 16]',
+            description: 'Array of parameters to bind. Example: [5001, 16]',
             items: { type: ['string', 'number', 'boolean', 'null'] },
           },
           description: {
             type: 'string',
-            description: 'What this operation does. Example: "Add 5000 rupees to user 16 balance"',
+            description: 'What this operation does. Example: "Add 5001 rupees to user 16 balance"',
           },
         },
         required: ['sql', 'params', 'description'],
@@ -250,7 +250,7 @@ RULES:
 
 EXAMPLES:
 - "rahul ke trades" → db_read to get user ID by name, then fetch trades
-- "5000 add karo user 16 me" → db_write to UPDATE users balance
+- "5001 add karo user 16 me" → db_write to UPDATE users balance
 - "user 5 ko block karo aur ledger me mark karo" → db_transaction with 2 writes
 `;
 
@@ -279,7 +279,7 @@ EXAMPLES:
 
     try {
       if (!openai) {
-          throw new Error("OpenAI API key missing. AI features are disabled.");
+        throw new Error("OpenAI API key missing. AI features are disabled.");
       }
       response = await openai.chat.completions.create({
 

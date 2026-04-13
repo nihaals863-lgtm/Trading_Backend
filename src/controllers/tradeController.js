@@ -187,6 +187,49 @@ const placeOrder = async (req, res) => {
             }
         } catch (_) { /* scrip_data may not have market_type column yet */ }
 
+        // ─── BROKER SEGMENT VALIDATION ─────────────────────────────────────
+        // Get client's broker info and validate against broker's segment config
+        const [clientSettings] = await db.execute(
+            'SELECT broker_id, config_json FROM client_settings WHERE user_id = ?',
+            [targetUserId]
+        );
+
+        if (clientSettings.length > 0 && clientSettings[0].broker_id) {
+            const brokerIdForClient = clientSettings[0].broker_id;
+            try {
+                const clientConfig = JSON.parse(clientSettings[0].config_json || '{}');
+                const brokerSegmentConfig = clientConfig.brokerSegments || {};
+
+                // Determine segment key based on market type
+                let segmentKey = null;
+                if (marketType === 'MCX') {
+                    segmentKey = 'mcx_all_future';
+                } else if (marketType === 'COMEX') {
+                    segmentKey = 'comex_commodity_future'; // or other COMEX variants
+                } else if (marketType === 'FOREX') {
+                    segmentKey = 'forex';
+                } else if (marketType === 'CRYPTO') {
+                    segmentKey = 'crypto';
+                } else if (marketType === 'EQUITY') {
+                    segmentKey = 'equity';
+                }
+
+                // Check if segment is enabled for this broker
+                if (segmentKey && brokerSegmentConfig[segmentKey]) {
+                    const segConfig = brokerSegmentConfig[segmentKey];
+                    if (!segConfig.enabled) {
+                        return res.status(403).json({
+                            message: `Trading disabled for ${marketType} segment by your broker`
+                        });
+                    }
+                    console.log(`[placeOrder] ✅ ${marketType} segment enabled for broker ${brokerIdForClient}`);
+                }
+            } catch (e) {
+                console.error('[placeOrder] Error validating broker segment config:', e);
+                // Continue - validation error shouldn't block the trade
+            }
+        }
+
         console.log('Executing with:', { targetUserId, symbol, type, executionPrice, marginRequired, marketType });
 
         // 8. Insert Trade
@@ -427,12 +470,35 @@ const closeTrade = async (req, res) => {
             ? (finalExitPrice - trade.entry_price) * trade.qty
             : (trade.entry_price - finalExitPrice) * trade.qty;
 
-        // Release margin + Add/Subtract PnL
-        const balanceChange = pnl + marginToRelease;
+        // ─── CALCULATE BROKERAGE FROM BROKER CONFIG ─────────────────────────
+        let brokerage = 0;
+        try {
+            const [clientSettings] = await db.execute(
+                'SELECT broker_id, config_json FROM client_settings WHERE user_id = ?',
+                [trade.user_id]
+            );
+
+            if (clientSettings.length > 0 && clientSettings[0].broker_id) {
+                const clientConfig = JSON.parse(clientSettings[0].config_json || '{}');
+                const brokerMcxBrokerage = clientConfig.brokerMcxBrokerage || {};
+
+                // Get brokerage for this symbol
+                const symbolBrokerage = brokerMcxBrokerage[trade.symbol];
+                if (symbolBrokerage !== undefined) {
+                    brokerage = trade.qty * parseFloat(symbolBrokerage);
+                    console.log(`[closeTrade] ✅ Brokerage calculated: Symbol=${trade.symbol}, Qty=${trade.qty}, BrokeragePerLot=${symbolBrokerage}, Total=${brokerage}`);
+                }
+            }
+        } catch (e) {
+            console.error('[closeTrade] Error calculating brokerage from broker config:', e);
+        }
+
+        // Release margin + Add/Subtract PnL - Deduct brokerage
+        const balanceChange = pnl + marginToRelease - brokerage;
 
         await db.execute(
-            'UPDATE trades SET status = "CLOSED", exit_price = ?, exit_time = NOW(), pnl = ? WHERE id = ?',
-            [finalExitPrice, pnl, req.params.id]
+            'UPDATE trades SET status = "CLOSED", exit_price = ?, exit_time = NOW(), pnl = ?, brokerage = ? WHERE id = ?',
+            [finalExitPrice, pnl, brokerage, req.params.id]
         );
 
         // Update User Balance
@@ -441,10 +507,10 @@ const closeTrade = async (req, res) => {
             [balanceChange, trade.user_id]
         );
 
-        console.log(`✅ Trade ${trade.id} closed. PnL: ${pnl}, Margin Released: ${marginToRelease}, Balance Change: ${balanceChange}`);
+        console.log(`✅ Trade ${trade.id} closed. PnL: ${pnl}, Margin Released: ${marginToRelease}, Brokerage: ${brokerage}, Balance Change: ${balanceChange}`);
 
         // Log the action (Audit)
-        await logAction(req.user.id || trade.user_id, 'CLOSE_TRADE', 'trades', `Closed trade ID #${trade.id} @ ${finalExitPrice}. PnL: ${pnl}`);
+        await logAction(req.user.id || trade.user_id, 'CLOSE_TRADE', 'trades', `Closed trade ID #${trade.id} @ ${finalExitPrice}. PnL: ${pnl}, Brokerage: ${brokerage}`);
 
         // Clear cache on trade close (Option A - immediate consistency)
         try {
@@ -459,6 +525,7 @@ const closeTrade = async (req, res) => {
             message: 'Trade closed successfully',
             pnl,
             marginReleased: marginToRelease,
+            brokerage,
             newBalanceChange: balanceChange
         });
     } catch (err) {

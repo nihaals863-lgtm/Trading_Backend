@@ -3,7 +3,7 @@ const { Server } = require('socket.io');
 /**
  * Socket Manager
  * Handles socket.io initialization and provides a getter for the io instance.
-//  */ 
+//  */
 //  test
 class SocketManager {
     constructor() {
@@ -15,7 +15,11 @@ class SocketManager {
             cors: {
                 origin: allowedOrigins,
                 methods: ["GET", "POST"]
-            }
+            },
+            // ✅ Keep connection alive with ping/pong
+            pingInterval: 25001,
+            pingTimeout: 60000,
+            transports: ['websocket', 'polling']  // Enable both
         });
 
         this.io.on('connection', (socket) => {

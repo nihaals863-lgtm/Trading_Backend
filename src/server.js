@@ -1,4 +1,4 @@
-require('dotenv').config({ path: require('path').resolve(__dirname, '.env') });
+require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
@@ -6,20 +6,21 @@ const compression = require('compression');
 const { initializeCache } = require('./utils/cacheManager');
 const socketManager = require('./websocket/SocketManager');
 const marketDataService = require('./services/MarketDataService');
+const mockEngine = require('./utils/mockEngine');
 const paperTradingEngine = require('./trading-engine/PaperTradingEngine');
 const { setIo } = require('./config/socket');
 const runMigrations = require('./config/migrate');
 
 
 
-const app = express();  
+const app = express();
 app.set('trust proxy', true);
 const server = http.createServer(app);
 
 const ALLOWED_ORIGINS = [
-    'http://localhost:5173', 
-     'http://localhost:8081', 
-    'https://traderss.kiaantechnology.com', 
+    'http://localhost:5173',
+    'http://localhost:8081',
+    'https://traderss.kiaantechnology.com',
     process.env.FRONTEND_URL
 ].filter(Boolean);
 
@@ -88,6 +89,9 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/paper-trading', paperRoutes);
 
+const marketDataRoutes = require('./routes/marketDataRoutes');
+app.use('/api/market-data', marketDataRoutes);
+
 // ── Root-level voice AI routes (no /api prefix, no auth required for direct access)
 app.post('/ai-parse', aiParse);
 app.post('/execute-command', executeVoiceCommand);
@@ -96,35 +100,35 @@ app.post('/master-command', masterCommand);
 
 // Routes Placeholder
 app.get('/', (req, res) => {
-  res.send('Traders API is running...');
+    res.send('Traders API is running...');
 });
 
 // Socket.io logic
 io.on('connection', (socket) => {
-  // console.log('User connected:', socket.id);
+    // console.log('User connected:', socket.id);
 
-  // Client sends { userId, role } right after connecting
-  socket.on('join', ({ userId, role }) => {
-    if (userId) socket.join(`user:${userId}`);
-    if (role) socket.join(`role:${role}`);
-  });
+    // Client sends { userId, role } right after connecting
+    socket.on('join', ({ userId, role }) => {
+        if (userId) socket.join(`user:${userId}`);
+        if (role) socket.join(`role:${role}`);
+    });
 
-  socket.on('subscribe_market', (scrips) => {
-    // console.log(`User ${socket.id} subscribed to:`, scrips);
-    if (Array.isArray(scrips)) {
-      scrips.forEach(s => mockEngine.getPrice(s)); // Ensure mock engine starts tracking them
-    }
-  });
+    socket.on('subscribe_market', (scrips) => {
+        // console.log(`User ${socket.id} subscribed to:`, scrips);
+        if (Array.isArray(scrips)) {
+            scrips.forEach(s => mockEngine.getPrice(s)); // Ensure mock engine starts tracking them
+        }
+    });
 
-  socket.on('disconnect', () => {
-    // console.log('User disconnected');
-  });
+    socket.on('disconnect', () => {
+        // console.log('User disconnected');
+    });
 });
 
 // ── Market Data Initialization ──
 // Handled inside migration callback
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Share io instance with controllers (before migrations)
 setIo(io);
@@ -146,17 +150,33 @@ runMigrations()
         const { startExpirySquareOffJob } = require('./services/expirySquareOffService');
         startExpirySquareOffJob();
 
-        // Initialize Market Data
+        // Initialize Market Data (with fallback to mock engine)
         try {
             const db = require('./config/db');
             const [users] = await db.execute('SELECT id FROM user_kite_sessions LIMIT 1');
             if (users.length > 0) {
-                await marketDataService.init(users[0].id);
+                try {
+                    await marketDataService.init(users[0].id);
+                    console.log('✅ MarketDataService initialized with real Kite connection');
+                } catch (tickerErr) {
+                    console.warn('⚠️  Kite ticker failed, falling back to mock engine:', tickerErr.message);
+                    marketDataService.startMockEngine();
+                }
             } else {
+                console.log('ℹ️  No Kite sessions found, starting mock engine');
                 marketDataService.startMockEngine();
             }
         } catch (err) {
+            console.warn('Market data init failed:', err.message);
             marketDataService.startMockEngine();
+        }
+
+        // Start Crypto + Forex feeds (Twelve Data) — independent of Kite
+        try {
+            marketDataService.startCryptoForex();
+            console.log('✅ Crypto + Forex feeds started');
+        } catch (cfErr) {
+            console.warn('Crypto/Forex feeds failed:', cfErr.message);
         }
     })
     .catch((err) => {

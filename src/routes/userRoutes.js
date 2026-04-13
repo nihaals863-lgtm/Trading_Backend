@@ -7,7 +7,7 @@ const {
     getDocuments, updateDocuments, getUserSegments, updateUserSegments, getBrokerClients,
     resetAccount, recalculateBrokerage
 } = require('../controllers/userController');
-const { authMiddleware, roleMiddleware, brokerPermission } = require('../middleware/auth');
+const { authMiddleware, roleMiddleware, brokerPermission, brokerSharesPermission } = require('../middleware/auth');
 
 // Multer setup - memory storage for ImageKit uploads
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } }); // 5MB limit
@@ -15,8 +15,8 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 *
 // ─── EXISTING ROUTES ─────────────────────────────────
 router.get('/', authMiddleware, getUsers);
 router.get('/:id', authMiddleware, getUserProfile);
-router.put('/:id/status', authMiddleware, roleMiddleware(['SUPERADMIN', 'ADMIN']), updateStatus);
-router.delete('/:id', authMiddleware, roleMiddleware(['SUPERADMIN', 'ADMIN']), deleteUser);
+router.put('/:id/status', authMiddleware, roleMiddleware(['SUPERADMIN', 'ADMIN', 'BROKER']), updateStatus);
+router.delete('/:id', authMiddleware, roleMiddleware(['SUPERADMIN', 'ADMIN', 'BROKER']), deleteUser);
 router.put('/:id/passwords', authMiddleware, brokerPermission('createClientsAllowed'), updatePasswords);
 router.post('/:id/reset-password', authMiddleware, roleMiddleware(['SUPERADMIN', 'ADMIN', 'BROKER']), brokerPermission('createClientsAllowed'), resetPassword);
 router.post('/:id/reset-account', authMiddleware, roleMiddleware(['SUPERADMIN', 'ADMIN']), resetAccount);
@@ -27,7 +27,7 @@ router.put('/:id', authMiddleware, brokerPermission('createClientsAllowed'), upd
 router.put('/:id/settings', authMiddleware, brokerPermission('createClientsAllowed'), updateClientSettings);
 router.get('/:id/broker-clients', authMiddleware, getBrokerClients);
 router.get('/:id/broker-shares', authMiddleware, getBrokerShares);
-router.put('/:id/broker-shares', authMiddleware, roleMiddleware(['SUPERADMIN', 'ADMIN']), updateBrokerShares);
+router.put('/:id/broker-shares', authMiddleware, brokerSharesPermission(), updateBrokerShares);
 router.get('/:id/documents', authMiddleware, getDocuments);
 router.put('/:id/documents', authMiddleware, upload.fields([
     { name: 'panScreenshot', maxCount: 1 },

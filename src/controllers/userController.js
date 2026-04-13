@@ -49,21 +49,29 @@ const getUsers = async (req, res) => {
 
         // Apply hierarchy filtering based on role
         // SUPERADMIN/ADMIN: See only clients they created (parent_id = current user id)
-        // BROKER: See only assigned clients (broker_id = current user id)
+        // BROKER: If viewing BROKER role, see sub-brokers (parent_id = current user id)
+        //         If viewing TRADER role, see assigned clients (broker_id = current user id)
         // OTHERS: See only their own created clients (parent_id = current user id)
-        if (currentUserRole === 'BROKER') {
-            // Brokers see only assigned clients
-            query += ' AND cs.broker_id = ?';
-            params.push(currentUserId);
-        } else {
-            // Everyone else (SUPERADMIN, ADMIN, TRADER, etc.) sees only their created clients
-            query += ' AND u.parent_id = ?';
-            params.push(currentUserId);
-        }
 
         if (role) {
             query += ' AND u.role = ?';
             params.push(role);
+        }
+
+        if (currentUserRole === 'BROKER') {
+            // If broker is viewing other BROKERS, show sub-brokers they created
+            if (role === 'BROKER') {
+                query += ' AND u.parent_id = ?';
+                params.push(currentUserId);
+            } else {
+                // For TRADER role, show both assigned clients AND created clients
+                query += ' AND (cs.broker_id = ? OR u.parent_id = ?)';
+                params.push(currentUserId, currentUserId);
+            }
+        } else {
+            // SUPERADMIN, ADMIN: See only clients/brokers they created
+            query += ' AND u.parent_id = ?';
+            params.push(currentUserId);
         }
 
         console.log(`[getUsers] Executing query with params:`, params);
@@ -123,12 +131,26 @@ const getUserProfile = async (req, res) => {
 
 const updateStatus = async (req, res) => {
     const { status } = req.body;
+    const targetUserId = req.params.id;
+    const currentUserId = req.user.id;
+    const currentUserRole = req.user.role;
     try {
-        await db.execute('UPDATE users SET status = ? WHERE id = ?', [status, req.params.id]);
-        
+        // Brokers can only update status for their own created users or assigned clients
+        if (currentUserRole === 'BROKER') {
+            const [userRows] = await db.execute(
+                'SELECT id FROM users WHERE id = ? AND (parent_id = ? OR broker_id = ?)',
+                [targetUserId, currentUserId, currentUserId]
+            );
+            if (userRows.length === 0) {
+                return res.status(403).json({ message: 'You can only update status for your own clients' });
+            }
+        }
+
+        await db.execute('UPDATE users SET status = ? WHERE id = ?', [status, targetUserId]);
+
         // Log the action
-        await logAction(req.user.id, 'UPDATE_STATUS', 'users', `Updated status of user ID ${req.params.id} to ${status}`);
-        
+        await logAction(currentUserId, 'UPDATE_STATUS', 'users', `Updated status of user ID ${targetUserId} to ${status}`);
+
         res.json({ message: 'Status updated successfully' });
     } catch (err) {
 
@@ -174,10 +196,25 @@ const updatePasswords = async (req, res) => {
 
 const deleteUser = async (req, res) => {
     try {
-        await db.execute('DELETE FROM users WHERE id = ?', [req.params.id]);
+        const targetUserId = req.params.id;
+        const currentUserId = req.user.id;
+        const currentUserRole = req.user.role;
+
+        // Brokers can only delete their own created users or assigned clients
+        if (currentUserRole === 'BROKER') {
+            const [userRows] = await db.execute(
+                'SELECT id FROM users WHERE id = ? AND (parent_id = ? OR broker_id = ?)',
+                [targetUserId, currentUserId, currentUserId]
+            );
+            if (userRows.length === 0) {
+                return res.status(403).json({ message: 'You can only delete your own clients' });
+            }
+        }
+
+        await db.execute('DELETE FROM users WHERE id = ?', [targetUserId]);
 
         // Log the action
-        await logAction(req.user.id, 'DELETE_USER', 'users', `Deleted user ID ${req.params.id}`);
+        await logAction(currentUserId, 'DELETE_USER', 'users', `Deleted user ID ${targetUserId}`);
 
         res.json({ message: 'User deleted successfully' });
     } catch (err) {
@@ -242,9 +279,33 @@ const updateClientSettings = async (req, res) => {
     } = req.body;
 
     try {
-        // Merge autoCloseEnabled into config JSON so it persists
-        const configObj = config || {};
+        let configObj = config || {};
         if (autoCloseEnabled !== undefined) configObj.autoCloseEnabled = autoCloseEnabled;
+
+        // ─── If broker is assigned, fetch & apply broker's segment config ─────
+        if (brokerId) {
+            console.log(`[updateClientSettings] Broker assigned (ID: ${brokerId}). Fetching broker's segment config...`);
+            const [brokerSharesRows] = await db.execute(
+                'SELECT segments_json FROM broker_shares WHERE user_id = ?',
+                [brokerId]
+            );
+
+            if (brokerSharesRows.length > 0 && brokerSharesRows[0].segments_json) {
+                try {
+                    const brokerSegments = JSON.parse(brokerSharesRows[0].segments_json);
+                    if (brokerSegments.segmentConfig) {
+                        console.log(`[updateClientSettings] ✅ Applied broker's segment config to client`);
+                        // Apply broker's segment configuration to client
+                        configObj.brokerSegments = brokerSegments.segmentConfig;
+                        configObj.brokerMcxMargins = brokerSegments.mcxMargins || {};
+                        configObj.brokerMcxBrokerage = brokerSegments.mcxBrokerage || {};
+                    }
+                } catch (e) {
+                    console.error(`[updateClientSettings] Failed to parse broker segments:`, e);
+                }
+            }
+        }
+
         const configJson = Object.keys(configObj).length > 0 ? JSON.stringify(configObj) : null;
 
         await db.execute(`
@@ -553,6 +614,7 @@ const resetAccount = async (req, res) => {
 
 /**
  * Recalculate Brokerage — recalculates brokerage for all closed trades of a user
+ * Uses broker's lot-wise brokerage configuration if available
  */
 const recalculateBrokerage = async (req, res) => {
     const userId = req.params.id;
@@ -570,20 +632,30 @@ const recalculateBrokerage = async (req, res) => {
         );
 
         let totalBrokerage = 0;
-        const brokeragePerLot = parseFloat(config.mcxBrokerage || 0);
-        const brokerageType = config.mcxBrokerageType || 'per_crore';
+        const brokerMcxBrokerage = config.brokerMcxBrokerage || config.mcxLotBrokerage || {};
 
         for (const trade of trades) {
             let brokerage = 0;
-            if (brokerageType === 'per_lot') {
-                brokerage = trade.qty * brokeragePerLot;
-            } else {
-                // per crore basis
-                const turnover = trade.qty * (parseFloat(trade.entry_price) + parseFloat(trade.exit_price || 0));
-                brokerage = (turnover / 10000000) * brokeragePerLot;
-            }
-            totalBrokerage += brokerage;
 
+            // Try broker's lot-wise brokerage first
+            if (brokerMcxBrokerage[trade.symbol] !== undefined) {
+                brokerage = trade.qty * parseFloat(brokerMcxBrokerage[trade.symbol]);
+                console.log(`[recalcBrokerage] Symbol=${trade.symbol}, Qty=${trade.qty}, BrokeragePerLot=${brokerMcxBrokerage[trade.symbol]}, Total=${brokerage}`);
+            } else {
+                // Fallback to config
+                const brokeragePerLot = parseFloat(config.mcxBrokerage || 0);
+                const brokerageType = config.mcxBrokerageType || 'per_crore';
+
+                if (brokerageType === 'per_lot') {
+                    brokerage = trade.qty * brokeragePerLot;
+                } else {
+                    // per crore basis
+                    const turnover = trade.qty * (parseFloat(trade.entry_price) + parseFloat(trade.exit_price || 0));
+                    brokerage = (turnover / 10000000) * brokeragePerLot;
+                }
+            }
+
+            totalBrokerage += brokerage;
             await db.execute('UPDATE trades SET brokerage = ? WHERE id = ?', [brokerage, trade.id]);
         }
 
