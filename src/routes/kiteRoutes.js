@@ -542,225 +542,60 @@ router.get('/market/dashboard', authMiddleware, asyncHandler(async (req, res) =>
 //   UNIFIED WATCHLIST — ONE API, ONE TABLE (NSE + NFO OPT + MCX FUT + MCX OPT)
 // ══════════════════════════════════════════════════════════════
 
+// Watchlist cache — ALWAYS serve from cache, refresh in background
+let watchlistCache = { data: null, time: 0, key: '' };
+let watchlistRefreshing = false;
+let watchlistLastQuery = null;
+let watchlistLastUserId = null;
+
+// Auto-refresh loop: keeps cache warm every 2s after first request
+let watchlistAutoRefreshStarted = false;
+function startWatchlistAutoRefresh() {
+    if (watchlistAutoRefreshStarted) return;
+    watchlistAutoRefreshStarted = true;
+    setInterval(async () => {
+        if (!watchlistLastQuery || !kiteService.isAuthenticated()) return;
+        await refreshWatchlistInBackground(watchlistLastQuery, watchlistLastUserId);
+    }, 2000);
+    console.log('🔄 Watchlist auto-refresh started (every 2s)');
+}
+
+// Background refresh: fetches new data without blocking the response
+async function refreshWatchlistInBackground(queryParams, userId) {
+    if (watchlistRefreshing) return; // already refreshing, skip
+    watchlistRefreshing = true;
+    try {
+        const rows = await _buildWatchlistData(queryParams, userId);
+        const cacheKey = `${queryParams.nse || ''}_${queryParams.nfoUnderlyings || ''}_${queryParams.mcxOptSymbols || ''}`;
+        watchlistCache = { data: rows, time: Date.now(), key: cacheKey };
+    } catch (err) {
+        console.warn('Watchlist background refresh error:', err.message);
+    } finally {
+        watchlistRefreshing = false;
+    }
+}
+
 // GET /api/kite/market/watchlist
-// - instruments: cached
-// - quotes: ALWAYS fresh (no caching)
+// INSTANT response from cache, background refresh every 2s
 router.get('/market/watchlist', authMiddleware, asyncHandler(async (req, res) => {
     try {
-        // Token sync (same logic as dashboard)
-        if (!kiteService.isAuthenticated() && req.user?.id) {
-            try {
-                const status = await kiteAuthService.getStatus(req.user.id);
-                if (status.connected) {
-                    const session = await require('../repositories/KiteRepository').getSessionByUserId(req.user.id);
-                    if (session?.access_token) {
-                        kiteService.accessToken = session.access_token;
-                        kiteService.sessionData = { access_token: session.access_token, user_name: session.user_name };
-                    }
-                }
-            } catch (_) { }
+        const now = Date.now();
+        const cacheKey = `${req.query.nse || ''}_${req.query.nfoUnderlyings || ''}_${req.query.mcxOptSymbols || ''}`;
+
+        // If cache has data → return INSTANTLY, trigger background refresh if stale
+        if (watchlistCache.data && watchlistCache.key === cacheKey) {
+            watchlistLastQuery = req.query;
+            watchlistLastUserId = req.user?.id;
+            startWatchlistAutoRefresh();
+            return res.json(watchlistCache.data);
         }
 
-        if (!kiteService.isAuthenticated()) {
-            return res.status(503).json({ error: 'Kite not connected.', kite_disconnected: true });
-        }
-
-        const instruments = await getInstrumentsFromCache();
-
-        // ── NSE: selected stocks (defaults to NIFTY 50) ──
-        const nseList = String(req.query.nse || '').trim();
-        const nseSymbolsRaw = nseList
-            ? nseList.split(',').map(s => s.trim().toUpperCase()).filter(Boolean)
-            : NIFTY50.slice();
-        const nseQuoteKeys = nseSymbolsRaw.map(s => `NSE:${s}`);
-
-        // ── NFO Options: ATM + strike range for indices, include CE/PE ──
-        // Query knobs: nfoUnderlyings=NIFTY,BANKNIFTY&nfoRange=1000
-        const nfoUnderlyings = String(req.query.nfoUnderlyings || 'NIFTY,BANKNIFTY')
-            .split(',')
-            .map(s => s.trim().toUpperCase())
-            .filter(Boolean);
-        const nfoRange = parseInt(req.query.nfoRange) || 1000;
-        const nfoOptionKeys = [];
-        const nfoOptionMeta = {}; // fullKey -> { strike, optionType, expiry }
-
-        for (const underlying of nfoUnderlyings) {
-            const step = getOptionStrikeStepNfo(underlying);
-            if (!step) continue;
-
-            // Nearest expiry date from instruments for this underlying
-            const nearestOpt = pickNearestExpiry(instruments, { exchange: 'NFO', name: underlying, instrumentTypes: ['CE', 'PE'] });
-            if (!nearestOpt) continue;
-            const expiryYmd = toYmd(nearestOpt.expiry);
-            if (!expiryYmd) continue;
-
-            // LTP of underlying index for ATM calc (fallback to nearest FUT)
-            const indexSymbolMap = {
-                NIFTY: 'NSE:NIFTY 50',
-                BANKNIFTY: 'NSE:NIFTY BANK',
-                FINNIFTY: 'NSE:NIFTY FIN SERVICE',
-                MIDCPNIFTY: 'NSE:NIFTY MID SELECT',
-                SENSEX: 'BSE:SENSEX',
-            };
-
-            let underlyingLtp = 0;
-            const idxKey = indexSymbolMap[underlying] || `NSE:${underlying}`;
-            try {
-                const q = await kiteService.getQuote([idxKey]);
-                underlyingLtp = q?.[idxKey]?.last_price || 0;
-            } catch (_) { }
-
-            if (!underlyingLtp) {
-                const fut = pickNearestExpiry(instruments, { exchange: 'NFO', name: underlying, instrumentTypes: ['FUT'] });
-                if (fut?.tradingsymbol) {
-                    const futKey = `NFO:${fut.tradingsymbol}`;
-                    try {
-                        const q = await kiteService.getQuote([futKey]);
-                        underlyingLtp = q?.[futKey]?.last_price || 0;
-                    } catch (_) { }
-                }
-            }
-
-            if (!underlyingLtp) continue;
-
-            const atmStrike = Math.round(underlyingLtp / step) * step;
-            const lowerBound = Math.floor((underlyingLtp - nfoRange) / step) * step;
-            const upperBound = Math.ceil((underlyingLtp + nfoRange) / step) * step;
-            const strikeSet = new Set();
-            for (let s = lowerBound; s <= upperBound; s += step) strikeSet.add(s);
-
-            const requestedExpiry = new Date(expiryYmd).toDateString();
-            for (const inst of instruments) {
-                if (inst.exchange !== 'NFO') continue;
-                if (String(inst.name || '').toUpperCase() !== underlying) continue;
-                const it = String(inst.instrument_type || '').toUpperCase();
-                if (it !== 'CE' && it !== 'PE') continue;
-                if (new Date(inst.expiry || 0).toDateString() !== requestedExpiry) continue;
-                const strike = Number(inst.strike);
-                if (!strikeSet.has(strike)) continue;
-                const fullKey = `NFO:${inst.tradingsymbol}`;
-                nfoOptionKeys.push(fullKey);
-                nfoOptionMeta[fullKey] = { strike, optionType: it, expiry: expiryYmd, underlying, isATM: strike === atmStrike };
-            }
-        }
-
-        // ── MCX Futures: nearest expiry only for allowed bases ──
-        const mcxFutBases = MCX_ALLOWED_WATCHLIST.map(canonicalMcxName);
-        const mcxFutKeys = [];
-        const mcxFutMeta = {}; // fullKey -> { expiry }
-        const today = new Date();
-        for (const base of mcxFutBases) {
-            const nearest = instruments
-                .filter(i => i.exchange === 'MCX' && String(i.instrument_type || '').toUpperCase() === 'FUT')
-                .filter(i => isExactMcxFutureForBase(i.tradingsymbol, base))
-                .filter(i => new Date(i.expiry || 0) >= today)
-                .sort((a, b) => new Date(a.expiry || 0) - new Date(b.expiry || 0))[0];
-            if (!nearest?.tradingsymbol) continue;
-            const fullKey = `MCX:${nearest.tradingsymbol}`;
-            mcxFutKeys.push(fullKey);
-            mcxFutMeta[fullKey] = { expiry: toYmd(nearest.expiry) };
-        }
-
-        // ── MCX Options: filtered list only, ATM + range, include CE/PE ──
-        // Query knobs: mcxOptSymbols=GOLD,SILVER&mcxOptRange=2000
-        const mcxOptRange = parseInt(req.query.mcxOptRange) || 2000;
-        const mcxOptRequested = String(req.query.mcxOptSymbols || MCX_ALLOWED_WATCHLIST.join(','))
-            .split(',')
-            .map(s => s.trim().toUpperCase())
-            .filter(Boolean)
-            .filter(s => MCX_ALLOWED_WATCHLIST.includes(s));
-
-        const mcxOptKeys = [];
-        const mcxOptMeta = {}; // fullKey -> { strike, optionType, expiry, base }
-
-        for (const requestedName of mcxOptRequested) {
-            const base = canonicalMcxName(requestedName);
-
-            // Step size (fallbacks if not present in MCX_ALLOWED)
-            const step = MCX_ALLOWED[base]?.step || 10;
-
-            // Nearest option expiry
-            const nearestOpt = pickNearestExpiry(instruments, { exchange: 'MCX', name: base, instrumentTypes: ['CE', 'PE'] });
-            if (!nearestOpt) continue;
-            const expiryYmd = toYmd(nearestOpt.expiry);
-            if (!expiryYmd) continue;
-
-            // LTP from nearest futures
-            const fut = instruments
-                .filter(i => i.exchange === 'MCX' && String(i.instrument_type || '').toUpperCase() === 'FUT')
-                .filter(i => isExactMcxFutureForBase(i.tradingsymbol, base))
-                .filter(i => new Date(i.expiry || 0) >= today)
-                .sort((a, b) => new Date(a.expiry || 0) - new Date(b.expiry || 0))[0];
-            if (!fut?.tradingsymbol) continue;
-            const futKey = `MCX:${fut.tradingsymbol}`;
-
-            let ltp = 0;
-            try {
-                const q = await kiteService.getQuote([futKey]);
-                ltp = q?.[futKey]?.last_price || 0;
-            } catch (_) { }
-            if (!ltp) continue;
-
-            const atmStrike = Math.round(ltp / step) * step;
-            const lowerBound = Math.floor((ltp - mcxOptRange) / step) * step;
-            const upperBound = Math.ceil((ltp + mcxOptRange) / step) * step;
-            const strikeSet = new Set();
-            for (let s = lowerBound; s <= upperBound; s += step) strikeSet.add(s);
-
-            const requestedExpiry = new Date(expiryYmd).toDateString();
-            for (const inst of instruments) {
-                if (inst.exchange !== 'MCX') continue;
-                if (String(inst.name || '').toUpperCase() !== base) continue;
-                const it = String(inst.instrument_type || '').toUpperCase();
-                if (it !== 'CE' && it !== 'PE') continue;
-                if (new Date(inst.expiry || 0).toDateString() !== requestedExpiry) continue;
-                const strike = Number(inst.strike);
-                if (!strikeSet.has(strike)) continue;
-
-                const fullKey = `MCX:${inst.tradingsymbol}`;
-                mcxOptKeys.push(fullKey);
-                mcxOptMeta[fullKey] = { strike, optionType: it, expiry: expiryYmd, base, isATM: strike === atmStrike };
-            }
-        }
-
-        const allQuoteKeys = [...nseQuoteKeys, ...nfoOptionKeys, ...mcxFutKeys, ...mcxOptKeys];
-        const uniqueQuoteKeys = Array.from(new Set(allQuoteKeys));
-
-        // FRESH quotes only
-        const rawQuotes = await fetchQuotesBatchFresh(uniqueQuoteKeys);
-
-        const rows = [];
-
-        for (const key of nseQuoteKeys) {
-            rows.push(buildUnifiedRow({ type: 'NSE', symbol: key, quote: rawQuotes[key] }));
-        }
-        for (const key of nfoOptionKeys) {
-            const meta = nfoOptionMeta[key] || {};
-            rows.push(buildUnifiedRow({
-                type: 'OPTION',
-                symbol: key,
-                strike: meta.strike,
-                optionType: meta.optionType,
-                expiry: meta.expiry,
-                quote: rawQuotes[key],
-            }));
-        }
-        for (const key of mcxFutKeys) {
-            const meta = mcxFutMeta[key] || {};
-            rows.push(buildUnifiedRow({ type: 'MCX_FUT', symbol: key, expiry: meta.expiry, quote: rawQuotes[key] }));
-        }
-        for (const key of mcxOptKeys) {
-            const meta = mcxOptMeta[key] || {};
-            rows.push(buildUnifiedRow({
-                type: 'MCX_OPT',
-                symbol: key,
-                strike: meta.strike,
-                optionType: meta.optionType,
-                expiry: meta.expiry,
-                quote: rawQuotes[key],
-            }));
-        }
-
+        // First ever call → must wait for data (no cache yet)
+        const rows = await _buildWatchlistData(req.query, req.user?.id);
+        watchlistCache = { data: rows, time: Date.now(), key: cacheKey };
+        watchlistLastQuery = req.query;
+        watchlistLastUserId = req.user?.id;
+        startWatchlistAutoRefresh(); // start auto-refresh loop after first successful build
         res.json(rows);
     } catch (err) {
         console.error('Unified watchlist error:', err.message);
@@ -772,6 +607,255 @@ router.get('/market/watchlist', authMiddleware, asyncHandler(async (req, res) =>
         res.status(500).json({ status: 'error', message: err.message });
     }
 }));
+
+// ══════════════════════════════════════════════════════════════
+//   OPTIMIZED WATCHLIST BUILD — precomputed symbols, single batch, parallel
+// ══════════════════════════════════════════════════════════════
+
+// Precomputed symbol map — rebuilt only when instruments cache changes
+let _precomputed = null;
+let _precomputedInstrTime = 0;
+
+function _getPrecomputed(instruments, query) {
+    // Rebuild only if instruments cache changed (every 6 hours)
+    if (_precomputed && _precomputedInstrTime === instrumentsCacheTime) {
+        return _precomputed;
+    }
+
+    console.log('⚡ Precomputing watchlist symbol map...');
+    const today = new Date();
+
+    // ── NSE ──
+    const nseList = String(query.nse || '').trim();
+    const nseSymbols = nseList
+        ? nseList.split(',').map(s => s.trim().toUpperCase()).filter(Boolean)
+        : NIFTY50.slice();
+    const nseKeys = nseSymbols.map(s => `NSE:${s}`);
+
+    // ── NFO underlyings ──
+    const nfoUnderlyings = String(query.nfoUnderlyings || 'NIFTY,BANKNIFTY')
+        .split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+    const nfoRange = parseInt(query.nfoRange) || 1000;
+
+    const indexSymbolMap = {
+        NIFTY: 'NSE:NIFTY 50', BANKNIFTY: 'NSE:NIFTY BANK',
+        FINNIFTY: 'NSE:NIFTY FIN SERVICE', MIDCPNIFTY: 'NSE:NIFTY MID SELECT', SENSEX: 'BSE:SENSEX',
+    };
+
+    // Collect LTP keys needed for ATM calculation
+    const ltpKeys = [];
+    const nfoConfig = [];
+    for (const u of nfoUnderlyings) {
+        const step = getOptionStrikeStepNfo(u);
+        if (!step) continue;
+        const idxKey = indexSymbolMap[u] || `NSE:${u}`;
+        ltpKeys.push(idxKey);
+        const fut = pickNearestExpiry(instruments, { exchange: 'NFO', name: u, instrumentTypes: ['FUT'] });
+        if (fut?.tradingsymbol) ltpKeys.push(`NFO:${fut.tradingsymbol}`);
+        const nearestOpt = pickNearestExpiry(instruments, { exchange: 'NFO', name: u, instrumentTypes: ['CE', 'PE'] });
+        nfoConfig.push({ underlying: u, step, idxKey, futKey: fut ? `NFO:${fut.tradingsymbol}` : null, expiry: nearestOpt ? toYmd(nearestOpt.expiry) : null, range: nfoRange });
+    }
+
+    // ── MCX precompute: find nearest FUT for each base ONCE ──
+    const mcxFutBases = MCX_ALLOWED_WATCHLIST.map(canonicalMcxName);
+    const mcxOptRequested = String(query.mcxOptSymbols || MCX_ALLOWED_WATCHLIST.join(','))
+        .split(',').map(s => s.trim().toUpperCase()).filter(Boolean).filter(s => MCX_ALLOWED_WATCHLIST.includes(s));
+    const mcxOptRange = parseInt(query.mcxOptRange) || 2000;
+
+    // Build MCX FUT lookup ONCE (avoid scanning 100K instruments per base)
+    const mcxFutByBase = {}; // base → { tradingsymbol, expiry, fullKey }
+    for (const inst of instruments) {
+        if (inst.exchange !== 'MCX') continue;
+        if (String(inst.instrument_type || '').toUpperCase() !== 'FUT') continue;
+        if (new Date(inst.expiry || 0) < today) continue;
+        for (const base of mcxFutBases) {
+            if (isExactMcxFutureForBase(inst.tradingsymbol, base)) {
+                if (!mcxFutByBase[base] || new Date(inst.expiry) < new Date(mcxFutByBase[base].expiry)) {
+                    mcxFutByBase[base] = { tradingsymbol: inst.tradingsymbol, expiry: inst.expiry, fullKey: `MCX:${inst.tradingsymbol}` };
+                }
+            }
+        }
+    }
+
+    // Add MCX FUT keys to LTP fetch
+    for (const base of mcxFutBases) {
+        if (mcxFutByBase[base]) ltpKeys.push(mcxFutByBase[base].fullKey);
+    }
+
+    // Build NFO/MCX option instrument index ONCE (avoid scanning 100K per underlying)
+    const nfoOptIndex = {}; // underlying → [{ inst, strike, type, expiry }]
+    const mcxOptIndex = {}; // base → [{ inst, strike, type, expiry }]
+    for (const inst of instruments) {
+        const it = String(inst.instrument_type || '').toUpperCase();
+        if (it !== 'CE' && it !== 'PE') continue;
+        if (inst.exchange === 'NFO') {
+            const name = String(inst.name || '').toUpperCase();
+            if (!nfoOptIndex[name]) nfoOptIndex[name] = [];
+            nfoOptIndex[name].push(inst);
+        } else if (inst.exchange === 'MCX') {
+            const name = String(inst.name || '').toUpperCase();
+            if (!mcxOptIndex[name]) mcxOptIndex[name] = [];
+            mcxOptIndex[name].push(inst);
+        }
+    }
+
+    _precomputed = { nseKeys, nfoConfig, mcxFutBases, mcxFutByBase, mcxOptRequested, mcxOptRange, ltpKeys, nfoOptIndex, mcxOptIndex, indexSymbolMap };
+    _precomputedInstrTime = instrumentsCacheTime;
+    console.log(`⚡ Precomputed: NSE=${nseKeys.length} | NFO underlyings=${nfoConfig.length} | MCX bases=${mcxFutBases.length} | LTP keys=${ltpKeys.length}`);
+    return _precomputed;
+}
+
+async function _buildWatchlistData(query, userId) {
+    // Token sync
+    if (!kiteService.isAuthenticated() && userId) {
+        try {
+            const status = await kiteAuthService.getStatus(userId);
+            if (status.connected) {
+                const session = await require('../repositories/KiteRepository').getSessionByUserId(userId);
+                if (session?.access_token) {
+                    kiteService.accessToken = session.access_token;
+                    kiteService.sessionData = { access_token: session.access_token, user_name: session.user_name };
+                }
+            }
+        } catch (_) {}
+    }
+
+    if (!kiteService.isAuthenticated()) {
+        throw new Error('Kite not connected');
+    }
+
+    const instruments = await getInstrumentsFromCache();
+    const pc = _getPrecomputed(instruments, query);
+
+    // ── Step 1: ONE batch call for all LTP keys (index + futures) ──
+    let ltpQuotes = {};
+    if (pc.ltpKeys.length > 0) {
+        try { ltpQuotes = await kiteService.getQuote(pc.ltpKeys); } catch (_) {}
+    }
+
+    // ── Step 2: Build NFO option keys using precomputed index + LTP ──
+    const nfoOptionKeys = [];
+    const nfoOptionMeta = {};
+
+    for (const cfg of pc.nfoConfig) {
+        if (!cfg.expiry) continue;
+        let ltp = ltpQuotes?.[cfg.idxKey]?.last_price || 0;
+        if (!ltp && cfg.futKey) ltp = ltpQuotes?.[cfg.futKey]?.last_price || 0;
+        if (!ltp) continue;
+
+        const atmStrike = Math.round(ltp / cfg.step) * cfg.step;
+        const lower = Math.floor((ltp - cfg.range) / cfg.step) * cfg.step;
+        const upper = Math.ceil((ltp + cfg.range) / cfg.step) * cfg.step;
+        const strikeSet = new Set();
+        for (let s = lower; s <= upper; s += cfg.step) strikeSet.add(s);
+
+        const requestedExpiry = new Date(cfg.expiry).toDateString();
+        const optList = pc.nfoOptIndex[cfg.underlying] || [];
+        for (const inst of optList) {
+            if (new Date(inst.expiry || 0).toDateString() !== requestedExpiry) continue;
+            const strike = Number(inst.strike);
+            if (!strikeSet.has(strike)) continue;
+            const fullKey = `NFO:${inst.tradingsymbol}`;
+            const it = String(inst.instrument_type || '').toUpperCase();
+            nfoOptionKeys.push(fullKey);
+            nfoOptionMeta[fullKey] = { strike, optionType: it, expiry: cfg.expiry, underlying: cfg.underlying, isATM: strike === atmStrike };
+        }
+    }
+
+    // ── Step 3: MCX Futures keys ──
+    const mcxFutKeys = [];
+    const mcxFutMeta = {};
+    for (const base of pc.mcxFutBases) {
+        const f = pc.mcxFutByBase[base];
+        if (!f) continue;
+        mcxFutKeys.push(f.fullKey);
+        mcxFutMeta[f.fullKey] = { expiry: toYmd(f.expiry) };
+    }
+
+    // ── Step 4: MCX Options using precomputed index + LTP from step 1 ──
+    const mcxOptKeys = [];
+    const mcxOptMeta = {};
+
+    for (const reqName of pc.mcxOptRequested) {
+        const base = canonicalMcxName(reqName);
+        const step = MCX_ALLOWED[base]?.step || 10;
+        const fut = pc.mcxFutByBase[base];
+        if (!fut) continue;
+
+        const ltp = ltpQuotes?.[fut.fullKey]?.last_price || 0;
+        if (!ltp) continue;
+
+        const nearestOpt = pickNearestExpiry(instruments, { exchange: 'MCX', name: base, instrumentTypes: ['CE', 'PE'] });
+        if (!nearestOpt) continue;
+        const expiryYmd = toYmd(nearestOpt.expiry);
+        if (!expiryYmd) continue;
+
+        const atmStrike = Math.round(ltp / step) * step;
+        const lower = Math.floor((ltp - pc.mcxOptRange) / step) * step;
+        const upper = Math.ceil((ltp + pc.mcxOptRange) / step) * step;
+        const strikeSet = new Set();
+        for (let s = lower; s <= upper; s += step) strikeSet.add(s);
+
+        const requestedExpiry = new Date(expiryYmd).toDateString();
+        const optList = pc.mcxOptIndex[base] || [];
+        for (const inst of optList) {
+            if (new Date(inst.expiry || 0).toDateString() !== requestedExpiry) continue;
+            const strike = Number(inst.strike);
+            if (!strikeSet.has(strike)) continue;
+            const fullKey = `MCX:${inst.tradingsymbol}`;
+            const it = String(inst.instrument_type || '').toUpperCase();
+            mcxOptKeys.push(fullKey);
+            mcxOptMeta[fullKey] = { strike, optionType: it, expiry: expiryYmd, base, isATM: strike === atmStrike };
+        }
+    }
+
+    // ── Step 5: ONE batch quote fetch for ALL symbols (parallel chunks) ──
+    const allKeys = [...pc.nseKeys, ...nfoOptionKeys, ...mcxFutKeys, ...mcxOptKeys];
+    const uniqueKeys = Array.from(new Set(allKeys));
+
+    // Parallel batch: split into 500-symbol chunks, fetch simultaneously
+    const rawQuotes = {};
+    const chunks = [];
+    for (let i = 0; i < uniqueKeys.length; i += 500) {
+        chunks.push(uniqueKeys.slice(i, i + 500));
+    }
+    const results = await Promise.all(chunks.map(chunk =>
+        kiteService.getQuote(chunk).catch(() => ({}))
+    ));
+    for (const r of results) {
+        if (r && typeof r === 'object') Object.assign(rawQuotes, r);
+    }
+
+    // ── Step 6: Build rows ──
+    const rows = [];
+    for (const key of pc.nseKeys) {
+        rows.push(buildUnifiedRow({ type: 'NSE', symbol: key, quote: rawQuotes[key] }));
+    }
+    for (const key of nfoOptionKeys) {
+        const m = nfoOptionMeta[key] || {};
+        rows.push(buildUnifiedRow({ type: 'OPTION', symbol: key, strike: m.strike, optionType: m.optionType, expiry: m.expiry, quote: rawQuotes[key] }));
+    }
+    for (const key of mcxFutKeys) {
+        const m = mcxFutMeta[key] || {};
+        rows.push(buildUnifiedRow({ type: 'MCX_FUT', symbol: key, expiry: m.expiry, quote: rawQuotes[key] }));
+    }
+    for (const key of mcxOptKeys) {
+        const m = mcxOptMeta[key] || {};
+        rows.push(buildUnifiedRow({ type: 'MCX_OPT', symbol: key, strike: m.strike, optionType: m.optionType, expiry: m.expiry, quote: rawQuotes[key] }));
+    }
+
+    // ── Step 7: Push via WebSocket ──
+    const io = require('../websocket/SocketManager').getIo();
+    if (io) {
+        const wsPayload = {};
+        for (const row of rows) {
+            wsPayload[row.symbol] = row;
+        }
+        io.emit('price_update', wsPayload);
+    }
+
+    return rows;
+}
 
 // ══════════════════════════════════════════════════════════════
 //   OPTIONS CHAIN — Range-based strike chain (CE + PE)
