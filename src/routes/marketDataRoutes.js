@@ -48,60 +48,51 @@ async function fetchTwelveData(symbols, type) {
     }
 
     try {
-        const url = `${BASE_URL}/price?symbol=${symbols}&apikey=${TWELVE_DATA_KEY}`;
+        const url = `${BASE_URL}/quote?symbol=${symbols}&apikey=${TWELVE_DATA_KEY}`;
         const response = await fetch(url);
         const data = await response.json();
 
-        // Twelve Data returns { "BTC/USD": { price: "..." }, ... } for multiple symbols
-        // Or { price: "..." } for single symbol
-        let parsed;
-        if (data.price) {
-            // Single symbol response
+        let parsed = {};
+        if (data.price || data.symbol) {
+            // Single symbol
             const sym = symbols.split(',')[0];
-            parsed = { [sym]: { price: parseFloat(data.price) } };
+            parsed[sym] = data;
         } else {
-            parsed = {};
-            for (const [sym, val] of Object.entries(data)) {
-                if (val && val.price) {
-                    parsed[sym] = { price: parseFloat(val.price) };
-                }
-            }
+            parsed = data;
         }
 
         cache[type] = { data: parsed, time: now };
         return parsed;
     } catch (err) {
         console.error(`Twelve Data fetch error (${type}):`, err.message);
-        // Return stale cache if available
         if (cache[type]) return cache[type].data;
         return {};
     }
 }
 
-// Previous prices for change calculation
-const prevPrices = {};
-
 function buildResponse(rawData, type) {
     const result = [];
-    for (const [symbol, data] of Object.entries(rawData)) {
-        const price = data.price || 0;
-        const prev = prevPrices[symbol] || price;
-        const change = price - prev;
-        const changePct = prev ? ((change / prev) * 100).toFixed(4) : '0.00';
-
-        // Update previous price
-        prevPrices[symbol] = price;
-
+    for (const [symbol, res] of Object.entries(rawData)) {
+        if (!res || (!res.price && !res.close)) continue;
+        
+        const price = parseFloat(res.price || res.close || 0);
         const meta = SYMBOL_META[symbol] || { name: symbol, icon: '?', category: type };
+        
+        let bid = parseFloat(res.bid || 0);
+        let ask = parseFloat(res.ask || 0);
+
         result.push({
             symbol,
             name: meta.name,
             icon: meta.icon,
             category: meta.category,
             price,
-            change: parseFloat(change.toFixed(6)),
-            changePct: parseFloat(changePct),
-            direction: change > 0 ? 'up' : change < 0 ? 'down' : 'neutral',
+            ltp: price,
+            bid: parseFloat(bid.toFixed(5)),
+            ask: parseFloat(ask.toFixed(5)),
+            change: parseFloat(res.change || 0),
+            changePct: parseFloat(res.percent_change || 0),
+            direction: parseFloat(res.change) > 0 ? 'up' : parseFloat(res.change) < 0 ? 'down' : 'neutral',
             updatedAt: new Date().toISOString(),
         });
     }

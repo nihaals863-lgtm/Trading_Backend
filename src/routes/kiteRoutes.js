@@ -36,22 +36,63 @@ router.get('/margins', authMiddleware, kiteController.getMargins);
 //   CURATED MARKET DATA — 3 Tabs: NSE, MCX, NFO
 // ══════════════════════════════════════════════════════════════
 
-// ── Instruments Cache ──
 let instrumentsCache = null;
 let instrumentsCacheTime = 0;
 const CACHE_TTL = 6 * 60 * 60 * 1000;
+let symbolTokenMap = new Map();
+
+// Optimized lookup: exchange -> type -> [instruments]
+let indexedInstruments = {
+    NSE: { STOCKS: [], FUT: [], OPT: [] },
+    NFO: { FUT: [], OPT: [] },
+    MCX: { FUT: [], OPT: [] }
+};
 
 async function getInstrumentsFromCache() {
     const now = Date.now();
     if (instrumentsCache && (now - instrumentsCacheTime) < CACHE_TTL) {
         return instrumentsCache;
     }
-    console.log('Fetching ALL instruments from Kite API...');
+    console.log('⚡ Fetching and INDEXING ALL instruments from Kite API...');
     const instruments = await kiteService.getInstruments();
+    
+    // 1. Rebuild basic mapping
+    const newMap = new Map();
+    // 2. Rebuild optimized index
+    const newIndex = {
+        NSE: { STOCKS: [], FUT: [], OPT: [] },
+        NFO: { FUT: [], OPT: [] },
+        MCX: { FUT: [], OPT: [] }
+    };
+
+    instruments.forEach(inst => {
+        const fullKey = `${inst.exchange}:${inst.tradingsymbol}`;
+        newMap.set(fullKey, inst.instrument_token);
+
+        const ex = inst.exchange;
+        const type = inst.instrument_type;
+        if (newIndex[ex]) {
+            if (type === 'EQ' || type === 'STK') {
+                if (ex === 'NSE') newIndex.NSE.STOCKS.push(inst);
+            } else if (type === 'FUT') {
+                newIndex[ex].FUT.push(inst);
+            } else if (type === 'CE' || type === 'PE') {
+                newIndex[ex].OPT.push(inst);
+            }
+        }
+    });
+
+    symbolTokenMap = newMap;
+    indexedInstruments = newIndex;
     instrumentsCache = instruments;
     instrumentsCacheTime = now;
-    console.log(`Cached ${instruments.length} instruments`);
+    
+    console.log(`✅ Indexed ${instruments.length} instruments`);
     return instruments;
+}
+
+function getTokenSync(symbol) {
+    return symbolTokenMap.get(symbol);
 }
 
 // ── NIFTY 50 (50 stocks — Apr 2026 official list, Zerodha exact symbols) ──
@@ -221,19 +262,18 @@ function formatQuotes(rawQuotes) {
     for (const [symbol, quote] of Object.entries(rawQuotes)) {
         try {
             formatted[symbol] = {
-                symbol,
-                ltp: quote.last_price || 0,
+                symbol: symbol,
+                ltp: quote.last_price,
                 vol: quote.volume || 0,
                 oi: quote.oi || 0,
                 chg: quote.net_change || 0,
-                chg_pct: quote.ohlc?.close ? (((quote.last_price - quote.ohlc.close) / quote.ohlc.close) * 100).toFixed(2) : 0,
                 open: quote.ohlc?.open || 0,
                 high: quote.ohlc?.high || 0,
                 low: quote.ohlc?.low || 0,
                 close: quote.ohlc?.close || 0,
                 bid: quote.depth?.buy?.[0]?.price || 0,
                 ask: quote.depth?.sell?.[0]?.price || 0,
-                time: quote.timestamp || null
+                time: quote.timestamp || "1970-01-01 05:30:00"
             };
         } catch (e) {}
     }
@@ -301,28 +341,30 @@ function canonicalMcxName(name) {
     return MCX_CANONICAL_MAP[up] || up;
 }
 
-// ── Dynamic symbol builder: picks nearest 2 active expiries per base ──
+// ── Optimized symbol builder: uses INDEXED data for O(1) exchange search ──
 async function buildFutSymbols(exchange, baseNames, maxExpiries = 2) {
     try {
-        const instruments = await getInstrumentsFromCache();
+        await getInstrumentsFromCache(); // Ensure cached/indexed
         const now = new Date();
         const symbols = [];
 
+        // ONLY search in the filtered subset for this exchange/type
+        const relevantContracts = (indexedInstruments[exchange] && indexedInstruments[exchange].FUT) || [];
+        if (relevantContracts.length === 0) return [];
+
         for (const base of baseNames) {
             const baseUpper = base.toUpperCase();
-            // Match by tradingsymbol starting with base name + digits (expiry) + FUT
-            const contracts = instruments
+            
+            // This is now scanning ~500-1000 items instead of 100,000 items
+            const matches = relevantContracts
                 .filter(i => {
-                    if (i.exchange !== exchange) return false;
-                    if (i.instrument_type !== 'FUT') return false;
                     const sym = (i.tradingsymbol || '').toUpperCase();
-                    // Match: symbol starts with base and ends with FUT
                     return sym.startsWith(baseUpper) && sym.endsWith('FUT');
                 })
                 .sort((a, b) => new Date(a.expiry || 0) - new Date(b.expiry || 0));
 
             const added = new Set();
-            for (const c of contracts) {
+            for (const c of matches) {
                 if (added.size >= maxExpiries) break;
                 const expDate = new Date(c.expiry || 0);
                 if (expDate >= now) {
@@ -331,16 +373,43 @@ async function buildFutSymbols(exchange, baseNames, maxExpiries = 2) {
                 }
             }
         }
-
-        if (symbols.length === 0) {
-            console.warn(`⚠️  buildFutSymbols ${exchange}: No contracts found for ${baseNames.length} bases`);
-        }
         return symbols;
     } catch (err) {
         console.warn(`buildFutSymbols error for ${exchange}:`, err.message);
         return [];
     }
 }
+
+// ── Background Rebuilding of Dashboard Symbols ──
+let dashboardSymbolsRefreshing = false;
+async function refreshDashboardSymbols() {
+    if (dashboardSymbolsRefreshing) return;
+    dashboardSymbolsRefreshing = true;
+    try {
+        console.log('🔄 Rebuilding Dashboard Symbols Cache in Background...');
+        const [mcxSymbols, nfoIndexFut, nfoStockFut] = await Promise.all([
+            buildFutSymbols('MCX', MCX_BASES, 2),
+            buildFutSymbols('NFO', NFO_INDICES, 3),
+            buildFutSymbols('NFO', NIFTY50, 1),
+        ]);
+
+        dashboardSymbolsCache = {
+            mcxSymbols,
+            nfoSymbols: [...nfoIndexFut, ...nfoStockFut],
+        };
+        dashboardSymbolsCacheTime = Date.now();
+        console.log('✅ Dashboard Symbols Cache Ready');
+    } catch (err) {
+        console.error('Failed to rebuild dashboard symbols:', err.message);
+    } finally {
+        dashboardSymbolsRefreshing = false;
+    }
+}
+
+// Start background loop
+setInterval(refreshDashboardSymbols, 10 * 60 * 1000); // Rebuild every 10 mins
+// Immediate first run
+setTimeout(refreshDashboardSymbols, 5000);
 
 // Rate limiter
 async function sleep(ms) {
@@ -377,113 +446,73 @@ router.get('/market/dashboard', authMiddleware, asyncHandler(async (req, res) =>
             return res.status(503).json({ error: 'Kite not connected.', kite_disconnected: true });
         }
 
-        // ✅ Initialize MarketDataService for real-time WebSocket updates
+        // ✅ Initialize MarketDataService
         const marketDataService = require('../services/MarketDataService');
         marketDataService.init(userId).catch(err => console.log('MarketDataService init background:', err.message));
 
-        // ── NSE: All stocks from all 4 indices (deduplicated) + index symbols ──
+        // 1. Get Symbols
         const nseStocks = ALL_NSE_STOCKS.map(s => `NSE:${s}`);
-        const nseIndices = ['NSE:NIFTY', 'NSE:NIFTYNXT50', 'NSE:NIFTYBANK', 'NSE:NIFTYINFRA', 'NSE:NIFTYPHARMA', 'NSE:NIFTYIT'];
+        const nseIndices = ['NSE:NIFTY 50', 'NSE:NIFTY BANK', 'NSE:NIFTY FIN SERVICE', 'NSE:NIFTY MID SELECT'];
 
-        // ── MCX + NFO symbols (cached for speed) ──
-        const symNow = Date.now();
-        if (!dashboardSymbolsCache || (symNow - dashboardSymbolsCacheTime) > DASHBOARD_SYMBOLS_TTL) {
-            const [mcxSymbols, nfoIndexFut, nfoStockFut] = await Promise.all([
-                buildFutSymbols('MCX', MCX_BASES, 2),
-                buildFutSymbols('NFO', NFO_INDICES, 3),
-                buildFutSymbols('NFO', NIFTY50, 1),
-            ]);
-            dashboardSymbolsCache = {
-                mcxSymbols,
-                nfoSymbols: [...nfoIndexFut, ...nfoStockFut],
-            };
-            dashboardSymbolsCacheTime = symNow;
+        // ── Symbols from Precomputed Cache (STRICTLY NO BLOCKING FILTERING) ──
+        if (!dashboardSymbolsCache) {
+            // Start one refresh but don't wait too long
+            refreshDashboardSymbols().catch(() => {});
         }
 
-        const mcxSymbols = dashboardSymbolsCache.mcxSymbols;
-        const nfoSymbols = dashboardSymbolsCache.nfoSymbols;
-
+        const mcxSymbols = dashboardSymbolsCache?.mcxSymbols || [];
+        const nfoSymbols = dashboardSymbolsCache?.nfoSymbols || [];
         const allSymbols = [...nseStocks, ...nseIndices, ...mcxSymbols, ...nfoSymbols];
-        console.log(`📊 Dashboard Build: NSE ${nseStocks.length + nseIndices.length} | MCX ${mcxSymbols.length} | NFO ${nfoSymbols.length} = ${allSymbols.length} total`);
-        if (mcxSymbols.length === 0) console.warn('⚠️  MCX symbols returned 0 - will use mock data');
-        if (nfoSymbols.length === 0) console.warn('⚠️  NFO symbols returned 0 - will use mock data');
 
-        // Use cache if fresh (serves instantly)
-        const now = Date.now();
-        let rawQuotes;
-        if (Object.keys(quotesCache).length > 0 && (now - quotesCacheTime) < QUOTES_TTL) {
-            rawQuotes = quotesCache;
-        } else {
-            // Stream-cache-first: fill from websocket cache, fetch only missing via REST
-            rawQuotes = {};
-            const missing = [];
-            for (const sym of allSymbols) {
-                const q = getQuoteFromStream(sym);
-                if (q) rawQuotes[sym] = q;
-                else missing.push(sym);
-            }
+        // 2. Ensure Mapping & Subscriptions
+        getInstrumentsFromCache().catch(() => {}); // Ensure index in background
+        
+        const subList = allSymbols.map(sym => ({
+            symbol: sym,
+            token: getTokenSync(sym)
+        })).filter(i => i.token);
 
-            if (missing.length > 0) {
-                const fetched = await fetchQuotesBatchDedup(missing);
-                Object.assign(rawQuotes, fetched);
-            }
+        // Non-blocking bulk subscription
+        marketDataService.bulkSubscribe(subList);
 
-            quotesCache = rawQuotes;
-            quotesCacheTime = now;
-        }
+        // 3. Instant Fetch from Memory
+        const streamData = marketDataService.getPricesBatch(allSymbols);
+        const formatted = {};
 
-        const formatted = formatQuotes(rawQuotes);
-
-        // ── Add fallback mock data for missing symbols ──
+        // Build response instantly, use 0 if no tick yet
         for (const symbol of allSymbols) {
-            if (!formatted[symbol]) {
-                const mockQuote = generateMockQuote(symbol);
-                formatted[symbol] = {
-                    symbol,
-                    ltp: mockQuote.last_price,
-                    vol: mockQuote.volume,
-                    oi: mockQuote.oi,
-                    chg: mockQuote.net_change,
-                    chg_pct: mockQuote.ohlc?.close ? (((mockQuote.last_price - mockQuote.ohlc.close) / mockQuote.ohlc.close) * 100).toFixed(2) : 0,
-                    open: mockQuote.ohlc?.open || 0,
-                    high: mockQuote.ohlc?.high || 0,
-                    low: mockQuote.ohlc?.low || 0,
-                    close: mockQuote.ohlc?.close || 0,
-                    bid: mockQuote.depth?.buy?.[0]?.price || 0,
-                    ask: mockQuote.depth?.sell?.[0]?.price || 0,
-                    time: mockQuote.timestamp || null
-                };
-            }
+            const quote = streamData[symbol];
+            formatted[symbol] = {
+                symbol,
+                ltp: quote?.ltp || 0,
+                vol: quote?.volume || 0,
+                oi: quote?.oi || 0,
+                chg: quote?.change || 0,
+                chg_pct: quote?.ohlc?.close ? (((quote.ltp - quote.ohlc.close) / quote.ohlc.close) * 100).toFixed(2) : "0.00",
+                open: quote?.ohlc?.open || 0,
+                high: quote?.ohlc?.high || 0,
+                low: quote?.ohlc?.low || 0,
+                close: quote?.ohlc?.close || 0,
+                bid: quote?.depth?.buy?.[0]?.price || 0,
+                ask: quote?.depth?.sell?.[0]?.price || 0,
+                time: new Date().toISOString()
+            };
         }
 
-        // ── Build NSE sub-groups ──
+        // 4. Grouping for Frontend
+        const nseGroups = { 'NIFTY 50': {}, 'BANK NIFTY': {}, 'MIDCAP': {}, 'FIN NIFTY': {}, 'INDICES': {} };
         const nifty50Set = new Set(NIFTY50.map(s => `NSE:${s}`));
         const bankNiftySet = new Set(BANKNIFTY.map(s => `NSE:${s}`));
         const midcapSet = new Set(MIDCAP.map(s => `NSE:${s}`));
         const finniftySet = new Set(FINNIFTY.map(s => `NSE:${s}`));
-        const nseSet = new Set([...nseStocks, ...nseIndices]);
+
+        const sections = { nse: {}, mcx: {}, nfo: {} };
         const mcxSet = new Set(mcxSymbols);
         const nfoSet = new Set(nfoSymbols);
 
-        const sections = {
-            nse: {},
-            mcx: {},
-            nfo: {}
-        };
-
-        // NSE sub-groups for frontend filtering
-        const nseGroups = {
-            'NIFTY 50': {},
-            'BANK NIFTY': {},
-            'MIDCAP': {},
-            'FIN NIFTY': {},
-            'INDICES': {}
-        };
-
         for (const [sym, data] of Object.entries(formatted)) {
-            if (nseSet.has(sym)) {
+            if (sym.startsWith('NSE:')) {
                 sections.nse[sym] = data;
-                // Tag which index group this belongs to
                 if (nseIndices.includes(sym)) nseGroups['INDICES'][sym] = data;
                 if (nifty50Set.has(sym)) nseGroups['NIFTY 50'][sym] = data;
                 if (bankNiftySet.has(sym)) nseGroups['BANK NIFTY'][sym] = data;
@@ -494,28 +523,16 @@ router.get('/market/dashboard', authMiddleware, asyncHandler(async (req, res) =>
             else if (nfoSet.has(sym)) sections.nfo[sym] = data;
         }
 
-        // Log summary
-        const realDataCount = Object.keys(rawQuotes).length;
-        const mockDataCount = Object.keys(formatted).length - realDataCount;
-        console.log(`✅ Dashboard Response: Real=${realDataCount} | Mock=${mockDataCount} | Total=${Object.keys(formatted).length}`);
-
-        // Send response immediately (non-blocking)
         res.json({
             status: 'success',
             timestamp: new Date().toISOString(),
-            counts: {
-                nse: Object.keys(sections.nse).length,
-                mcx: Object.keys(sections.mcx).length,
-                nfo: Object.keys(sections.nfo).length,
-                total: Object.keys(formatted).length
-            },
+            counts: { nse: Object.keys(sections.nse).length, mcx: Object.keys(sections.mcx).length, nfo: Object.keys(sections.nfo).length, total: allSymbols.length },
             nseGroups: {
                 'NIFTY 50': Object.keys(nseGroups['NIFTY 50']).length,
                 'BANK NIFTY': Object.keys(nseGroups['BANK NIFTY']).length,
                 'MIDCAP': Object.keys(nseGroups['MIDCAP']).length,
                 'FIN NIFTY': Object.keys(nseGroups['FIN NIFTY']).length,
             },
-            // Each stock has a _group tag so frontend can filter
             data: sections,
             groups: nseGroups
         });
