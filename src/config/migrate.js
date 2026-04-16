@@ -402,13 +402,15 @@ const runMigrations = async () => {
             speed      INT DEFAULT 10,
             is_active  TINYINT(1) DEFAULT 1,
             start_time DATETIME DEFAULT NULL,
-            end_time   DATETIME DEFAULT NULL
+            end_time   DATETIME DEFAULT NULL,
+            created_by INT DEFAULT NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
 
     // Add start_time/end_time for tickers created before these columns existed
     await addColumn('tickers', 'start_time', 'DATETIME DEFAULT NULL AFTER is_active');
     await addColumn('tickers', 'end_time',   'DATETIME DEFAULT NULL AFTER start_time');
+    await addColumn('tickers', 'created_by', 'INT DEFAULT NULL');
 
     await db.execute(`
         CREATE TABLE IF NOT EXISTS banned_limit_orders (
@@ -446,9 +448,13 @@ const runMigrations = async () => {
             ifsc             VARCHAR(20) NOT NULL,
             branch           VARCHAR(100) NOT NULL,
             status           ENUM('Active','Inactive') DEFAULT 'Active',
+            created_by       INT DEFAULT NULL,
             created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
+
+    // Add created_by if table existed before this column was added
+    await addColumn('bank_details', 'created_by', 'INT DEFAULT NULL');
 
     await db.execute(`
         CREATE TABLE IF NOT EXISTS support_tickets (
