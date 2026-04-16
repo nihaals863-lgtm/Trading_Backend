@@ -708,7 +708,7 @@ const runMigrations = async () => {
     // Trades table indexes
     await addIndex('trades', 'idx_trades_user_id', 'user_id');
     await addIndex('trades', 'idx_trades_status', 'status');
-    await addIndex('trades', 'idx_trades_created_at', 'created_at');
+    await addIndex('trades', 'idx_trades_entry_time', 'entry_time');
     await addIndex('trades', 'idx_trades_user_status', 'user_id, status');
     await addIndex('trades', 'idx_trades_symbol', 'symbol');
     await addIndex('trades', 'idx_trades_created_by', 'created_by');

@@ -60,7 +60,7 @@ KEY MAPPINGS:
    - DELETE: "trade 5 delete karo" → UPDATE status='DELETED' WHERE id=5
 
 3. FUNDS / LEDGER (money management)
-   - ADD_FUND: "ID 16 me 5001 add karo" → UPDATE users balance + INSERT ledger
+   - ADD_FUND: "ID 16 me 5000 add karo" → UPDATE users balance + INSERT ledger
    - WITHDRAW: "ID 16 se 3000 hatao" → UPDATE users balance + INSERT ledger
    - TRANSFER: "ID 10 se ID 20 me 500 bhejo" → UPDATE both + INSERT 2 ledger
 
@@ -108,7 +108,7 @@ KEY MAPPINGS:
 
 6. ADD_FUND (deposit money)
    Keywords: add, deposit, jama, credit, bdhao
-   Example: "ID 16 me 5001 add karo" → ADD_FUND with amount=5001
+   Example: "ID 16 me 5000 add karo" → ADD_FUND with amount=5000
 
 7. WITHDRAW (deduct money)
    Keywords: withdraw, hatao, nikalo, debit
@@ -159,8 +159,8 @@ DATE RANGE:
 - "pichle mahine" (last month) → dateRange for month
 
 AMOUNT:
-- "5001" → {amount: 5001}
-- "5k" → {amount: 5001}
+- "5000" → {amount: 5000}
+- "5k" → {amount: 5000}
 - "10,000" → {amount: 10000}
 
 ════════════════════════════════════════════════════════════════════════════════
@@ -261,20 +261,20 @@ ALWAYS return this exact structure (no extra text, pure JSON):
         "step": 2,
         "description": "Update balance",
         "sql": "UPDATE users SET balance = balance + ? WHERE id = ?",
-        "params": [5001, 16]
+        "params": [5000, 16]
       },
       {
         "step": 3,
         "description": "Insert ledger",
         "sql": "INSERT INTO ledger (user_id, amount, type, balance_after, remarks) VALUES (?, ?, ?, ?, ?)",
-        "params": [16, 5001, "DEPOSIT", 15001, "AI Command: Fund added"]
+        "params": [16, 5000, "DEPOSIT", 15000, "AI Command: Fund added"]
       }
     ]
   },
 
   "data": {
     "userId": 16,
-    "amount": 5001,
+    "amount": 5000,
     "name": "Rahul",
     "email": "rahul@example.com",
     "role": "ADMIN",
@@ -304,7 +304,7 @@ ALWAYS return this exact structure (no extra text, pure JSON):
 INPUT: "trading clients dikhao"
 → SELECT * FROM users WHERE role = 'TRADER'
 
-INPUT: "ID 16 me 5001 add karo"
+INPUT: "ID 16 me 5000 add karo"
 → 3-step: validate user → update balance → insert ledger
 
 INPUT: "blocked users dikhao"
@@ -327,7 +327,7 @@ INPUT: "GOLD buy trades open"
 ════════════════════════════════════════════════════════════════════════════════
 
 - DO NOT keyword match — understand INTENT
-- Hindi "16 number ID pe 5001 jama karo" == English "add 5001 to user ID 16"
+- Hindi "16 number ID pe 5000 jama karo" == English "add 5000 to user ID 16"
 - Hindi "16 id se paise nikalo" == "withdraw from user 16"
 - "kitne traders" means COUNT, not SELECT *
 - "kal ke trades" needs DATE filter, not just trades

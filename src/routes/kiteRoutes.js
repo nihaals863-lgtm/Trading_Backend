@@ -55,7 +55,7 @@ async function getInstrumentsFromCache() {
     }
     console.log('⚡ Fetching and INDEXING ALL instruments from Kite API...');
     const instruments = await kiteService.getInstruments();
-    
+
     // 1. Rebuild basic mapping
     const newMap = new Map();
     // 2. Rebuild optimized index
@@ -86,7 +86,7 @@ async function getInstrumentsFromCache() {
     indexedInstruments = newIndex;
     instrumentsCache = instruments;
     instrumentsCacheTime = now;
-    
+
     console.log(`✅ Indexed ${instruments.length} instruments`);
     return instruments;
 }
@@ -155,7 +155,7 @@ const NFO_INDICES = ['NIFTY', 'BANKNIFTY', 'FINNIFTY', 'MIDCPNIFTY'];
 // Dashboard symbols cache (avoids rebuilding symbol lists every request)
 let dashboardSymbolsCache = null;
 let dashboardSymbolsCacheTime = 0;
-const DASHBOARD_SYMBOLS_TTL = 15001; // 15s
+const DASHBOARD_SYMBOLS_TTL = 15000; // 15s
 
 // ── Quotes cache ──
 let quotesCache = {};
@@ -232,7 +232,7 @@ function getQuoteFromStream(symbol) {
 
 // Generate realistic mock data for missing symbols
 function generateMockQuote(symbol) {
-    const basePrice = Math.random() * 5001 + 100;
+    const basePrice = Math.random() * 5000 + 100;
     const change = (Math.random() - 0.5) * 200;
     const closePrice = basePrice - change;
     const chgPct = ((change / closePrice) * 100).toFixed(2);
@@ -248,7 +248,7 @@ function generateMockQuote(symbol) {
             close: closePrice
         },
         volume: Math.floor(Math.random() * 10000000),
-        oi: Math.floor(Math.random() * 5001000),
+        oi: Math.floor(Math.random() * 5000000),
         depth: {
             buy: [{ price: basePrice - 0.05, quantity: Math.floor(Math.random() * 1000) }],
             sell: [{ price: basePrice + 0.05, quantity: Math.floor(Math.random() * 1000) }]
@@ -354,7 +354,7 @@ async function buildFutSymbols(exchange, baseNames, maxExpiries = 2) {
 
         for (const base of baseNames) {
             const baseUpper = base.toUpperCase();
-            
+
             // This is now scanning ~500-1000 items instead of 100,000 items
             const matches = relevantContracts
                 .filter(i => {
@@ -457,7 +457,7 @@ router.get('/market/dashboard', authMiddleware, asyncHandler(async (req, res) =>
         // ── Symbols from Precomputed Cache (STRICTLY NO BLOCKING FILTERING) ──
         if (!dashboardSymbolsCache) {
             // Start one refresh but don't wait too long
-            refreshDashboardSymbols().catch(() => {});
+            refreshDashboardSymbols().catch(() => { });
         }
 
         const mcxSymbols = dashboardSymbolsCache?.mcxSymbols || [];
@@ -465,8 +465,8 @@ router.get('/market/dashboard', authMiddleware, asyncHandler(async (req, res) =>
         const allSymbols = [...nseStocks, ...nseIndices, ...mcxSymbols, ...nfoSymbols];
 
         // 2. Ensure Mapping & Subscriptions
-        getInstrumentsFromCache().catch(() => {}); // Ensure index in background
-        
+        getInstrumentsFromCache().catch(() => { }); // Ensure index in background
+
         const subList = allSymbols.map(sym => ({
             symbol: sym,
             token: getTokenSync(sym)
@@ -734,7 +734,7 @@ async function _buildWatchlistData(query, userId) {
                     kiteService.sessionData = { access_token: session.access_token, user_name: session.user_name };
                 }
             }
-        } catch (_) {}
+        } catch (_) { }
     }
 
     if (!kiteService.isAuthenticated()) {
@@ -747,7 +747,7 @@ async function _buildWatchlistData(query, userId) {
     // ── Step 1: ONE batch call for all LTP keys (index + futures) ──
     let ltpQuotes = {};
     if (pc.ltpKeys.length > 0) {
-        try { ltpQuotes = await kiteService.getQuote(pc.ltpKeys); } catch (_) {}
+        try { ltpQuotes = await kiteService.getQuote(pc.ltpKeys); } catch (_) { }
     }
 
     // ── Step 2: Build NFO option keys using precomputed index + LTP ──

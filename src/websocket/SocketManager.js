@@ -17,7 +17,7 @@ class SocketManager {
                 methods: ["GET", "POST"]
             },
             // ✅ Keep connection alive with ping/pong
-            pingInterval: 25001,
+            pingInterval: 25000,
             pingTimeout: 60000,
             transports: ['websocket', 'polling']  // Enable both
         });

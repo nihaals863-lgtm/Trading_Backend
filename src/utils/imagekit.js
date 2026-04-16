@@ -79,7 +79,7 @@ const uploadFile = async (fileBuffer, fileName, folder = '/traders/documents') =
         const filePath = path.join(uploadDir, uniqueName);
         fs.writeFileSync(filePath, fileBuffer);
 
-        const baseUrl = process.env.BASE_URL || 'http://localhost:5001';
+        const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
         const publicUrl = `${baseUrl}/uploads${folder}/${uniqueName}`;
 
         console.log(`[Local Fallback] ✅ File saved: ${publicUrl}`);

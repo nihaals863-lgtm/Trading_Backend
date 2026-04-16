@@ -128,7 +128,7 @@ io.on('connection', (socket) => {
 // ── Market Data Initialization ──
 // Handled inside migration callback
 
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5000;
 
 // Share io instance with controllers (before migrations)
 setIo(io);

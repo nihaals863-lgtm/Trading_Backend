@@ -51,7 +51,7 @@ const parseWithRules = (rawText) => {
         // "1 peti" without number prefix
         if (sl.match(/\b(?:ek\s+)?(?:peti|पेटी)\b/)) return 100000;
         if (sl.match(/\b(?:ek\s+)?(?:khoka|खोका)\b/)) return 10000000;
-        // "5k" = 5001
+        // "5k" = 5000
         const km = str.match(/(\d+)\s*k\b/i);
         if (km) return parseInt(km[1], 10) * 1000;
         // "5 lakh" / "5 crore"
@@ -232,17 +232,17 @@ Examples:
 Input : "ID 16 me 2000 add karo"
 Output: { "action": "ADD_FUND", "userId": 16, "username": null, "amount": 2000 }
 
-Input : "username ke account me 5001 daalo"
-Output: { "action": "ADD_FUND", "userId": null, "username": "username", "amount": 5001 }
+Input : "username ke account me 5000 daalo"
+Output: { "action": "ADD_FUND", "userId": null, "username": "username", "amount": 5000 }
 
-Input : "username me 5001 daalo"
-Output: { "action": "ADD_FUND", "userId": null, "username": "username", "amount": 5001 }
+Input : "username me 5000 daalo"
+Output: { "action": "ADD_FUND", "userId": null, "username": "username", "amount": 5000 }
 
 Input : "add 3000 to john account"
 Output: { "action": "ADD_FUND", "userId": null, "username": "john", "amount": 3000 }
 
-Input : "username ke account se 5001 nikalo"
-Output: { "action": "WITHDRAW_FUND", "userId": null, "username": "username", "amount": 5001 }
+Input : "username ke account se 5000 nikalo"
+Output: { "action": "WITHDRAW_FUND", "userId": null, "username": "username", "amount": 5000 }
 
 Input : "username se 2000 nikalo"
 Output: { "action": "WITHDRAW_FUND", "userId": null, "username": "username", "amount": 2000 }
@@ -346,7 +346,7 @@ const parseCommand = async (text) => {
 
     // Check for unknown action
     if (result.action === 'UNKNOWN') {
-        throw new Error('Command not understood. Try: "ID 16 me 5001 add karo" or "user 15 block karo"');
+        throw new Error('Command not understood. Try: "ID 16 me 5000 add karo" or "user 15 block karo"');
     }
 
     return result;

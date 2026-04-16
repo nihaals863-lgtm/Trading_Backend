@@ -930,7 +930,7 @@ const getTrades = async (req, res) => {
         if (user_id) {
             query += ' AND t.user_id = ?';
             params.push(user_id);
-            
+
             // Even if user_id is provided, non-traders should only see trades they created for that user
             if (req.user.role !== 'TRADER') {
                 query += ' AND t.created_by = ?';
@@ -1002,7 +1002,7 @@ const getTradeById = async (req, res) => {
 
         const trade = rows[0];
         const { id: requesterId } = req.user;
-        
+
         // Access check: "Jisme jo trade banai usko vahi dikhe"
         // Target user (Trader) can see their own trades OR Creator can see trades they placed
         const isTargetUser = trade.user_id === requesterId;

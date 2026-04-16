@@ -90,11 +90,11 @@ class MarketDataService extends EventEmitter {
             this.ticker.on('error', (err) => {
                 const errMsg = err?.message || String(err);
                 console.error('⚠️  Ticker Error:', errMsg);
-                
+
                 // 403, 401 (Auth errors) or persistent connection errors → switch to mock
                 if (errMsg.includes('403') || errMsg.includes('401') || errMsg.includes('connection')) {
                     console.log('🧪 Switching to mock engine due to:', errMsg);
-                    
+
                     // CRITICAL: Stop the ticker from trying to reconnect persistently
                     if (this.ticker) {
                         try {
@@ -105,7 +105,7 @@ class MarketDataService extends EventEmitter {
                         }
                         this.ticker = null;
                     }
-                    
+
                     this.startMockEngine();
                 }
             });
@@ -174,7 +174,7 @@ class MarketDataService extends EventEmitter {
         ticks.forEach(tick => {
             const symbol = this.instrumentMap[tick.instrument_token];
             if (!symbol) return;
-            
+
             const data = {
                 symbol,
                 ltp: tick.last_price,
@@ -198,7 +198,7 @@ class MarketDataService extends EventEmitter {
         if (!token) return;
         this.instrumentMap[token] = symbol;
         this.subscribedTokens.add(token);
-        
+
         if (this.ticker && this.ticker.connected) {
             this.ticker.subscribe([tNum]);
             this.ticker.setMode(this.ticker.modeFull, [tNum]);
@@ -207,7 +207,7 @@ class MarketDataService extends EventEmitter {
 
     bulkSubscribe(instruments) {
         if (!Array.isArray(instruments) || instruments.length === 0) return;
-        
+
         const newTokens = [];
         instruments.forEach(({ symbol, token }) => {
             if (!token) return;
@@ -275,9 +275,9 @@ class MarketDataService extends EventEmitter {
     }
 
     stopCryptoForex() {
-        if (this.twelveDataInterval) { 
-            clearInterval(this.twelveDataInterval); 
-            this.twelveDataInterval = null; 
+        if (this.twelveDataInterval) {
+            clearInterval(this.twelveDataInterval);
+            this.twelveDataInterval = null;
         }
     }
 
@@ -300,7 +300,7 @@ class MarketDataService extends EventEmitter {
                 // --- SMART PULSE ENGINE ---
                 // Even if API stays same, we add +/- 0.005% fluctuation
                 let ltp = this.pulsedPrices[sym] || apiPrice;
-                
+
                 // If API changed significantly (>0.1%), reset to API price
                 if (Math.abs(ltp - apiPrice) / apiPrice > 0.001) {
                     ltp = apiPrice;

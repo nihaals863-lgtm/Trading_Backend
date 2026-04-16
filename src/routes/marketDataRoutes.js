@@ -12,7 +12,7 @@ const FOREX_SYMBOLS = 'XAU/USD,XAG/USD,USD/INR,EUR/INR,GBP/USD,USD/JPY,USD/CHF,A
 
 // ── Cache: per-type, short TTL to avoid rate limits ──
 const cache = {};
-const CACHE_TTL = 5001; // 5 seconds (Twelve Data free = 8 calls/min)
+const CACHE_TTL = 5000; // 5 seconds (Twelve Data free = 8 calls/min)
 
 // Symbol metadata for UI
 const SYMBOL_META = {
@@ -74,10 +74,10 @@ function buildResponse(rawData, type) {
     const result = [];
     for (const [symbol, res] of Object.entries(rawData)) {
         if (!res || (!res.price && !res.close)) continue;
-        
+
         const price = parseFloat(res.price || res.close || 0);
         const meta = SYMBOL_META[symbol] || { name: symbol, icon: '?', category: type };
-        
+
         let bid = parseFloat(res.bid || 0);
         let ask = parseFloat(res.ask || 0);
 
