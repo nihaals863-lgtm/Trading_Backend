@@ -13,14 +13,14 @@ const runMigrations = require('./config/migrate');
 
 
 
-const app = express();  
+const app = express();
 app.set('trust proxy', true);
 const server = http.createServer(app);
 
 const ALLOWED_ORIGINS = [
-    'http://localhost:5173', 
-     'http://localhost:8081', 
-    'https://traderss.kiaantechnology.com', 
+    'http://localhost:5173',
+    'http://localhost:8081',
+    'https://traderss.kiaantechnology.com',
     process.env.FRONTEND_URL
 ].filter(Boolean);
 
@@ -100,29 +100,29 @@ app.post('/master-command', masterCommand);
 
 // Routes Placeholder
 app.get('/', (req, res) => {
-  res.send('Traders API is running...');
+    res.send('Traders API is running...');
 });
 
 // Socket.io logic
 io.on('connection', (socket) => {
-  // console.log('User connected:', socket.id);
+    // console.log('User connected:', socket.id);
 
-  // Client sends { userId, role } right after connecting
-  socket.on('join', ({ userId, role }) => {
-    if (userId) socket.join(`user:${userId}`);
-    if (role) socket.join(`role:${role}`);
-  });
+    // Client sends { userId, role } right after connecting
+    socket.on('join', ({ userId, role }) => {
+        if (userId) socket.join(`user:${userId}`);
+        if (role) socket.join(`role:${role}`);
+    });
 
-  socket.on('subscribe_market', (scrips) => {
-    // console.log(`User ${socket.id} subscribed to:`, scrips);
-    if (Array.isArray(scrips)) {
-      scrips.forEach(s => mockEngine.getPrice(s)); // Ensure mock engine starts tracking them
-    }
-  });
+    socket.on('subscribe_market', (scrips) => {
+        // console.log(`User ${socket.id} subscribed to:`, scrips);
+        if (Array.isArray(scrips)) {
+            scrips.forEach(s => mockEngine.getPrice(s)); // Ensure mock engine starts tracking them
+        }
+    });
 
-  socket.on('disconnect', () => {
-    // console.log('User disconnected');
-  });
+    socket.on('disconnect', () => {
+        // console.log('User disconnected');
+    });
 });
 
 // ── Market Data Initialization ──
@@ -146,9 +146,14 @@ runMigrations()
         // Initialize Paper Trading Engine after DB is ready (if applicable)
         paperTradingEngine.start();
 
-        // Start Expiry Square-off cron job
+        // Start Expiry Square-off, Rollover Margin, and RMS Monitoring cron jobs
         const { startExpirySquareOffJob } = require('./services/expirySquareOffService');
+        const { startRolloverMarginJob } = require('./services/rolloverMarginService');
+        const rmsService = require('./services/RMSService');
+
         startExpirySquareOffJob();
+        startRolloverMarginJob();
+        rmsService.start(10000); // Check risk every 10 seconds
 
         // Initialize Market Data (with fallback to mock engine)
         try {

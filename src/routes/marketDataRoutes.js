@@ -78,8 +78,13 @@ function buildResponse(rawData, type) {
         const price = parseFloat(res.price || res.close || 0);
         const meta = SYMBOL_META[symbol] || { name: symbol, icon: '?', category: type };
         
+        // Apply synthetic spread if bid/ask are missing or equal to price
+        const spreadFactor = type === 'crypto' ? 0.0001 : 0.0002;
         let bid = parseFloat(res.bid || 0);
         let ask = parseFloat(res.ask || 0);
+
+        if (bid === 0 || bid === price) bid = price * (1 - spreadFactor);
+        if (ask === 0 || ask === price) ask = price * (1 + spreadFactor);
 
         result.push({
             symbol,

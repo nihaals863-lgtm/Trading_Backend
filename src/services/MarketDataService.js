@@ -51,8 +51,10 @@ class MarketDataService extends EventEmitter {
         // Crypto + Forex state
         this.cryptoPrices = {};
         this.forexPrices = {};
-        this.pulsedPrices = {}; // Store pulsed baseline for micro-volatility
+        this.apiBaselines = {};  // Real prices from API
+        this.pulsedPrices = {};  // Current pulsed price shown on UI
         this.twelveDataInterval = null;
+        this.pulseInterval = null;
     }
 
     async init(userId) {
@@ -89,31 +91,26 @@ class MarketDataService extends EventEmitter {
 
             this.ticker.on('error', (err) => {
                 const errMsg = err?.message || String(err);
-                console.error('⚠️  Ticker Error:', errMsg);
-                
-                // 403, 401 (Auth errors) or persistent connection errors → switch to mock
                 if (errMsg.includes('403') || errMsg.includes('401') || errMsg.includes('connection')) {
-                    console.log('🧪 Switching to mock engine due to:', errMsg);
-                    
-                    // CRITICAL: Stop the ticker from trying to reconnect persistently
+                    console.error('⚠️  Critical Ticker Error:', errMsg);
                     if (this.ticker) {
                         try {
-                            this.ticker.autoReconnect(false);
-                            this.ticker.disconnect();
-                        } catch (e) {
-                            console.error('Error while disconnecting faulty ticker:', e.message);
-                        }
-                        this.ticker = null;
+                            const oldTicker = this.ticker;
+                            this.ticker = null; // Clear first to prevent recursion
+                            oldTicker.autoReconnect(false);
+                            oldTicker.disconnect();
+                        } catch (e) {}
+                        this.startMockEngine();
                     }
-                    
-                    this.startMockEngine();
+                } else {
+                    console.error('⚠️  Ticker Error:', errMsg);
                 }
             });
 
             this.ticker.on('disconnect', () => {
-                console.warn('⚠️  Ticker disconnected, using mock engine');
-                // Only start mock if we haven't already switched (ticker might be null if we handled 403)
+                console.warn('⚠️  Ticker disconnected');
                 if (this.ticker) {
+                    this.ticker = null;
                     this.startMockEngine();
                 }
             });
@@ -264,10 +261,13 @@ class MarketDataService extends EventEmitter {
 
     startCryptoForex() {
         if (this.twelveDataInterval) return;
-        console.log('🌐 Starting Optimized Twelve Data feed (15s interval)');
+        console.log('🌐 Starting High-Frequency Crypto/Forex Engine');
 
-        // Batch fetch every 15 seconds to stay within 8 requests/min limit
+        // 1. Real API Fetch (every 15s to respect rate limits)
         this.twelveDataInterval = setInterval(() => this._fetchTwelveData(ALL_TD_SYMBOLS), 15000);
+
+        // 2. Fast Pulse Timer (every 1s for ultra-fast UI movement)
+        this.pulseInterval = setInterval(() => this._broadcastPulse(), 1000);
 
         // Immediate first fetch
         this._fetchTwelveData(ALL_TD_SYMBOLS);
@@ -278,6 +278,10 @@ class MarketDataService extends EventEmitter {
             clearInterval(this.twelveDataInterval); 
             this.twelveDataInterval = null; 
         }
+        if (this.pulseInterval) {
+            clearInterval(this.pulseInterval);
+            this.pulseInterval = null;
+        }
     }
 
     async _fetchTwelveData(symbols) {
@@ -286,72 +290,87 @@ class MarketDataService extends EventEmitter {
             const response = await fetch(url);
             const data = await response.json();
 
-            const io = socketManager.getIo();
-            const cryptoUpdates = [];
-            const forexUpdates = [];
-
-            const processSymbol = (sym, res) => {
-                if (!res || (!res.price && !res.close)) return null;
-                const apiPrice = parseFloat(res.price || res.close || 0);
-                const meta = SYMBOL_META[sym] || { name: sym, category: sym.includes('/') ? 'forex' : 'crypto' };
-                const type = meta.category === 'crypto' ? 'crypto' : 'forex';
-
-                // --- SMART PULSE ENGINE ---
-                // Even if API stays same, we add +/- 0.005% fluctuation
-                let ltp = this.pulsedPrices[sym] || apiPrice;
-                
-                // If API changed significantly (>0.1%), reset to API price
-                if (Math.abs(ltp - apiPrice) / apiPrice > 0.001) {
-                    ltp = apiPrice;
-                }
-
-                const delta = (Math.random() - 0.5) * (ltp * 0.0001); // 0.01% max pulse
-                ltp = parseFloat((ltp + delta).toFixed(5));
-                this.pulsedPrices[sym] = ltp;
-
-                // Synthetic Spread
-                const spreadFactor = type === 'crypto' ? 0.0001 : 0.0002;
-                const bid = parseFloat((ltp * (1 - spreadFactor)).toFixed(5));
-                const ask = parseFloat((ltp * (1 + spreadFactor)).toFixed(5));
-
-                const entry = {
-                    symbol: sym, name: meta.name, category: meta.category, type,
-                    ltp,
-                    bid,
-                    ask,
+            const updateBaseline = (sym, res) => {
+                if (!res || (!res.price && !res.close)) return;
+                const price = parseFloat(res.price || res.close || 0);
+                this.apiBaselines[sym] = {
+                    price,
                     change: parseFloat(res.change || 0),
-                    chg_pct: res.percent_change || '0.00',
-                    direction: parseFloat(res.change) > 0 ? 'up' : parseFloat(res.change) < 0 ? 'down' : 'neutral',
-                    updatedAt: new Date().toISOString()
+                    chg_pct: res.percent_change || '0.00'
                 };
-
-                if (type === 'crypto') {
-                    this.cryptoPrices[sym] = entry;
-                    cryptoUpdates.push(entry);
-                } else {
-                    this.forexPrices[sym] = entry;
-                    forexUpdates.push(entry);
-                }
-                return entry;
+                
+                // Initialize pulsedPrice if not exists
+                if (!this.pulsedPrices[sym]) this.pulsedPrices[sym] = price;
             };
 
             if (data.price || data.symbol) {
-                processSymbol(symbols.split(',')[0], data);
+                updateBaseline(symbols.split(',')[0], data);
             } else {
-                Object.entries(data).forEach(([sym, res]) => processSymbol(sym, res));
-            }
-
-            // Broadcast updates
-            if (io) {
-                if (cryptoUpdates.length > 0) {
-                    io.emit('market_data_update', { type: 'crypto', data: cryptoUpdates, timestamp: new Date().toISOString() });
-                }
-                if (forexUpdates.length > 0) {
-                    io.emit('market_data_update', { type: 'forex', data: forexUpdates, timestamp: new Date().toISOString() });
-                }
+                Object.entries(data).forEach(([sym, res]) => updateBaseline(sym, res));
             }
         } catch (err) {
-            if (!err.message?.includes('429')) console.warn(`Twelve Data error:`, err.message);
+            if (!err.message?.includes('429')) console.warn(`Twelve Data fetch error:`, err.message);
+        }
+    }
+
+    _broadcastPulse() {
+        const io = socketManager.getIo();
+        if (!io) return;
+
+        const cryptoUpdates = [];
+        const forexUpdates = [];
+
+        Object.entries(this.apiBaselines).forEach(([sym, base]) => {
+            const meta = SYMBOL_META[sym] || { name: sym, category: sym.includes('/') ? 'forex' : 'crypto' };
+            const type = meta.category === 'crypto' ? 'crypto' : 'forex';
+
+            // Micro-fluctuation logic (every 1s)
+            let ltp = this.pulsedPrices[sym] || base.price;
+            
+            // Gradually pull towards API baseline if drifting too far (>0.05% difference)
+            const drift = (ltp - base.price) / base.price;
+            if (Math.abs(drift) > 0.0005) {
+                ltp = ltp - (drift * 0.1); // Pull back 10% of the drift
+            }
+
+            // Normal fluctuation (+/- 0.002%)
+            const delta = (Math.random() - 0.5) * (ltp * 0.00004); 
+            ltp = parseFloat((ltp + delta).toFixed(5));
+            this.pulsedPrices[sym] = ltp;
+
+            // Synthetic Spread (Synced with current pulsed LTP)
+            const spreadFactor = type === 'crypto' ? 0.0001 : 0.0002;
+            const bid = parseFloat((ltp * (1 - spreadFactor)).toFixed(5));
+            const ask = parseFloat((ltp * (1 + spreadFactor)).toFixed(5));
+
+            const entry = {
+                symbol: sym,
+                name: meta.name,
+                category: meta.category,
+                type,
+                ltp,
+                bid,
+                ask,
+                change: base.change,
+                chg_pct: base.chg_pct,
+                direction: base.change > 0 ? 'up' : base.change < 0 ? 'down' : 'neutral',
+                updatedAt: new Date().toISOString()
+            };
+
+            if (type === 'crypto') {
+                this.cryptoPrices[sym] = entry;
+                cryptoUpdates.push(entry);
+            } else {
+                this.forexPrices[sym] = entry;
+                forexUpdates.push(entry);
+            }
+        });
+
+        if (cryptoUpdates.length > 0) {
+            io.emit('market_data_update', { type: 'crypto', data: cryptoUpdates, timestamp: new Date().toISOString() });
+        }
+        if (forexUpdates.length > 0) {
+            io.emit('market_data_update', { type: 'forex', data: forexUpdates, timestamp: new Date().toISOString() });
         }
     }
 
