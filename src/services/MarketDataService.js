@@ -9,6 +9,7 @@ const TWELVE_BASE = 'https://api.twelvedata.com';
 
 const CRYPTO_SYMBOLS = 'BTC/USD,ETH/USD,BNB/USD,SOL/USD,XRP/USD,ADA/USD,DOGE/USD,DOT/USD,MATIC/USD,AVAX/USD';
 const FOREX_SYMBOLS = 'XAU/USD,XAG/USD,USD/INR,EUR/INR,GBP/USD,USD/JPY,USD/CHF,AUD/CAD,EUR/USD,GBP/INR';
+const ALL_TD_SYMBOLS = `${CRYPTO_SYMBOLS},${FOREX_SYMBOLS}`;
 
 const SYMBOL_META = {
     'BTC/USD': { name: 'Bitcoin', category: 'crypto' },
@@ -50,8 +51,8 @@ class MarketDataService extends EventEmitter {
         // Crypto + Forex state
         this.cryptoPrices = {};
         this.forexPrices = {};
-        this.cryptoInterval = null;
-        this.forexInterval = null;
+        this.pulsedPrices = {}; // Store pulsed baseline for micro-volatility
+        this.twelveDataInterval = null;
     }
 
     async init(userId) {
@@ -87,17 +88,34 @@ class MarketDataService extends EventEmitter {
             });
 
             this.ticker.on('error', (err) => {
-                console.error('⚠️  Ticker Error:', err.message);
-                // 403, 401, connection errors → switch to mock
-                if (err.message?.includes('403') || err.message?.includes('401') || err.message?.includes('connection')) {
-                    console.log('🧪 Switching to mock engine due to:', err.message);
+                const errMsg = err?.message || String(err);
+                console.error('⚠️  Ticker Error:', errMsg);
+                
+                // 403, 401 (Auth errors) or persistent connection errors → switch to mock
+                if (errMsg.includes('403') || errMsg.includes('401') || errMsg.includes('connection')) {
+                    console.log('🧪 Switching to mock engine due to:', errMsg);
+                    
+                    // CRITICAL: Stop the ticker from trying to reconnect persistently
+                    if (this.ticker) {
+                        try {
+                            this.ticker.autoReconnect(false);
+                            this.ticker.disconnect();
+                        } catch (e) {
+                            console.error('Error while disconnecting faulty ticker:', e.message);
+                        }
+                        this.ticker = null;
+                    }
+                    
                     this.startMockEngine();
                 }
             });
 
             this.ticker.on('disconnect', () => {
                 console.warn('⚠️  Ticker disconnected, using mock engine');
-                this.startMockEngine();
+                // Only start mock if we haven't already switched (ticker might be null if we handled 403)
+                if (this.ticker) {
+                    this.startMockEngine();
+                }
             });
 
             this.ticker.connect();
@@ -154,9 +172,9 @@ class MarketDataService extends EventEmitter {
         const updates = {};
 
         ticks.forEach(tick => {
-            const info = this.instrumentMap[tick.instrument_token];
-            const symbol = info || tick.instrument_token;
-
+            const symbol = this.instrumentMap[tick.instrument_token];
+            if (!symbol) return;
+            
             const data = {
                 symbol,
                 ltp: tick.last_price,
@@ -170,7 +188,7 @@ class MarketDataService extends EventEmitter {
             updates[symbol] = data;
         });
 
-        if (io) {
+        if (io && Object.keys(updates).length > 0) {
             io.emit('price_update', updates);
         }
         this.emit('update', updates);
@@ -180,13 +198,31 @@ class MarketDataService extends EventEmitter {
         if (!token) return;
         this.instrumentMap[token] = symbol;
         this.subscribedTokens.add(token);
-
+        
         if (this.ticker && this.ticker.connected) {
-            this.ticker.subscribe([token]);
-            this.ticker.setMode(this.ticker.modeFull, [token]);
-        } else if (!this.ticker) {
-            // If ticker not active, ensure mock engine starts or resumes
-            this.startMockEngine();
+            this.ticker.subscribe([tNum]);
+            this.ticker.setMode(this.ticker.modeFull, [tNum]);
+        }
+    }
+
+    bulkSubscribe(instruments) {
+        if (!Array.isArray(instruments) || instruments.length === 0) return;
+        
+        const newTokens = [];
+        instruments.forEach(({ symbol, token }) => {
+            if (!token) return;
+            const tNum = Number(token);
+            this.instrumentMap[tNum] = symbol;
+            if (!this.subscribedTokens.has(tNum)) {
+                this.subscribedTokens.add(tNum);
+                newTokens.push(tNum);
+            }
+        });
+
+        if (newTokens.length > 0 && this.ticker && this.ticker.connected) {
+            this.ticker.subscribe(newTokens);
+            this.ticker.setMode(this.ticker.modeFull, newTokens);
+            console.log(`📡 Bulk Subscribed to ${newTokens.length} instruments`);
         }
     }
 
@@ -196,12 +232,20 @@ class MarketDataService extends EventEmitter {
         if (tokens.length > 0) {
             this.ticker.subscribe(tokens);
             this.ticker.setMode(this.ticker.modeFull, tokens);
-            console.log(`📊 Resubscribed to ${tokens.length} instruments`);
+            console.log(`📊 Total Subscriptions: ${tokens.length}`);
         }
     }
 
     getPrice(symbol) {
-        return this.prices[symbol];
+        return this.prices[symbol] || null;
+    }
+
+    getPricesBatch(symbols) {
+        const result = {};
+        symbols.forEach(sym => {
+            if (this.prices[sym]) result[sym] = this.prices[sym];
+        });
+        return result;
     }
 
     shutdown() {
@@ -218,79 +262,97 @@ class MarketDataService extends EventEmitter {
     // ══════════════════════════════════════════════════════
 
     startCryptoForex() {
-        if (this.cryptoInterval) return;
-        console.log('🌐 Starting Crypto + Forex data feeds');
+        if (this.twelveDataInterval) return;
+        console.log('🌐 Starting Optimized Twelve Data feed (15s interval)');
 
         // Crypto: fetch every 3 seconds
         this.cryptoInterval = setInterval(() => this._fetchTwelveData(CRYPTO_SYMBOLS, 'crypto'), 3000);
         // Forex: fetch every 5 seconds
-        this.forexInterval = setInterval(() => this._fetchTwelveData(FOREX_SYMBOLS, 'forex'), 5001);
+        this.forexInterval = setInterval(() => this._fetchTwelveData(FOREX_SYMBOLS, 'forex'), 5000);
 
         // Immediate first fetch
-        this._fetchTwelveData(CRYPTO_SYMBOLS, 'crypto');
-        this._fetchTwelveData(FOREX_SYMBOLS, 'forex');
+        this._fetchTwelveData(ALL_TD_SYMBOLS);
     }
 
     stopCryptoForex() {
-        if (this.cryptoInterval) { clearInterval(this.cryptoInterval); this.cryptoInterval = null; }
-        if (this.forexInterval) { clearInterval(this.forexInterval); this.forexInterval = null; }
+        if (this.twelveDataInterval) { 
+            clearInterval(this.twelveDataInterval); 
+            this.twelveDataInterval = null; 
+        }
     }
 
-    async _fetchTwelveData(symbols, type) {
+    async _fetchTwelveData(symbols) {
         try {
-            const url = `${TWELVE_BASE}/price?symbol=${symbols}&apikey=${TWELVE_DATA_KEY}`;
+            const url = `${TWELVE_BASE}/quote?symbol=${symbols}&apikey=${TWELVE_DATA_KEY}`;
             const response = await fetch(url);
             const data = await response.json();
 
             const io = socketManager.getIo();
-            const updates = {};
-            const store = type === 'crypto' ? this.cryptoPrices : this.forexPrices;
+            const cryptoUpdates = [];
+            const forexUpdates = [];
 
-            // Parse response — multi-symbol returns { "BTC/USD": { price: "..." } }
-            if (data.price) {
-                // Single symbol
-                const sym = symbols.split(',')[0];
-                const price = parseFloat(data.price);
-                const prev = store[sym]?.ltp || price;
-                const change = price - prev;
-                const meta = SYMBOL_META[sym] || { name: sym, category: type };
+            const processSymbol = (sym, res) => {
+                if (!res || (!res.price && !res.close)) return null;
+                const apiPrice = parseFloat(res.price || res.close || 0);
+                const meta = SYMBOL_META[sym] || { name: sym, category: sym.includes('/') ? 'forex' : 'crypto' };
+                const type = meta.category === 'crypto' ? 'crypto' : 'forex';
+
+                // --- SMART PULSE ENGINE ---
+                // Even if API stays same, we add +/- 0.005% fluctuation
+                let ltp = this.pulsedPrices[sym] || apiPrice;
+                
+                // If API changed significantly (>0.1%), reset to API price
+                if (Math.abs(ltp - apiPrice) / apiPrice > 0.001) {
+                    ltp = apiPrice;
+                }
+
+                const delta = (Math.random() - 0.5) * (ltp * 0.0001); // 0.01% max pulse
+                ltp = parseFloat((ltp + delta).toFixed(5));
+                this.pulsedPrices[sym] = ltp;
+
+                // Synthetic Spread
+                const spreadFactor = type === 'crypto' ? 0.0001 : 0.0002;
+                const bid = parseFloat((ltp * (1 - spreadFactor)).toFixed(5));
+                const ask = parseFloat((ltp * (1 + spreadFactor)).toFixed(5));
 
                 const entry = {
                     symbol: sym, name: meta.name, category: meta.category, type,
-                    ltp: price, change: parseFloat(change.toFixed(6)),
-                    chg_pct: prev ? ((change / prev) * 100).toFixed(4) : '0.00',
-                    direction: change > 0 ? 'up' : change < 0 ? 'down' : 'neutral',
+                    ltp,
+                    bid,
+                    ask,
+                    change: parseFloat(res.change || 0),
+                    chg_pct: res.percent_change || '0.00',
+                    direction: parseFloat(res.change) > 0 ? 'up' : parseFloat(res.change) < 0 ? 'down' : 'neutral',
+                    updatedAt: new Date().toISOString()
                 };
-                store[sym] = entry;
-                updates[`${type}:${sym}`] = entry;
-            } else {
-                for (const [sym, val] of Object.entries(data)) {
-                    if (!val || !val.price) continue;
-                    const price = parseFloat(val.price);
-                    const prev = store[sym]?.ltp || price;
-                    const change = price - prev;
-                    const meta = SYMBOL_META[sym] || { name: sym, category: type };
 
-                    const entry = {
-                        symbol: sym, name: meta.name, category: meta.category, type,
-                        ltp: price, change: parseFloat(change.toFixed(6)),
-                        chg_pct: prev ? ((change / prev) * 100).toFixed(4) : '0.00',
-                        direction: change > 0 ? 'up' : change < 0 ? 'down' : 'neutral',
-                    };
-                    store[sym] = entry;
-                    updates[`${type}:${sym}`] = entry;
+                if (type === 'crypto') {
+                    this.cryptoPrices[sym] = entry;
+                    cryptoUpdates.push(entry);
+                } else {
+                    this.forexPrices[sym] = entry;
+                    forexUpdates.push(entry);
+                }
+                return entry;
+            };
+
+            if (data.price || data.symbol) {
+                processSymbol(symbols.split(',')[0], data);
+            } else {
+                Object.entries(data).forEach(([sym, res]) => processSymbol(sym, res));
+            }
+
+            // Broadcast updates
+            if (io) {
+                if (cryptoUpdates.length > 0) {
+                    io.emit('market_data_update', { type: 'crypto', data: cryptoUpdates, timestamp: new Date().toISOString() });
+                }
+                if (forexUpdates.length > 0) {
+                    io.emit('market_data_update', { type: 'forex', data: forexUpdates, timestamp: new Date().toISOString() });
                 }
             }
-
-            // Broadcast via same WebSocket event
-            if (io && Object.keys(updates).length > 0) {
-                io.emit('market_data_update', { type, data: Object.values(updates), timestamp: new Date().toISOString() });
-            }
         } catch (err) {
-            // Silent fail — don't spam console on rate limits
-            if (!err.message?.includes('429')) {
-                console.warn(`Twelve Data (${type}) error:`, err.message);
-            }
+            if (!err.message?.includes('429')) console.warn(`Twelve Data error:`, err.message);
         }
     }
 
