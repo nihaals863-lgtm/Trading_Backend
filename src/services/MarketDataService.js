@@ -771,6 +771,7 @@ class MarketDataService extends EventEmitter {
         this.ticker = null;
         this.prices = {};
         this.subscribedTokens = new Set();
+        this.subscribedSymbols = new Set();
         this.instrumentMap = {}; // token -> symbol
         this.isConnecting = false;
 
@@ -867,44 +868,11 @@ class MarketDataService extends EventEmitter {
     }
 
     startMockEngine() {
-        if (this.mockInterval) return;
-        console.log('🧪 Starting Mock Price Engine (400ms ticks)');
-        let tickCount = 0;
-        this.mockInterval = setInterval(() => {
-            const updates = {};
-            const io = socketManager.getIo();
-
-            // 1. Handle Kite Subscriptions (Tokens)
-            this.subscribedTokens.forEach(token => {
-                const symbol = this.instrumentMap[token] || `TOKEN_${token}`;
-                this._generateMockUpdate(symbol, updates);
-            });
-
-            // 2. Handle Kite Subscriptions (Direct Symbols - Failsafe)
-            if (this.subscribedSymbols) {
-                this.subscribedSymbols.forEach(symbol => {
-                    this._generateMockUpdate(symbol, updates);
-                });
-            }
-
-            // 3. Handle Crypto/Forex micro-fluctuations
-            Object.values(this.cryptoPrices).forEach(p => {
-                const fluctuate = (Math.random() - 0.5) * (p.ltp * 0.0005);
-                p.ltp = parseFloat((p.ltp + fluctuate).toFixed(4));
-                updates[p.symbol] = p;
-            });
-
-            Object.values(this.forexPrices).forEach(p => {
-                const fluctuate = (Math.random() - 0.5) * (p.ltp * 0.0003);
-                p.ltp = parseFloat((p.ltp + fluctuate).toFixed(4));
-                updates[p.symbol] = p;
-            });
-
-            if (io && Object.keys(updates).length > 0) {
-                io.emit('price_update', updates);
-                tickCount++;
-            }
-        }, 400);
+        // Mock data generation is intentionally disabled for all segments.
+        if (this.mockInterval) {
+            clearInterval(this.mockInterval);
+            this.mockInterval = null;
+        }
     }
 
     _generateMockUpdate(symbol, updates) {
@@ -971,10 +939,7 @@ class MarketDataService extends EventEmitter {
 
     subscribe(symbol, token) {
         if (!token) {
-            // Failsafe: if no token, subscribe via symbol for mock data
-            if (!this.subscribedSymbols) this.subscribedSymbols = new Set();
             this.subscribedSymbols.add(symbol);
-            this.startMockEngine();
             return;
         }
 
@@ -986,8 +951,29 @@ class MarketDataService extends EventEmitter {
             this.ticker.subscribe([parseInt(sToken)]);
             this.ticker.setMode(this.ticker.modeFull, [parseInt(sToken)]);
             console.log(`✅ Subscribed to real ticker: ${symbol} (${sToken})`);
-        } else {
-            this.startMockEngine();
+        }
+    }
+
+    bulkSubscribe(items = []) {
+        if (!Array.isArray(items) || items.length === 0) return;
+
+        const tokenNums = [];
+        for (const item of items) {
+            if (!item?.symbol) continue;
+            if (!item.token) {
+                this.subscribe(item.symbol);
+                continue;
+            }
+
+            const sToken = String(item.token);
+            this.instrumentMap[sToken] = item.symbol;
+            this.subscribedTokens.add(sToken);
+            tokenNums.push(parseInt(sToken, 10));
+        }
+
+        if (this.ticker && this.ticker.connected && tokenNums.length > 0) {
+            this.ticker.subscribe(tokenNums);
+            this.ticker.setMode(this.ticker.modeFull, tokenNums);
         }
     }
 

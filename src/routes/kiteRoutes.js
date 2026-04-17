@@ -596,7 +596,10 @@ async function refreshWatchlistInBackground(queryParams, userId) {
 // INSTANT response from cache, background refresh every 2s
 router.get('/market/watchlist', authMiddleware, asyncHandler(async (req, res) => {
     try {
-        const now = Date.now();
+        if (!kiteService.isAuthenticated()) {
+            return res.status(503).json({ error: 'Kite not connected.', kite_disconnected: true });
+        }
+
         const cacheKey = `${req.query.nse || ''}_${req.query.nfoUnderlyings || ''}_${req.query.mcxOptSymbols || ''}`;
 
         // If cache has data → return INSTANTLY, trigger background refresh if stale
