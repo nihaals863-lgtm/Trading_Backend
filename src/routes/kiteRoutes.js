@@ -596,7 +596,10 @@ async function refreshWatchlistInBackground(queryParams, userId) {
 // INSTANT response from cache, background refresh every 2s
 router.get('/market/watchlist', authMiddleware, asyncHandler(async (req, res) => {
     try {
-        const now = Date.now();
+        if (!kiteService.isAuthenticated()) {
+            return res.status(503).json({ error: 'Kite not connected.', kite_disconnected: true });
+        }
+
         const cacheKey = `${req.query.nse || ''}_${req.query.nfoUnderlyings || ''}_${req.query.mcxOptSymbols || ''}`;
 
         // If cache has data → return INSTANTLY, trigger background refresh if stale
@@ -765,10 +768,9 @@ async function _buildWatchlistData(query, userId) {
         if (!cfg.expiry) continue;
         let ltp = ltpQuotes?.[cfg.idxKey]?.last_price || 0;
         if (!ltp && cfg.futKey) ltp = ltpQuotes?.[cfg.futKey]?.last_price || 0;
-        if (!ltp) continue;
 
         let atmStrike = null;
-        if (cfg.step) {
+        if (cfg.step && ltp) {
             atmStrike = Math.round(ltp / cfg.step) * cfg.step;
             const lower = Math.floor((ltp - cfg.range) / cfg.step) * cfg.step;
             const upper = Math.ceil((ltp + cfg.range) / cfg.step) * cfg.step;
@@ -811,18 +813,19 @@ async function _buildWatchlistData(query, userId) {
         if (!fut) continue;
 
         const ltp = ltpQuotes?.[fut.fullKey]?.last_price || 0;
-        if (!ltp) continue;
 
         const nearestOpt = pickNearestExpiry(instruments, { exchange: 'MCX', name: base, instrumentTypes: ['CE', 'PE'] });
         if (!nearestOpt) continue;
         const expiryYmd = toYmd(nearestOpt.expiry);
         if (!expiryYmd) continue;
 
-        const atmStrike = Math.round(ltp / step) * step;
-        const lower = Math.floor((ltp - pc.mcxOptRange) / step) * step;
-        const upper = Math.ceil((ltp + pc.mcxOptRange) / step) * step;
-        const strikeSet = new Set();
-        for (let s = lower; s <= upper; s += step) strikeSet.add(s);
+        const atmStrike = ltp ? Math.round(ltp / step) * step : null;
+        if (ltp) {
+            const lower = Math.floor((ltp - pc.mcxOptRange) / step) * step;
+            const upper = Math.ceil((ltp + pc.mcxOptRange) / step) * step;
+            const strikeSet = new Set();
+            for (let s = lower; s <= upper; s += step) strikeSet.add(s);
+        }
 
         const requestedExpiry = new Date(expiryYmd).toDateString();
         const optList = pc.mcxOptIndex[base] || [];
