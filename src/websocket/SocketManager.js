@@ -35,16 +35,24 @@ class SocketManager {
                 const instrumentService = require('../services/InstrumentService');
 
                 if (Array.isArray(scrips)) {
-                    scrips.forEach(async (symbol) => {
-                        try {
-                            const instrument = await instrumentService.getInstrumentBySymbol(symbol);
-                            if (instrument) {
-                                marketDataService.subscribe(symbol, instrument.instrument_token);
-                            }
-                        } catch (e) {
-                            console.error(`Subscription failed for ${symbol}:`, e.message);
-                        }
-                    });
+                    const normalizedSymbols = Array.from(
+                        new Set(
+                            scrips
+                                .map((symbol) => String(symbol || '').trim().toUpperCase())
+                                .filter(Boolean)
+                        )
+                    );
+
+                    instrumentService.getInstrumentsBySymbols(normalizedSymbols)
+                        .then((instrumentsBySymbol) => {
+                            normalizedSymbols.forEach((symbol) => {
+                                const instrument = instrumentsBySymbol.get(symbol);
+                                marketDataService.subscribe(symbol, instrument?.instrument_token);
+                            });
+                        })
+                        .catch((e) => {
+                            console.error('Market subscription batch failed:', e.message);
+                        });
                 }
             });
 
