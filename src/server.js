@@ -129,9 +129,14 @@ runMigrations()
         // Initialize Paper Trading Engine after DB is ready (if applicable)
         paperTradingEngine.start();
 
-        // Start Expiry Square-off cron job
+        // Start Expiry Square-off, Rollover Margin, and RMS Monitoring cron jobs
         const { startExpirySquareOffJob } = require('./services/expirySquareOffService');
+        const { startRolloverMarginJob } = require('./services/rolloverMarginService');
+        const rmsService = require('./services/RMSService');
+
         startExpirySquareOffJob();
+        startRolloverMarginJob();
+        rmsService.start(10000); // Check risk every 10 seconds
 
         // Initialize Market Data (with fallback to mock engine)
         try {

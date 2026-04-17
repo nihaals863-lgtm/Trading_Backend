@@ -54,9 +54,14 @@ const getClientLiveM2M = async (req, res) => {
         `;
         let params = [];
 
-        if (role !== 'SUPERADMIN') {
-            query += ' AND (u.id = ? OR u.parent_id = ?)';
-            params.push(userId, userId);
+        if (role === 'TRADER') {
+            // Traders see M2M of their OWN trades
+            query += ' AND t.user_id = ?';
+            params.push(userId);
+        } else {
+            // Admins/Brokers see M2M ONLY for trades THEY created
+            query += ' AND t.created_by = ?';
+            params.push(userId);
         }
 
         const [trades] = await db.execute(query, params);
