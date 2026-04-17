@@ -275,6 +275,11 @@ const changePassword = async (req, res) => {
 };
 
 const verifyTransactionPassword = async (req, res) => {
+    // Bypass for TRADER (Clients in App)
+    if (req.user.role === 'TRADER') {
+        return res.json({ message: 'OK' });
+    }
+
     const { password } = req.body;
     try {
         const [rows] = await db.execute('SELECT transaction_password FROM users WHERE id = ?', [req.user.id]);

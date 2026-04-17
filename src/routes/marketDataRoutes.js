@@ -17,27 +17,27 @@ const CACHE_TTL = 5000; // 5 seconds (Twelve Data free = 8 calls/min)
 // Symbol metadata for UI
 const SYMBOL_META = {
     // Crypto
-    'BTC/USD':  { name: 'Bitcoin',      icon: '₿', category: 'crypto' },
-    'ETH/USD':  { name: 'Ethereum',     icon: 'Ξ', category: 'crypto' },
-    'BNB/USD':  { name: 'BNB',          icon: 'B', category: 'crypto' },
-    'SOL/USD':  { name: 'Solana',       icon: 'S', category: 'crypto' },
-    'XRP/USD':  { name: 'Ripple',       icon: 'X', category: 'crypto' },
-    'ADA/USD':  { name: 'Cardano',      icon: 'A', category: 'crypto' },
-    'DOGE/USD': { name: 'Dogecoin',     icon: 'D', category: 'crypto' },
-    'DOT/USD':  { name: 'Polkadot',     icon: '●', category: 'crypto' },
-    'MATIC/USD':{ name: 'Polygon',      icon: 'M', category: 'crypto' },
-    'AVAX/USD': { name: 'Avalanche',    icon: 'A', category: 'crypto' },
+    'BTC/USD': { name: 'Bitcoin', icon: '₿', category: 'crypto' },
+    'ETH/USD': { name: 'Ethereum', icon: 'Ξ', category: 'crypto' },
+    'BNB/USD': { name: 'BNB', icon: 'B', category: 'crypto' },
+    'SOL/USD': { name: 'Solana', icon: 'S', category: 'crypto' },
+    'XRP/USD': { name: 'Ripple', icon: 'X', category: 'crypto' },
+    'ADA/USD': { name: 'Cardano', icon: 'A', category: 'crypto' },
+    'DOGE/USD': { name: 'Dogecoin', icon: 'D', category: 'crypto' },
+    'DOT/USD': { name: 'Polkadot', icon: '●', category: 'crypto' },
+    'MATIC/USD': { name: 'Polygon', icon: 'M', category: 'crypto' },
+    'AVAX/USD': { name: 'Avalanche', icon: 'A', category: 'crypto' },
     // Forex / Commodities
-    'XAU/USD':  { name: 'Gold',         icon: '🥇', category: 'commodity' },
-    'XAG/USD':  { name: 'Silver',       icon: '🥈', category: 'commodity' },
-    'USD/INR':  { name: 'USD/INR',      icon: '₹', category: 'forex' },
-    'EUR/INR':  { name: 'EUR/INR',      icon: '€', category: 'forex' },
-    'GBP/USD':  { name: 'GBP/USD',      icon: '£', category: 'forex' },
-    'USD/JPY':  { name: 'USD/JPY',      icon: '¥', category: 'forex' },
-    'USD/CHF':  { name: 'USD/CHF',      icon: 'Fr', category: 'forex' },
-    'AUD/CAD':  { name: 'AUD/CAD',      icon: 'A$', category: 'forex' },
-    'EUR/USD':  { name: 'EUR/USD',      icon: '€', category: 'forex' },
-    'GBP/INR':  { name: 'GBP/INR',      icon: '£', category: 'forex' },
+    'XAU/USD': { name: 'Gold', icon: '🥇', category: 'commodity' },
+    'XAG/USD': { name: 'Silver', icon: '🥈', category: 'commodity' },
+    'USD/INR': { name: 'USD/INR', icon: '₹', category: 'forex' },
+    'EUR/INR': { name: 'EUR/INR', icon: '€', category: 'forex' },
+    'GBP/USD': { name: 'GBP/USD', icon: '£', category: 'forex' },
+    'USD/JPY': { name: 'USD/JPY', icon: '¥', category: 'forex' },
+    'USD/CHF': { name: 'USD/CHF', icon: 'Fr', category: 'forex' },
+    'AUD/CAD': { name: 'AUD/CAD', icon: 'A$', category: 'forex' },
+    'EUR/USD': { name: 'EUR/USD', icon: '€', category: 'forex' },
+    'GBP/INR': { name: 'GBP/INR', icon: '£', category: 'forex' },
 };
 
 // ── Fetch from Twelve Data with caching ──
@@ -74,7 +74,7 @@ function buildResponse(rawData, type) {
     const result = [];
     for (const [symbol, res] of Object.entries(rawData)) {
         if (!res || (!res.price && !res.close)) continue;
-        
+
         const price = parseFloat(res.price || res.close || 0);
         const meta = SYMBOL_META[symbol] || { name: symbol, icon: '?', category: type };
         

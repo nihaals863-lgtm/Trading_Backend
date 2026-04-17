@@ -59,14 +59,20 @@ class MarketDataService extends EventEmitter {
 
     async init(userId) {
         if (this.ticker || this.isConnecting) return;
-        this.isConnecting = true;
+        
+        // Cooldown: If auth failed recently, don't try again for 5 minutes
+        const now = Date.now();
+        if (this.lastAuthFail && (now - this.lastAuthFail < 5 * 60 * 1000)) {
+            this.startMockEngine();
+            return;
+        }
 
+        this.isConnecting = true;
         try {
             const repo = require('../repositories/KiteRepository');
             const userSession = await repo.getSessionByUserId(userId);
 
             if (!userSession || !userSession.access_token) {
-                console.log('⚠️  Kite credentials not available for user ' + userId + ', falling back to mock engine');
                 this.startMockEngine();
                 this.isConnecting = false;
                 return;
@@ -81,6 +87,7 @@ class MarketDataService extends EventEmitter {
 
             this.ticker.on('connect', () => {
                 console.log('📈 Zerodha Ticker Connected');
+                this.lastAuthFail = null; // Clear failure on success
                 this.stopMockEngine();
                 this.resubscribe();
             });
@@ -91,14 +98,16 @@ class MarketDataService extends EventEmitter {
 
             this.ticker.on('error', (err) => {
                 const errMsg = err?.message || String(err);
-                if (errMsg.includes('403') || errMsg.includes('401') || errMsg.includes('connection')) {
-                    console.error('⚠️  Critical Ticker Error:', errMsg);
+                if (errMsg.includes('403') || errMsg.includes('401')) {
+                    console.error('⚠️  Critical Auth Error (403/401). Cooling down for 5 mins.');
+                    this.lastAuthFail = Date.now();
                     if (this.ticker) {
                         try {
                             const oldTicker = this.ticker;
-                            this.ticker = null; // Clear first to prevent recursion
+                            this.ticker = null; 
                             oldTicker.autoReconnect(false);
                             oldTicker.disconnect();
+                            oldTicker.removeAllListeners();
                         } catch (e) {}
                         this.startMockEngine();
                     }
@@ -108,9 +117,8 @@ class MarketDataService extends EventEmitter {
             });
 
             this.ticker.on('disconnect', () => {
-                console.warn('⚠️  Ticker disconnected');
                 if (this.ticker) {
-                    this.ticker = null;
+                    console.warn('⚠️  Ticker disconnected, trying to recover...');
                     this.startMockEngine();
                 }
             });
@@ -171,7 +179,7 @@ class MarketDataService extends EventEmitter {
         ticks.forEach(tick => {
             const symbol = this.instrumentMap[tick.instrument_token];
             if (!symbol) return;
-            
+
             const data = {
                 symbol,
                 ltp: tick.last_price,
@@ -193,10 +201,9 @@ class MarketDataService extends EventEmitter {
 
     subscribe(symbol, token) {
         if (!token) return;
-        const tNum = Number(token);
-        this.instrumentMap[tNum] = symbol;
-        this.subscribedTokens.add(tNum);
-        
+        this.instrumentMap[token] = symbol;
+        this.subscribedTokens.add(token);
+
         if (this.ticker && this.ticker.connected) {
             this.ticker.subscribe([tNum]);
             this.ticker.setMode(this.ticker.modeFull, [tNum]);
@@ -205,7 +212,7 @@ class MarketDataService extends EventEmitter {
 
     bulkSubscribe(instruments) {
         if (!Array.isArray(instruments) || instruments.length === 0) return;
-        
+
         const newTokens = [];
         instruments.forEach(({ symbol, token }) => {
             if (!token) return;
@@ -274,9 +281,9 @@ class MarketDataService extends EventEmitter {
     }
 
     stopCryptoForex() {
-        if (this.twelveDataInterval) { 
-            clearInterval(this.twelveDataInterval); 
-            this.twelveDataInterval = null; 
+        if (this.twelveDataInterval) {
+            clearInterval(this.twelveDataInterval);
+            this.twelveDataInterval = null;
         }
         if (this.pulseInterval) {
             clearInterval(this.pulseInterval);

@@ -70,24 +70,26 @@ const placeOrder = async (req, res) => {
             return res.status(404).json({ message: 'Target user not found' });
         }
 
-        // 4. Validate Transaction Password for the requester
-        const [requesterRows] = await db.execute(
-            'SELECT transaction_password FROM users WHERE id = ?',
-            [requesterId]
-        );
-        const requester = requesterRows[0];
+        // 4. Validate Transaction Password (Bypass for TRADER/Client)
+        if (requesterRole !== 'TRADER') {
+            const [requesterRows] = await db.execute(
+                'SELECT transaction_password FROM users WHERE id = ?',
+                [requesterId]
+            );
+            const requester = requesterRows[0];
 
-        if (!requester || !requester.transaction_password) {
-            return res.status(400).json({ message: 'Your transaction password is not set' });
-        }
+            if (!requester || !requester.transaction_password) {
+                return res.status(400).json({ message: 'Your transaction password is not set' });
+            }
 
-        if (!transactionPassword) {
-            return res.status(400).json({ message: 'Transaction password is required' });
-        }
+            if (!transactionPassword) {
+                return res.status(400).json({ message: 'Transaction password is required' });
+            }
 
-        const isMatch = await bcrypt.compare(transactionPassword, requester.transaction_password);
-        if (!isMatch) {
-            return res.status(403).json({ message: 'Invalid transaction password' });
+            const isMatch = await bcrypt.compare(transactionPassword, requester.transaction_password);
+            if (!isMatch) {
+                return res.status(403).json({ message: 'Invalid transaction password' });
+            }
         }
 
         // ─── FETCH CLIENT CONFIG FOR VALIDATIONS ───────────────────────────────
@@ -932,7 +934,7 @@ const getTrades = async (req, res) => {
         if (user_id) {
             query += ' AND t.user_id = ?';
             params.push(user_id);
-            
+
             // Even if user_id is provided, non-traders should only see trades they created for that user
             if (req.user.role !== 'TRADER') {
                 query += ' AND t.created_by = ?';
@@ -1004,7 +1006,7 @@ const getTradeById = async (req, res) => {
 
         const trade = rows[0];
         const { id: requesterId } = req.user;
-        
+
         // Access check: "Jisme jo trade banai usko vahi dikhe"
         // Target user (Trader) can see their own trades OR Creator can see trades they placed
         const isTargetUser = trade.user_id === requesterId;
@@ -1161,8 +1163,8 @@ const closeTrade = async (req, res) => {
  */
 const deleteTrade = async (req, res) => {
     try {
-        // Verify transaction password if provided
-        if (req.body && req.body.transactionPassword) {
+        // Verify transaction password if provided (Bypass for TRADER)
+        if (req.user.role !== 'TRADER' && req.body && req.body.transactionPassword) {
             const [users] = await db.execute('SELECT transaction_password FROM users WHERE id = ?', [req.user.id]);
             if (users.length && users[0].transaction_password) {
                 const match = await bcrypt.compare(req.body.transactionPassword, users[0].transaction_password);
@@ -1211,8 +1213,8 @@ const updateTrade = async (req, res) => {
     try {
         const { entry_price, exit_price, qty, transactionPassword } = req.body;
 
-        // Verify transaction password
-        if (transactionPassword) {
+        // Verify transaction password (Bypass for TRADER)
+        if (req.user.role !== 'TRADER' && transactionPassword) {
             const [users] = await db.execute('SELECT transaction_password FROM users WHERE id = ?', [req.user.id]);
             if (users.length && users[0].transaction_password) {
                 const match = await bcrypt.compare(transactionPassword, users[0].transaction_password);
@@ -1290,8 +1292,8 @@ const restoreTrade = async (req, res) => {
     try {
         const { transactionPassword } = req.body;
 
-        // Verify transaction password
-        if (transactionPassword) {
+        // Verify transaction password (Bypass for TRADER)
+        if (req.user.role !== 'TRADER' && transactionPassword) {
             const [users] = await db.execute('SELECT transaction_password FROM users WHERE id = ?', [req.user.id]);
             if (users.length && users[0].transaction_password) {
                 const match = await bcrypt.compare(transactionPassword, users[0].transaction_password);
