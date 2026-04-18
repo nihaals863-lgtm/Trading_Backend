@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const express = require('express');
 const kiteController = require('../controllers/kiteController');
 const kiteService = require('../utils/kiteService');
@@ -96,6 +98,9 @@ function getTokenSync(symbol) {
 }
 
 // ── NIFTY 50 (50 stocks — Apr 2026 official list, Zerodha exact symbols) ──
+/** Bump when default unified watchlist shape changes (invalidates HTTP cache + precompute). */
+const WATCHLIST_CACHE_BUST = 'watchlist_v3_mcx_crude_gas_opts';
+
 const NIFTY50 = [
     'ADANIPORTS', 'APOLLOHOSP', 'ASIANPAINT', 'AXISBANK', 'BAJAJ-AUTO',
     'BAJFINANCE', 'BAJAJFINSV', 'BEL', 'BHARTIARTL', 'BPCL',
@@ -108,6 +113,21 @@ const NIFTY50 = [
     'SUNPHARMA', 'TATACONSUM', 'TATAMOTORS', 'TATASTEEL', 'TCS',
     'TECHM', 'TITAN', 'TRENT', 'ULTRACEMCO', 'WIPRO'
 ];
+
+let _userNseEquityWatchlist = null;
+function loadUserNseEquityWatchlist() {
+    if (_userNseEquityWatchlist) return _userNseEquityWatchlist;
+    try {
+        const p = path.join(__dirname, '../data/user_nse_equity_watchlist.json');
+        const raw = JSON.parse(fs.readFileSync(p, 'utf8'));
+        if (!Array.isArray(raw)) throw new Error('expected array');
+        _userNseEquityWatchlist = raw.map((s) => String(s || '').trim().toUpperCase()).filter(Boolean);
+    } catch (e) {
+        console.warn('user_nse_equity_watchlist.json not loaded, falling back to NIFTY50:', e.message);
+        _userNseEquityWatchlist = NIFTY50.slice();
+    }
+    return _userNseEquityWatchlist;
+}
 
 // ── NIFTY BANK (12 banking stocks) ──
 const BANKNIFTY = [
@@ -329,6 +349,9 @@ const MCX_ALLOWED_WATCHLIST = [
     'GOLD', 'SILVER', 'CRUDEOIL', 'COPPER', 'ZINC', 'ALUMINIUM', 'LEAD', 'NATURALGAS',
     'GOLDM', 'SILVERM', 'CRUDEOILM', 'ZINCMINI', 'LEADMINI', 'COPPERMINI', 'NATURALGASMINI',
 ];
+
+/** Unified watchlist: MCX options only for Crude + Natural Gas (incl. mini); other MCX bases = nearest FUT only */
+const MCX_OPTION_UNDERLYINGS_DEFAULT = ['CRUDEOIL', 'CRUDEOILM', 'NATURALGAS', 'NATURALGASMINI'];
 
 const MCX_CANONICAL_MAP = {
     // Project-internal (instrument name) vs requirement names
@@ -583,7 +606,7 @@ async function refreshWatchlistInBackground(queryParams, userId) {
     watchlistRefreshing = true;
     try {
         const rows = await _buildWatchlistData(queryParams, userId);
-        const cacheKey = `${queryParams.nse || ''}_${queryParams.nfoUnderlyings || ''}_${queryParams.mcxOptSymbols || ''}`;
+        const cacheKey = `${queryParams.nse || ''}_${queryParams.nfoUnderlyings || ''}_${queryParams.mcxOptSymbols || ''}_${WATCHLIST_CACHE_BUST}`;
         watchlistCache = { data: rows, time: Date.now(), key: cacheKey };
     } catch (err) {
         console.warn('Watchlist background refresh error:', err.message);
@@ -596,8 +619,11 @@ async function refreshWatchlistInBackground(queryParams, userId) {
 // INSTANT response from cache, background refresh every 2s
 router.get('/market/watchlist', authMiddleware, asyncHandler(async (req, res) => {
     try {
-        const now = Date.now();
-        const cacheKey = `${req.query.nse || ''}_${req.query.nfoUnderlyings || ''}_${req.query.mcxOptSymbols || ''}`;
+        if (!kiteService.isAuthenticated()) {
+            return res.status(503).json({ error: 'Kite not connected.', kite_disconnected: true });
+        }
+
+        const cacheKey = `${req.query.nse || ''}_${req.query.nfoUnderlyings || ''}_${req.query.mcxOptSymbols || ''}_${WATCHLIST_CACHE_BUST}`;
 
         // If cache has data → return INSTANTLY, trigger background refresh if stale
         if (watchlistCache.data && watchlistCache.key === cacheKey) {
@@ -629,25 +655,45 @@ router.get('/market/watchlist', authMiddleware, asyncHandler(async (req, res) =>
 //   OPTIMIZED WATCHLIST BUILD — precomputed symbols, single batch, parallel
 // ══════════════════════════════════════════════════════════════
 
-// Precomputed symbol map — rebuilt only when instruments cache changes
+// Precomputed symbol map — rebuilt when instruments cache or default NSE list signature changes
 let _precomputed = null;
 let _precomputedInstrTime = 0;
+let _precomputedQuerySig = '';
 
 function _getPrecomputed(instruments, query) {
-    // Rebuild only if instruments cache changed (every 6 hours)
-    if (_precomputed && _precomputedInstrTime === instrumentsCacheTime) {
+    const today = new Date();
+
+    // ── NSE (default = curated list from user paste, validated against live NSE EQ/BE) ──
+    const nseList = String(query.nse || '').trim();
+    const rawNse = nseList
+        ? nseList.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean)
+        : loadUserNseEquityWatchlist();
+    const nseEqSyms = new Set(
+        instruments
+            .filter((i) => i.exchange === 'NSE' && ['EQ', 'BE'].includes(String(i.instrument_type || '').toUpperCase()))
+            .map((i) => i.tradingsymbol)
+    );
+    let nseSymbols = [...new Set(rawNse.filter((s) => nseEqSyms.has(s)))].sort((a, b) => a.localeCompare(b));
+    if (nseSymbols.length === 0) {
+        nseSymbols = [...new Set(NIFTY50.filter((s) => nseEqSyms.has(s)))].sort((a, b) => a.localeCompare(b));
+        if (nseSymbols.length === 0) nseSymbols = NIFTY50.slice();
+    }
+    const mcxOptSymQuery = String(query.mcxOptSymbols || '').trim();
+    const mcxOptRequested = (mcxOptSymQuery
+        ? mcxOptSymQuery.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean)
+        : MCX_OPTION_UNDERLYINGS_DEFAULT.slice()
+    ).filter((s) => MCX_ALLOWED_WATCHLIST.includes(s));
+    const mcxOptSigForPrecompute = mcxOptSymQuery || MCX_OPTION_UNDERLYINGS_DEFAULT.join(',');
+    const mcxOptRange = parseInt(query.mcxOptRange) || 2000;
+    const querySig = `${nseList || '__DEFAULT__'}_${WATCHLIST_CACHE_BUST}_nse${nseSymbols.length}_mcxopt_${mcxOptSigForPrecompute}`;
+
+    if (_precomputed && _precomputedInstrTime === instrumentsCacheTime && _precomputedQuerySig === querySig) {
         return _precomputed;
     }
 
     console.log('⚡ Precomputing watchlist symbol map...');
-    const today = new Date();
 
-    // ── NSE ──
-    const nseList = String(query.nse || '').trim();
-    const nseSymbols = nseList
-        ? nseList.split(',').map(s => s.trim().toUpperCase()).filter(Boolean)
-        : NIFTY50.slice();
-    const nseKeys = nseSymbols.map(s => `NSE:${s}`);
+    const nseKeys = nseSymbols.map((s) => `NSE:${s}`);
 
     // ── NFO underlyings ──
     const nfoUnderlyings = String(query.nfoUnderlyings || `NIFTY,BANKNIFTY,FINNIFTY,MIDCPNIFTY,${NIFTY50.join(',')}`)
@@ -682,9 +728,6 @@ function _getPrecomputed(instruments, query) {
 
     // ── MCX precompute: find nearest FUT for each base ONCE ──
     const mcxFutBases = MCX_ALLOWED_WATCHLIST.map(canonicalMcxName);
-    const mcxOptRequested = String(query.mcxOptSymbols || MCX_ALLOWED_WATCHLIST.join(','))
-        .split(',').map(s => s.trim().toUpperCase()).filter(Boolean).filter(s => MCX_ALLOWED_WATCHLIST.includes(s));
-    const mcxOptRange = parseInt(query.mcxOptRange) || 2000;
 
     // Build MCX FUT lookup ONCE (avoid scanning 100K instruments per base)
     const mcxFutByBase = {}; // base → { tradingsymbol, expiry, fullKey }
@@ -725,6 +768,7 @@ function _getPrecomputed(instruments, query) {
 
     _precomputed = { nseKeys, nfoConfig, nfoFutKeys, nfoFutMeta, mcxFutBases, mcxFutByBase, mcxOptRequested, mcxOptRange, ltpKeys, nfoOptIndex, mcxOptIndex, indexSymbolMap };
     _precomputedInstrTime = instrumentsCacheTime;
+    _precomputedQuerySig = querySig;
     console.log(`⚡ Precomputed: NSE=${nseKeys.length} | NFO underlyings=${nfoConfig.length} | MCX bases=${mcxFutBases.length} | LTP keys=${ltpKeys.length}`);
     return _precomputed;
 }
@@ -757,37 +801,7 @@ async function _buildWatchlistData(query, userId) {
         try { ltpQuotes = await kiteService.getQuote(pc.ltpKeys); } catch (_) { }
     }
 
-    // ── Step 2: Build NFO option keys using precomputed index + LTP ──
-    const nfoOptionKeys = [];
-    const nfoOptionMeta = {};
-
-    for (const cfg of pc.nfoConfig) {
-        if (!cfg.expiry) continue;
-        let ltp = ltpQuotes?.[cfg.idxKey]?.last_price || 0;
-        if (!ltp && cfg.futKey) ltp = ltpQuotes?.[cfg.futKey]?.last_price || 0;
-
-        let atmStrike = null;
-        if (cfg.step && ltp) {
-            atmStrike = Math.round(ltp / cfg.step) * cfg.step;
-            const lower = Math.floor((ltp - cfg.range) / cfg.step) * cfg.step;
-            const upper = Math.ceil((ltp + cfg.range) / cfg.step) * cfg.step;
-            const strikeSet = new Set();
-            for (let s = lower; s <= upper; s += cfg.step) strikeSet.add(s);
-        }
-
-        const requestedExpiry = new Date(cfg.expiry).toDateString();
-        const optList = pc.nfoOptIndex[cfg.underlying] || [];
-        for (const inst of optList) {
-            if (new Date(inst.expiry || 0).toDateString() !== requestedExpiry) continue;
-            const strike = Number(inst.strike);
-            // Limitation removed: showing all strikes for the expiry
-            // if (!strikeSet.has(strike)) continue; 
-            const fullKey = `NFO:${inst.tradingsymbol}`;
-            const it = String(inst.instrument_type || '').toUpperCase();
-            nfoOptionKeys.push(fullKey);
-            nfoOptionMeta[fullKey] = { strike, optionType: it, expiry: cfg.expiry, underlying: cfg.underlying, isATM: strike === atmStrike };
-        }
-    }
+    // NFO CE/PE options are not added to unified watchlist (only futures). Use GET /market/options-chain for option chains.
 
     // ── Step 3: MCX Futures keys ──
     const mcxFutKeys = [];
@@ -839,7 +853,7 @@ async function _buildWatchlistData(query, userId) {
     }
 
     // ── Step 5: ONE batch quote fetch for ALL symbols (parallel chunks) ──
-    const allKeys = [...pc.nseKeys, ...pc.nfoFutKeys, ...nfoOptionKeys, ...mcxFutKeys, ...mcxOptKeys];
+    const allKeys = [...pc.nseKeys, ...pc.nfoFutKeys, ...mcxFutKeys, ...mcxOptKeys];
     const uniqueKeys = Array.from(new Set(allKeys));
 
     // Parallel batch: split into 500-symbol chunks, fetch simultaneously
@@ -863,10 +877,6 @@ async function _buildWatchlistData(query, userId) {
     for (const key of pc.nfoFutKeys) {
         const m = pc.nfoFutMeta[key] || {};
         rows.push(buildUnifiedRow({ type: 'FUT', symbol: key, expiry: m.expiry, quote: rawQuotes[key] }));
-    }
-    for (const key of nfoOptionKeys) {
-        const m = nfoOptionMeta[key] || {};
-        rows.push(buildUnifiedRow({ type: 'OPTION', symbol: key, strike: m.strike, optionType: m.optionType, expiry: m.expiry, quote: rawQuotes[key] }));
     }
     for (const key of mcxFutKeys) {
         const m = mcxFutMeta[key] || {};
