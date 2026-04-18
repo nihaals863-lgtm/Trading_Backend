@@ -1,4 +1,5 @@
 const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
 
 /**
  * Socket Manager
@@ -22,12 +23,87 @@ class SocketManager {
             transports: ['websocket', 'polling']  // Enable both
         });
 
+        this.io.use((socket, next) => {
+            try {
+                const token = socket.handshake.auth?.token || socket.handshake.query?.token;
+                if (!token) {
+                    socket.user = null;
+                    return next();
+                }
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                socket.user = decoded;
+                next();
+            } catch (e) {
+                socket.user = null;
+                next();
+            }
+        });
+
         this.io.on('connection', (socket) => {
             // console.log('User connected:', socket.id);
 
             socket.on('join', ({ userId, role }) => {
                 if (userId) socket.join(`user:${userId}`);
                 if (role) socket.join(`role:${role}`);
+            });
+
+            socket.on('request_market_snapshot', async (query) => {
+                const kiteRoutes = require('../routes/kiteRoutes');
+                const marketDataService = require('../services/MarketDataService');
+
+                if (!socket.user?.id) {
+                    socket.emit('market_snapshot', {
+                        error: 'Unauthorized',
+                        kite_connected: false,
+                        kite_disconnected: true,
+                        watchlist: [],
+                        crypto: [],
+                        forex: []
+                    });
+                    return;
+                }
+
+                try {
+                    const userId = socket.user.id;
+                    const q = query && typeof query === 'object' ? query : {};
+                    const kiteResult = await kiteRoutes.fetchUnifiedWatchlistForSocket(userId, q);
+
+                    const crypto = marketDataService.getCryptoPrices();
+                    const forex = marketDataService.getForexPrices();
+
+                    const kite_connected = Boolean(kiteResult.ok && !kiteResult.kite_disconnected);
+
+                    let dashboard = null;
+                    try {
+                        if (kite_connected) {
+                            dashboard = await kiteRoutes.buildKiteDashboardPayload(userId);
+                        }
+                    } catch (dashErr) {
+                        if (dashErr.message !== 'KITE_NOT_CONNECTED') {
+                            console.warn('market_snapshot dashboard:', dashErr.message);
+                        }
+                    }
+
+                    socket.emit('market_snapshot', {
+                        kite_connected,
+                        kite_disconnected: !!kiteResult.kite_disconnected,
+                        watchlist: Array.isArray(kiteResult.data) ? kiteResult.data : [],
+                        crypto,
+                        forex,
+                        dashboard,
+                        error: kiteResult.error || null
+                    });
+                } catch (e) {
+                    console.error('request_market_snapshot:', e.message);
+                    socket.emit('market_snapshot', {
+                        error: e.message,
+                        kite_connected: false,
+                        kite_disconnected: true,
+                        watchlist: [],
+                        crypto: [],
+                        forex: []
+                    });
+                }
             });
 
             socket.on('subscribe_market', (scrips) => {
