@@ -844,17 +844,35 @@ class MarketDataService extends EventEmitter {
             });
 
             this.ticker.on('error', (err) => {
-                console.error('⚠️  Ticker Error:', err.message);
-                if (err.message?.includes('403') || err.message?.includes('401') || err.message?.includes('connection')) {
-                    console.log('🧪 Switching to mock engine due to:', err.message);
+                const msg = err.message || '';
+                console.error('⚠️  Ticker Error:', msg);
+                
+                if (msg.includes('403') || msg.includes('401')) {
+                    console.error('❌ Critical Ticker Auth Error (403/401). Stopping ticker to prevent loop.');
+                    this.lastAuthFail = Date.now();
+                    if (this.ticker) {
+                        try {
+                            this.ticker.autoReconnect(false);
+                            this.ticker.disconnect();
+                        } catch (e) {}
+                        this.ticker = null;
+                    }
+                    this.startMockEngine();
+                    return;
+                }
+
+                if (msg.includes('connection')) {
+                    console.log('🧪 Switching to mock engine due to connection issue:', msg);
                     this.startMockEngine();
                 }
             });
 
             this.ticker.on('disconnect', () => {
                 if (this.ticker) {
-                    console.warn('⚠️  Ticker disconnected, trying to recover...');
+                    console.warn('⚠️  Ticker disconnected, attempting recovery...');
                     this.startMockEngine();
+                } else {
+                    console.log('ℹ️  Ticker session terminated.');
                 }
             });
 
@@ -911,20 +929,24 @@ class MarketDataService extends EventEmitter {
         ticks.forEach(tick => {
             const token = String(tick.instrument_token);
             const symbol = this.instrumentMap[token] || token;
+            const prev = this.prices[symbol] || {};
 
-            // Extract Bid/Ask from Depth
-            const bid = tick.depth?.buy?.[0]?.price || 0;
-            const ask = tick.depth?.sell?.[0]?.price || 0;
+            // Kite often sends LTP-only ticks (no depth). Using || 0 overwrites good bid/ask → UI flickers to 0 (common on MCX/NFO).
+            const buy0 = tick.depth?.buy?.[0]?.price;
+            const sell0 = tick.depth?.sell?.[0]?.price;
+            const hasBid = buy0 != null && Number.isFinite(Number(buy0));
+            const hasAsk = sell0 != null && Number.isFinite(Number(sell0));
 
             const data = {
+                ...prev,
                 symbol,
-                ltp: tick.last_price,
-                bid: bid,
-                ask: ask,
-                change: tick.net_change || 0,
-                volume: tick.volume_traded || 0,
-                ohlc: tick.ohlc || {},
-                depth: tick.depth || {}
+                ltp: tick.last_price != null ? tick.last_price : prev.ltp,
+                bid: hasBid ? Number(buy0) : prev.bid,
+                ask: hasAsk ? Number(sell0) : prev.ask,
+                change: tick.net_change != null ? tick.net_change : prev.change,
+                volume: tick.volume_traded != null ? tick.volume_traded : prev.volume,
+                ohlc: tick.ohlc && Object.keys(tick.ohlc).length ? tick.ohlc : (prev.ohlc || {}),
+                depth: tick.depth && (tick.depth.buy?.length || tick.depth.sell?.length) ? tick.depth : (prev.depth || {})
             };
 
             this.prices[symbol] = data;
