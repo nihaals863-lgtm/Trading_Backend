@@ -806,7 +806,7 @@ class MarketDataService extends EventEmitter {
 
     async init(userId) {
         if (this.ticker || this.isConnecting) return;
-        
+
         // Cooldown: If auth failed recently, don't try again for 5 minutes
         const now = Date.now();
         if (this.lastAuthFail && (now - this.lastAuthFail < 5 * 60 * 1000)) {
@@ -846,7 +846,7 @@ class MarketDataService extends EventEmitter {
             this.ticker.on('error', (err) => {
                 const msg = err.message || '';
                 console.error('⚠️  Ticker Error:', msg);
-                
+
                 if (msg.includes('403') || msg.includes('401')) {
                     console.error('❌ Critical Ticker Auth Error (403/401). Stopping ticker to prevent loop.');
                     this.lastAuthFail = Date.now();
@@ -854,7 +854,7 @@ class MarketDataService extends EventEmitter {
                         try {
                             this.ticker.autoReconnect(false);
                             this.ticker.disconnect();
-                        } catch (e) {}
+                        } catch (e) { }
                         this.ticker = null;
                     }
                     this.startMockEngine();
