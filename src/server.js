@@ -1,4 +1,4 @@
-require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
+require('dotenv').config({ path: require('path').resolve(__dirname, '.env') });
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
@@ -103,27 +103,10 @@ app.get('/', (req, res) => {
     res.send('Traders API is running...');
 });
 
-// Socket.io logic
-io.on('connection', (socket) => {
-    // console.log('User connected:', socket.id);
-
-    // Client sends { userId, role } right after connecting
-    socket.on('join', ({ userId, role }) => {
-        if (userId) socket.join(`user:${userId}`);
-        if (role) socket.join(`role:${role}`);
-    });
-
-    socket.on('subscribe_market', (scrips) => {
-        // console.log(`User ${socket.id} subscribed to:`, scrips);
-        if (Array.isArray(scrips)) {
-            scrips.forEach(s => mockEngine.getPrice(s)); // Ensure mock engine starts tracking them
-        }
-    });
-
-    socket.on('disconnect', () => {
-        // console.log('User disconnected');
-    });
-});
+// ── Socket Logic handled in SocketManager.js ──
+// NOTE: Internal socket event listeners (join, subscribe_market) are 
+// managed in src/websocket/SocketManager.js to allow modular integration 
+// with PaperTradingEngine and MarketDataService.
 
 // ── Market Data Initialization ──
 // Handled inside migration callback
@@ -146,9 +129,14 @@ runMigrations()
         // Initialize Paper Trading Engine after DB is ready (if applicable)
         paperTradingEngine.start();
 
-        // Start Expiry Square-off cron job
+        // Start Expiry Square-off, Rollover Margin, and RMS Monitoring cron jobs
         const { startExpirySquareOffJob } = require('./services/expirySquareOffService');
+        const { startRolloverMarginJob } = require('./services/rolloverMarginService');
+        const rmsService = require('./services/RMSService');
+
         startExpirySquareOffJob();
+        startRolloverMarginJob();
+        rmsService.start(10000); // Check risk every 10 seconds
 
         // Initialize Market Data (with fallback to mock engine)
         try {

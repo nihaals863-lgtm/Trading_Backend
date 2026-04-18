@@ -596,7 +596,10 @@ async function refreshWatchlistInBackground(queryParams, userId) {
 // INSTANT response from cache, background refresh every 2s
 router.get('/market/watchlist', authMiddleware, asyncHandler(async (req, res) => {
     try {
-        const now = Date.now();
+        if (!kiteService.isAuthenticated()) {
+            return res.status(503).json({ error: 'Kite not connected.', kite_disconnected: true });
+        }
+
         const cacheKey = `${req.query.nse || ''}_${req.query.nfoUnderlyings || ''}_${req.query.mcxOptSymbols || ''}`;
 
         // If cache has data → return INSTANTLY, trigger background refresh if stale
@@ -650,9 +653,9 @@ function _getPrecomputed(instruments, query) {
     const nseKeys = nseSymbols.map(s => `NSE:${s}`);
 
     // ── NFO underlyings ──
-    const nfoUnderlyings = String(query.nfoUnderlyings || 'NIFTY,BANKNIFTY')
+    const nfoUnderlyings = String(query.nfoUnderlyings || `NIFTY,BANKNIFTY,FINNIFTY,MIDCPNIFTY,${NIFTY50.join(',')}`)
         .split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
-    const nfoRange = parseInt(query.nfoRange) || 1000;
+    const nfoRange = parseInt(query.nfoRange) || 50000; // Increased default range to effectively show all strikes
 
     const indexSymbolMap = {
         NIFTY: 'NSE:NIFTY 50', BANKNIFTY: 'NSE:NIFTY BANK',
@@ -662,15 +665,22 @@ function _getPrecomputed(instruments, query) {
     // Collect LTP keys needed for ATM calculation
     const ltpKeys = [];
     const nfoConfig = [];
+    const nfoFutKeys = [];
+    const nfoFutMeta = {};
     for (const u of nfoUnderlyings) {
         const step = getOptionStrikeStepNfo(u);
-        if (!step) continue;
         const idxKey = indexSymbolMap[u] || `NSE:${u}`;
         ltpKeys.push(idxKey);
         const fut = pickNearestExpiry(instruments, { exchange: 'NFO', name: u, instrumentTypes: ['FUT'] });
-        if (fut?.tradingsymbol) ltpKeys.push(`NFO:${fut.tradingsymbol}`);
+        let futKey = null;
+        if (fut?.tradingsymbol) {
+            futKey = `NFO:${fut.tradingsymbol}`;
+            ltpKeys.push(futKey);
+            nfoFutKeys.push(futKey);
+            nfoFutMeta[futKey] = { expiry: toYmd(fut.expiry) };
+        }
         const nearestOpt = pickNearestExpiry(instruments, { exchange: 'NFO', name: u, instrumentTypes: ['CE', 'PE'] });
-        nfoConfig.push({ underlying: u, step, idxKey, futKey: fut ? `NFO:${fut.tradingsymbol}` : null, expiry: nearestOpt ? toYmd(nearestOpt.expiry) : null, range: nfoRange });
+        nfoConfig.push({ underlying: u, step, idxKey, futKey, expiry: nearestOpt ? toYmd(nearestOpt.expiry) : null, range: nfoRange });
     }
 
     // ── MCX precompute: find nearest FUT for each base ONCE ──
@@ -716,7 +726,7 @@ function _getPrecomputed(instruments, query) {
         }
     }
 
-    _precomputed = { nseKeys, nfoConfig, mcxFutBases, mcxFutByBase, mcxOptRequested, mcxOptRange, ltpKeys, nfoOptIndex, mcxOptIndex, indexSymbolMap };
+    _precomputed = { nseKeys, nfoConfig, nfoFutKeys, nfoFutMeta, mcxFutBases, mcxFutByBase, mcxOptRequested, mcxOptRange, ltpKeys, nfoOptIndex, mcxOptIndex, indexSymbolMap };
     _precomputedInstrTime = instrumentsCacheTime;
     console.log(`⚡ Precomputed: NSE=${nseKeys.length} | NFO underlyings=${nfoConfig.length} | MCX bases=${mcxFutBases.length} | LTP keys=${ltpKeys.length}`);
     return _precomputed;
@@ -758,20 +768,23 @@ async function _buildWatchlistData(query, userId) {
         if (!cfg.expiry) continue;
         let ltp = ltpQuotes?.[cfg.idxKey]?.last_price || 0;
         if (!ltp && cfg.futKey) ltp = ltpQuotes?.[cfg.futKey]?.last_price || 0;
-        if (!ltp) continue;
 
-        const atmStrike = Math.round(ltp / cfg.step) * cfg.step;
-        const lower = Math.floor((ltp - cfg.range) / cfg.step) * cfg.step;
-        const upper = Math.ceil((ltp + cfg.range) / cfg.step) * cfg.step;
-        const strikeSet = new Set();
-        for (let s = lower; s <= upper; s += cfg.step) strikeSet.add(s);
+        let atmStrike = null;
+        if (cfg.step && ltp) {
+            atmStrike = Math.round(ltp / cfg.step) * cfg.step;
+            const lower = Math.floor((ltp - cfg.range) / cfg.step) * cfg.step;
+            const upper = Math.ceil((ltp + cfg.range) / cfg.step) * cfg.step;
+            const strikeSet = new Set();
+            for (let s = lower; s <= upper; s += cfg.step) strikeSet.add(s);
+        }
 
         const requestedExpiry = new Date(cfg.expiry).toDateString();
         const optList = pc.nfoOptIndex[cfg.underlying] || [];
         for (const inst of optList) {
             if (new Date(inst.expiry || 0).toDateString() !== requestedExpiry) continue;
             const strike = Number(inst.strike);
-            if (!strikeSet.has(strike)) continue;
+            // Limitation removed: showing all strikes for the expiry
+            // if (!strikeSet.has(strike)) continue; 
             const fullKey = `NFO:${inst.tradingsymbol}`;
             const it = String(inst.instrument_type || '').toUpperCase();
             nfoOptionKeys.push(fullKey);
@@ -800,25 +813,27 @@ async function _buildWatchlistData(query, userId) {
         if (!fut) continue;
 
         const ltp = ltpQuotes?.[fut.fullKey]?.last_price || 0;
-        if (!ltp) continue;
 
         const nearestOpt = pickNearestExpiry(instruments, { exchange: 'MCX', name: base, instrumentTypes: ['CE', 'PE'] });
         if (!nearestOpt) continue;
         const expiryYmd = toYmd(nearestOpt.expiry);
         if (!expiryYmd) continue;
 
-        const atmStrike = Math.round(ltp / step) * step;
-        const lower = Math.floor((ltp - pc.mcxOptRange) / step) * step;
-        const upper = Math.ceil((ltp + pc.mcxOptRange) / step) * step;
-        const strikeSet = new Set();
-        for (let s = lower; s <= upper; s += step) strikeSet.add(s);
+        const atmStrike = ltp ? Math.round(ltp / step) * step : null;
+        if (ltp) {
+            const lower = Math.floor((ltp - pc.mcxOptRange) / step) * step;
+            const upper = Math.ceil((ltp + pc.mcxOptRange) / step) * step;
+            const strikeSet = new Set();
+            for (let s = lower; s <= upper; s += step) strikeSet.add(s);
+        }
 
         const requestedExpiry = new Date(expiryYmd).toDateString();
         const optList = pc.mcxOptIndex[base] || [];
         for (const inst of optList) {
             if (new Date(inst.expiry || 0).toDateString() !== requestedExpiry) continue;
             const strike = Number(inst.strike);
-            if (!strikeSet.has(strike)) continue;
+            // Limitation removed: showing all strikes for the expiry
+            // if (!strikeSet.has(strike)) continue; 
             const fullKey = `MCX:${inst.tradingsymbol}`;
             const it = String(inst.instrument_type || '').toUpperCase();
             mcxOptKeys.push(fullKey);
@@ -827,7 +842,7 @@ async function _buildWatchlistData(query, userId) {
     }
 
     // ── Step 5: ONE batch quote fetch for ALL symbols (parallel chunks) ──
-    const allKeys = [...pc.nseKeys, ...nfoOptionKeys, ...mcxFutKeys, ...mcxOptKeys];
+    const allKeys = [...pc.nseKeys, ...pc.nfoFutKeys, ...nfoOptionKeys, ...mcxFutKeys, ...mcxOptKeys];
     const uniqueKeys = Array.from(new Set(allKeys));
 
     // Parallel batch: split into 500-symbol chunks, fetch simultaneously
@@ -847,6 +862,10 @@ async function _buildWatchlistData(query, userId) {
     const rows = [];
     for (const key of pc.nseKeys) {
         rows.push(buildUnifiedRow({ type: 'NSE', symbol: key, quote: rawQuotes[key] }));
+    }
+    for (const key of pc.nfoFutKeys) {
+        const m = pc.nfoFutMeta[key] || {};
+        rows.push(buildUnifiedRow({ type: 'FUT', symbol: key, expiry: m.expiry, quote: rawQuotes[key] }));
     }
     for (const key of nfoOptionKeys) {
         const m = nfoOptionMeta[key] || {};
