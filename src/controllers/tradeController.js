@@ -931,20 +931,40 @@ const getTrades = async (req, res) => {
             query += ' AND t.user_id = ?';
             params.push(user_id);
 
-            // Even if user_id is provided, non-traders should only see trades they created for that user
+            // Role-based visibility logic: "Jisme jo trade banai usko vahi dikhe"
+            // ENHANCED: Admins/Brokers can also see trades of their direct subordinates
             if (req.user.role !== 'TRADER') {
-                query += ' AND t.created_by = ?';
-                params.push(req.user.id);
+                query += ` AND (t.created_by = ? OR t.user_id IN (
+                    SELECT u.id FROM users u 
+                    LEFT JOIN client_settings cs ON u.id = cs.user_id 
+                    WHERE u.parent_id = ? OR cs.broker_id = ?
+                ))`;
+                params.push(req.user.id, req.user.id, req.user.id);
             }
         } else {
-            // Role-based visibility logic: "Jisme jo trade banai usko vahi dikhe"
-            if (req.user.role === 'TRADER') {
-                // Traders see their own trades
-                query += ' AND t.user_id = ?';
-                params.push(req.user.id);
+            // Role-based visibility logic for global list
+            if (req.user.role === 'SUPERADMIN') {
+                // Superadmins can see everything
+                console.log('[getTrades] SUPERADMIN viewing all trades');
+            } else if (req.user.role === 'ADMIN') {
+                // Admins see their own created trades OR trades of their descendants
+                query += ` AND (t.created_by = ? OR t.user_id IN (
+                    SELECT u.id FROM users u 
+                    LEFT JOIN client_settings cs ON u.id = cs.user_id
+                    WHERE u.parent_id = ? OR cs.broker_id IN (SELECT id FROM users WHERE parent_id = ?)
+                ))`;
+                params.push(req.user.id, req.user.id, req.user.id);
+            } else if (req.user.role === 'BROKER') {
+                // Brokers see trades they created OR trades of their clients/sub-brokers
+                query += ` AND (t.created_by = ? OR t.user_id IN (
+                    SELECT u.id FROM users u 
+                    LEFT JOIN client_settings cs ON u.id = cs.user_id 
+                    WHERE u.parent_id = ? OR cs.broker_id = ?
+                ))`;
+                params.push(req.user.id, req.user.id, req.user.id);
             } else {
-                // Admins, Brokers, Superadmins see only trades THEY created
-                query += ' AND t.created_by = ?';
+                // TRADER see only their own (already handled in initial if, but safety fallback)
+                query += ' AND t.user_id = ?';
                 params.push(req.user.id);
             }
         }
@@ -1004,11 +1024,23 @@ const getTradeById = async (req, res) => {
         const { id: requesterId } = req.user;
 
         // Access check: "Jisme jo trade banai usko vahi dikhe"
-        // Target user (Trader) can see their own trades OR Creator can see trades they placed
+        // ENHANCED: Also allow Admin/Broker to see if it's their subordinate's trade
         const isTargetUser = trade.user_id === requesterId;
         const isCreator = trade.created_by === requesterId;
-
+        
+        let isParent = false;
         if (!isTargetUser && !isCreator) {
+            // Check if requester is parent or broker
+            const [relRows] = await db.execute(
+                `SELECT u.id FROM users u 
+                 LEFT JOIN client_settings cs ON u.id = cs.user_id 
+                 WHERE u.id = ? AND (u.parent_id = ? OR cs.broker_id = ?)`,
+                [trade.user_id, requesterId, requesterId]
+            );
+            isParent = relRows.length > 0;
+        }
+
+        if (!isTargetUser && !isCreator && !isParent) {
             return res.status(403).json({ message: 'Not authorized to view this trade' });
         }
 
@@ -1042,10 +1074,25 @@ const getGroupTrades = async (req, res) => {
         if (role === 'TRADER') {
             query += ` AND t.user_id = ?`;
             params.push(id);
-        } else {
-            // For others, only show groups of trades THEY created
-            query += ` AND t.created_by = ?`;
-            params.push(id);
+        } else if (role === 'SUPERADMIN') {
+            // Superadmin sees groups for all users
+            console.log('[getGroupTrades] SUPERADMIN viewing all groups');
+        } else if (role === 'ADMIN') {
+            // Admin sees their groups OR their descendants' groups
+            query += ` AND (t.created_by = ? OR t.user_id IN (
+                SELECT u.id FROM users u 
+                LEFT JOIN client_settings cs ON u.id = cs.user_id
+                WHERE u.parent_id = ? OR cs.broker_id IN (SELECT id FROM users WHERE parent_id = ?)
+            ))`;
+            params.push(id, id, id);
+        } else if (role === 'BROKER') {
+            // Broker sees their own created groups OR their clients' groups
+            query += ` AND (t.created_by = ? OR t.user_id IN (
+                SELECT u.id FROM users u 
+                LEFT JOIN client_settings cs ON u.id = cs.user_id 
+                WHERE u.parent_id = ? OR cs.broker_id = ?
+            ))`;
+            params.push(id, id, id);
         }
         // Note: Joining users table is kept if needed for future filters, 
         // though currently we filter by trade.user_id/created_by directly where possible.
