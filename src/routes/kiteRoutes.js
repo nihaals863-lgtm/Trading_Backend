@@ -1599,8 +1599,15 @@ router.get('/market/search', authMiddleware, asyncHandler(async (req, res) => {
     const query = q.toUpperCase();
     const results = instruments
         .filter(i => i.tradingsymbol?.toUpperCase().includes(query) || i.name?.toUpperCase().includes(query))
-        .slice(0, 30)
-        .map(i => ({ symbol: i.tradingsymbol, exchange: i.exchange, name: i.name || '', type: i.instrument_type || '', expiry: i.expiry || '' }));
+        .slice(0, 100)
+        .map(i => ({
+            symbol: i.tradingsymbol,
+            exchange: i.exchange,
+            name: i.name || '',
+            type: i.instrument_type || '',
+            expiry: i.expiry || '',
+            instrument_token: i.instrument_token
+        }));
 
     res.json({ status: 'success', count: results.length, data: results });
 }));
