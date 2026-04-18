@@ -99,7 +99,10 @@ function getTokenSync(symbol) {
 
 // ── NIFTY 50 (50 stocks — Apr 2026 official list, Zerodha exact symbols) ──
 /** Bump when default unified watchlist shape changes (invalidates HTTP cache + precompute). */
-const WATCHLIST_CACHE_BUST = 'watchlist_v3_mcx_crude_gas_opts';
+const WATCHLIST_CACHE_BUST = 'watchlist_v4_nfo_index_opts';
+
+/** NFO index options included in unified watchlist (instruments + quotes from Kite only). */
+const NFO_INDEX_OPTION_UNDERLYINGS = new Set(['NIFTY', 'BANKNIFTY', 'FINNIFTY']);
 
 const NIFTY50 = [
     'ADANIPORTS', 'APOLLOHOSP', 'ASIANPAINT', 'AXISBANK', 'BAJAJ-AUTO',
@@ -439,136 +442,157 @@ async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/**
+ * Spot for NFO index-option strike band: index cash can be delayed/missing while NFO fut still ticks.
+ * Without a positive spot, Step 2 skips the whole chain → NFO tab count swings (e.g. ~53 vs ~800+).
+ */
+function resolveNfoIndexSpotLtp(ltpQuotes, cfg) {
+    const fromQuote = (key) => {
+        if (!key || !ltpQuotes || !ltpQuotes[key]) return 0;
+        const q = ltpQuotes[key];
+        const lp = Number(q.last_price);
+        if (Number.isFinite(lp) && lp > 0) return lp;
+        const oc = Number(q.ohlc?.close);
+        if (Number.isFinite(oc) && oc > 0) return oc;
+        const av = Number(q.average_price);
+        if (Number.isFinite(av) && av > 0) return av;
+        return 0;
+    };
+    let ltp = fromQuote(cfg.idxKey);
+    if (ltp > 0) return ltp;
+    if (cfg.futKey) {
+        ltp = fromQuote(cfg.futKey);
+        if (ltp > 0) return ltp;
+    }
+    return 0;
+}
+
 // ══════════════════════════════════════════════════════════════
 //   3-TAB DASHBOARD: NSE | MCX | NFO
 // ══════════════════════════════════════════════════════════════
 
+/**
+ * Shared dashboard payload (NSE + MCX + NFO tabs) — used by HTTP and Socket.IO.
+ * @returns {Promise<{ status: string, timestamp: string, counts: object, nseGroups: object, data: object, groups: object }>}
+ */
+async function buildKiteDashboardPayload(userId) {
+    // Sync per-user token from DB to global kiteService if needed
+    if (!kiteService.isAuthenticated() && userId) {
+        try {
+            const status = await kiteAuthService.getStatus(userId);
+            if (status.connected) {
+                const session = await require('../repositories/KiteRepository').getSessionByUserId(userId);
+                if (session?.access_token) {
+                    kiteService.accessToken = session.access_token;
+                    kiteService.sessionData = { access_token: session.access_token, user_name: session.user_name };
+                }
+            }
+        } catch (syncErr) {
+            console.warn('Token sync failed:', syncErr.message);
+        }
+    }
+
+    if (!kiteService.isAuthenticated()) {
+        const err = new Error('KITE_NOT_CONNECTED');
+        err.kite_disconnected = true;
+        throw err;
+    }
+
+    const marketDataService = require('../services/MarketDataService');
+    marketDataService.init(userId).catch(err => console.log('MarketDataService init background:', err.message));
+
+    const nseStocks = ALL_NSE_STOCKS.map(s => `NSE:${s}`);
+    const nseIndices = ['NSE:NIFTY 50', 'NSE:NIFTY BANK', 'NSE:NIFTY FIN SERVICE', 'NSE:NIFTY MID SELECT'];
+
+    if (!dashboardSymbolsCache) {
+        await refreshDashboardSymbols().catch(() => {});
+    }
+
+    const mcxSymbols = dashboardSymbolsCache?.mcxSymbols || [];
+    const nfoSymbols = dashboardSymbolsCache?.nfoSymbols || [];
+    const allSymbols = [...nseStocks, ...nseIndices, ...mcxSymbols, ...nfoSymbols];
+
+    getInstrumentsFromCache().catch(() => { });
+
+    const subList = allSymbols.map(sym => ({
+        symbol: sym,
+        token: getTokenSync(sym)
+    })).filter(i => i.token);
+
+    marketDataService.bulkSubscribe(subList);
+
+    const streamData = marketDataService.getPricesBatch(allSymbols);
+    const formatted = {};
+
+    for (const symbol of allSymbols) {
+        const quote = streamData[symbol];
+        formatted[symbol] = {
+            symbol,
+            ltp: quote?.ltp || 0,
+            vol: quote?.volume || 0,
+            oi: quote?.oi || 0,
+            chg: quote?.change || 0,
+            chg_pct: quote?.ohlc?.close ? (((quote.ltp - quote.ohlc.close) / quote.ohlc.close) * 100).toFixed(2) : "0.00",
+            open: quote?.ohlc?.open || 0,
+            high: quote?.ohlc?.high || 0,
+            low: quote?.ohlc?.low || 0,
+            close: quote?.ohlc?.close || 0,
+            bid: quote?.depth?.buy?.[0]?.price || 0,
+            ask: quote?.depth?.sell?.[0]?.price || 0,
+            time: new Date().toISOString()
+        };
+    }
+
+    const nseGroups = { 'NIFTY 50': {}, 'BANK NIFTY': {}, 'MIDCAP': {}, 'FIN NIFTY': {}, 'INDICES': {} };
+    const nifty50Set = new Set(NIFTY50.map(s => `NSE:${s}`));
+    const bankNiftySet = new Set(BANKNIFTY.map(s => `NSE:${s}`));
+    const midcapSet = new Set(MIDCAP.map(s => `NSE:${s}`));
+    const finniftySet = new Set(FINNIFTY.map(s => `NSE:${s}`));
+
+    const sections = { nse: {}, mcx: {}, nfo: {} };
+    const mcxSet = new Set(mcxSymbols);
+    const nfoSet = new Set(nfoSymbols);
+
+    for (const [sym, data] of Object.entries(formatted)) {
+        if (sym.startsWith('NSE:')) {
+            sections.nse[sym] = data;
+            if (nseIndices.includes(sym)) nseGroups['INDICES'][sym] = data;
+            if (nifty50Set.has(sym)) nseGroups['NIFTY 50'][sym] = data;
+            if (bankNiftySet.has(sym)) nseGroups['BANK NIFTY'][sym] = data;
+            if (midcapSet.has(sym)) nseGroups['MIDCAP'][sym] = data;
+            if (finniftySet.has(sym)) nseGroups['FIN NIFTY'][sym] = data;
+        }
+        else if (mcxSet.has(sym)) sections.mcx[sym] = data;
+        else if (nfoSet.has(sym)) sections.nfo[sym] = data;
+    }
+
+    return {
+        status: 'success',
+        timestamp: new Date().toISOString(),
+        counts: { nse: Object.keys(sections.nse).length, mcx: Object.keys(sections.mcx).length, nfo: Object.keys(sections.nfo).length, total: allSymbols.length },
+        nseGroups: {
+            'NIFTY 50': Object.keys(nseGroups['NIFTY 50']).length,
+            'BANK NIFTY': Object.keys(nseGroups['BANK NIFTY']).length,
+            'MIDCAP': Object.keys(nseGroups['MIDCAP']).length,
+            'FIN NIFTY': Object.keys(nseGroups['FIN NIFTY']).length,
+        },
+        data: sections,
+        groups: nseGroups
+    };
+}
+
 // ── /market/dashboard — Single call, returns 3 tabs with sub-groups ──
 router.get('/market/dashboard', authMiddleware, asyncHandler(async (req, res) => {
     try {
-        const userId = req.user?.id;
-
-        // Sync per-user token from DB to global kiteService if needed
-        if (!kiteService.isAuthenticated() && userId) {
-            try {
-                const status = await kiteAuthService.getStatus(userId);
-                if (status.connected) {
-                    const session = await require('../repositories/KiteRepository').getSessionByUserId(userId);
-                    if (session?.access_token) {
-                        kiteService.accessToken = session.access_token;
-                        kiteService.sessionData = { access_token: session.access_token, user_name: session.user_name };
-                        console.log('🔗 Synced user Kite token to global kiteService for', session.user_name);
-                    }
-                }
-            } catch (syncErr) {
-                console.warn('Token sync failed:', syncErr.message);
-            }
-        }
-
-        if (!kiteService.isAuthenticated()) {
-            return res.status(503).json({ error: 'Kite not connected.', kite_disconnected: true });
-        }
-
-        // ✅ Initialize MarketDataService
-        const marketDataService = require('../services/MarketDataService');
-        marketDataService.init(userId).catch(err => console.log('MarketDataService init background:', err.message));
-
-        // 1. Get Symbols
-        const nseStocks = ALL_NSE_STOCKS.map(s => `NSE:${s}`);
-        const nseIndices = ['NSE:NIFTY 50', 'NSE:NIFTY BANK', 'NSE:NIFTY FIN SERVICE', 'NSE:NIFTY MID SELECT'];
-
-        // ── Symbols from Precomputed Cache (STRICTLY NO BLOCKING FILTERING) ──
-        if (!dashboardSymbolsCache) {
-            // Start one refresh but don't wait too long
-            refreshDashboardSymbols().catch(() => { });
-        }
-
-        const mcxSymbols = dashboardSymbolsCache?.mcxSymbols || [];
-        const nfoSymbols = dashboardSymbolsCache?.nfoSymbols || [];
-        const allSymbols = [...nseStocks, ...nseIndices, ...mcxSymbols, ...nfoSymbols];
-
-        // 2. Ensure Mapping & Subscriptions
-        getInstrumentsFromCache().catch(() => { }); // Ensure index in background
-
-        const subList = allSymbols.map(sym => ({
-            symbol: sym,
-            token: getTokenSync(sym)
-        })).filter(i => i.token);
-
-        // Non-blocking bulk subscription
-        marketDataService.bulkSubscribe(subList);
-
-        // 3. Instant Fetch from Memory
-        const streamData = marketDataService.getPricesBatch(allSymbols);
-        const formatted = {};
-
-        // Build response instantly, use 0 if no tick yet
-        for (const symbol of allSymbols) {
-            const quote = streamData[symbol];
-            formatted[symbol] = {
-                symbol,
-                ltp: quote?.ltp || 0,
-                vol: quote?.volume || 0,
-                oi: quote?.oi || 0,
-                chg: quote?.change || 0,
-                chg_pct: quote?.ohlc?.close ? (((quote.ltp - quote.ohlc.close) / quote.ohlc.close) * 100).toFixed(2) : "0.00",
-                open: quote?.ohlc?.open || 0,
-                high: quote?.ohlc?.high || 0,
-                low: quote?.ohlc?.low || 0,
-                close: quote?.ohlc?.close || 0,
-                bid: quote?.depth?.buy?.[0]?.price || 0,
-                ask: quote?.depth?.sell?.[0]?.price || 0,
-                time: new Date().toISOString()
-            };
-        }
-
-        // 4. Grouping for Frontend
-        const nseGroups = { 'NIFTY 50': {}, 'BANK NIFTY': {}, 'MIDCAP': {}, 'FIN NIFTY': {}, 'INDICES': {} };
-        const nifty50Set = new Set(NIFTY50.map(s => `NSE:${s}`));
-        const bankNiftySet = new Set(BANKNIFTY.map(s => `NSE:${s}`));
-        const midcapSet = new Set(MIDCAP.map(s => `NSE:${s}`));
-        const finniftySet = new Set(FINNIFTY.map(s => `NSE:${s}`));
-
-        const sections = { nse: {}, mcx: {}, nfo: {} };
-        const mcxSet = new Set(mcxSymbols);
-        const nfoSet = new Set(nfoSymbols);
-
-        for (const [sym, data] of Object.entries(formatted)) {
-            if (sym.startsWith('NSE:')) {
-                sections.nse[sym] = data;
-                if (nseIndices.includes(sym)) nseGroups['INDICES'][sym] = data;
-                if (nifty50Set.has(sym)) nseGroups['NIFTY 50'][sym] = data;
-                if (bankNiftySet.has(sym)) nseGroups['BANK NIFTY'][sym] = data;
-                if (midcapSet.has(sym)) nseGroups['MIDCAP'][sym] = data;
-                if (finniftySet.has(sym)) nseGroups['FIN NIFTY'][sym] = data;
-            }
-            else if (mcxSet.has(sym)) sections.mcx[sym] = data;
-            else if (nfoSet.has(sym)) sections.nfo[sym] = data;
-        }
-
-        res.json({
-            status: 'success',
-            timestamp: new Date().toISOString(),
-            counts: { nse: Object.keys(sections.nse).length, mcx: Object.keys(sections.mcx).length, nfo: Object.keys(sections.nfo).length, total: allSymbols.length },
-            nseGroups: {
-                'NIFTY 50': Object.keys(nseGroups['NIFTY 50']).length,
-                'BANK NIFTY': Object.keys(nseGroups['BANK NIFTY']).length,
-                'MIDCAP': Object.keys(nseGroups['MIDCAP']).length,
-                'FIN NIFTY': Object.keys(nseGroups['FIN NIFTY']).length,
-            },
-            data: sections,
-            groups: nseGroups
-        });
-
-        // ✅ DISABLED: Frontend doesn't require subscription anymore
-        // Backend broadcasts to all clients via mock engine
-        // (removed to prevent background process issues)
+        const body = await buildKiteDashboardPayload(req.user?.id);
+        res.json(body);
     } catch (err) {
         console.error('Dashboard error:', err.message);
-        // If token expired (403), clear both global and per-user session
+        if (err.message === 'KITE_NOT_CONNECTED') {
+            return res.status(503).json({ error: 'Kite not connected.', kite_disconnected: true });
+        }
         if (err.message?.includes('403') || err.message?.includes('expired')) {
             kiteService.clearSession();
-            // Also clear per-user DB session if possible
             try {
                 if (req.user?.id) await kiteAuthService.disconnect(req.user.id);
             } catch (_) { }
@@ -606,7 +630,7 @@ async function refreshWatchlistInBackground(queryParams, userId) {
     watchlistRefreshing = true;
     try {
         const rows = await _buildWatchlistData(queryParams, userId);
-        const cacheKey = `${queryParams.nse || ''}_${queryParams.nfoUnderlyings || ''}_${queryParams.mcxOptSymbols || ''}_${WATCHLIST_CACHE_BUST}`;
+        const cacheKey = `${queryParams.nse || ''}_${queryParams.nfoUnderlyings || ''}_${queryParams.mcxOptSymbols || ''}_${queryParams.nfoIndexOptRange || ''}_${WATCHLIST_CACHE_BUST}`;
         watchlistCache = { data: rows, time: Date.now(), key: cacheKey };
     } catch (err) {
         console.warn('Watchlist background refresh error:', err.message);
@@ -623,7 +647,7 @@ router.get('/market/watchlist', authMiddleware, asyncHandler(async (req, res) =>
             return res.status(503).json({ error: 'Kite not connected.', kite_disconnected: true });
         }
 
-        const cacheKey = `${req.query.nse || ''}_${req.query.nfoUnderlyings || ''}_${req.query.mcxOptSymbols || ''}_${WATCHLIST_CACHE_BUST}`;
+        const cacheKey = `${req.query.nse || ''}_${req.query.nfoUnderlyings || ''}_${req.query.mcxOptSymbols || ''}_${req.query.nfoIndexOptRange || ''}_${WATCHLIST_CACHE_BUST}`;
 
         // If cache has data → return INSTANTLY, trigger background refresh if stale
         if (watchlistCache.data && watchlistCache.key === cacheKey) {
@@ -801,7 +825,38 @@ async function _buildWatchlistData(query, userId) {
         try { ltpQuotes = await kiteService.getQuote(pc.ltpKeys); } catch (_) { }
     }
 
-    // NFO CE/PE options are not added to unified watchlist (only futures). Use GET /market/options-chain for option chains.
+    // ── Step 2: NFO index options (NIFTY / BANKNIFTY / FINNIFTY CE+PE) — strikes ±nfoIndexOptRange from spot, nearest expiry
+    const nfoIndexOptRange = parseInt(query.nfoIndexOptRange, 10);
+    const nfoOptRangePts = Number.isFinite(nfoIndexOptRange) && nfoIndexOptRange > 0 ? nfoIndexOptRange : 5000;
+
+    const nfoOptKeys = [];
+    const nfoOptMeta = {};
+    for (const cfg of pc.nfoConfig) {
+        if (!NFO_INDEX_OPTION_UNDERLYINGS.has(String(cfg.underlying || '').toUpperCase())) continue;
+        const step = getOptionStrikeStepNfo(cfg.underlying);
+        if (!step) continue;
+        const ltp = resolveNfoIndexSpotLtp(ltpQuotes, cfg);
+        if (!ltp) continue;
+        const expiryYmd = cfg.expiry;
+        if (!expiryYmd) continue;
+        const requestedExpiry = new Date(expiryYmd).toDateString();
+
+        const lowerBound = Math.floor((ltp - nfoOptRangePts) / step) * step;
+        const upperBound = Math.ceil((ltp + nfoOptRangePts) / step) * step;
+        const strikeSet = new Set();
+        for (let s = lowerBound; s <= upperBound; s += step) strikeSet.add(s);
+
+        const optList = pc.nfoOptIndex[cfg.underlying] || [];
+        for (const inst of optList) {
+            if (new Date(inst.expiry || 0).toDateString() !== requestedExpiry) continue;
+            const strike = Number(inst.strike);
+            if (!strikeSet.has(strike)) continue;
+            const fullKey = `NFO:${inst.tradingsymbol}`;
+            const it = String(inst.instrument_type || '').toUpperCase();
+            nfoOptKeys.push(fullKey);
+            nfoOptMeta[fullKey] = { strike, optionType: it, expiry: expiryYmd };
+        }
+    }
 
     // ── Step 3: MCX Futures keys ──
     const mcxFutKeys = [];
@@ -853,7 +908,7 @@ async function _buildWatchlistData(query, userId) {
     }
 
     // ── Step 5: ONE batch quote fetch for ALL symbols (parallel chunks) ──
-    const allKeys = [...pc.nseKeys, ...pc.nfoFutKeys, ...mcxFutKeys, ...mcxOptKeys];
+    const allKeys = [...pc.nseKeys, ...pc.nfoFutKeys, ...nfoOptKeys, ...mcxFutKeys, ...mcxOptKeys];
     const uniqueKeys = Array.from(new Set(allKeys));
 
     // Parallel batch: split into 500-symbol chunks, fetch simultaneously
@@ -877,6 +932,10 @@ async function _buildWatchlistData(query, userId) {
     for (const key of pc.nfoFutKeys) {
         const m = pc.nfoFutMeta[key] || {};
         rows.push(buildUnifiedRow({ type: 'FUT', symbol: key, expiry: m.expiry, quote: rawQuotes[key] }));
+    }
+    for (const key of nfoOptKeys) {
+        const m = nfoOptMeta[key] || {};
+        rows.push(buildUnifiedRow({ type: 'NFO_OPT', symbol: key, strike: m.strike, optionType: m.optionType, expiry: m.expiry, quote: rawQuotes[key] }));
     }
     for (const key of mcxFutKeys) {
         const m = mcxFutMeta[key] || {};
@@ -1654,4 +1713,47 @@ router.post('/ticker/reconnect', authMiddleware, asyncHandler(async (req, res) =
     res.json({ success: started, connected: kiteTicker.isConnected() });
 }));
 
+/**
+ * Unified watchlist for Socket.IO (same cache + build path as GET /market/watchlist).
+ * @param {number} userId
+ * @param {object} query - same query keys as HTTP route
+ * @returns {Promise<{ ok: boolean, data?: any[], kite_disconnected?: boolean, error?: string }>}
+ */
+async function fetchUnifiedWatchlistForSocket(userId, query = {}) {
+    try {
+        if (!kiteService.isAuthenticated()) {
+            return { ok: false, kite_disconnected: true, data: [], error: 'Kite not connected.' };
+        }
+
+        const cacheKey = `${query.nse || ''}_${query.nfoUnderlyings || ''}_${query.mcxOptSymbols || ''}_${query.nfoIndexOptRange || ''}_${WATCHLIST_CACHE_BUST}`;
+
+        if (watchlistCache.data && watchlistCache.key === cacheKey) {
+            watchlistLastQuery = query;
+            watchlistLastUserId = userId;
+            startWatchlistAutoRefresh();
+            return { ok: true, data: watchlistCache.data };
+        }
+
+        const rows = await _buildWatchlistData(query, userId);
+        watchlistCache = { data: rows, time: Date.now(), key: cacheKey };
+        watchlistLastQuery = query;
+        watchlistLastUserId = userId;
+        startWatchlistAutoRefresh();
+        return { ok: true, data: rows };
+    } catch (err) {
+        console.error('fetchUnifiedWatchlistForSocket:', err.message);
+        if (err.message?.includes('403') || err.message?.includes('expired')) {
+            kiteService.clearSession();
+            try { if (userId) await kiteAuthService.disconnect(userId); } catch (_) { }
+            return { ok: false, kite_disconnected: true, data: [], error: 'Kite session expired. Please reconnect.' };
+        }
+        if (String(err.message || '').includes('Kite not connected')) {
+            return { ok: false, kite_disconnected: true, data: [], error: err.message };
+        }
+        return { ok: false, data: [], error: err.message };
+    }
+}
+
 module.exports = router;
+module.exports.fetchUnifiedWatchlistForSocket = fetchUnifiedWatchlistForSocket;
+module.exports.buildKiteDashboardPayload = buildKiteDashboardPayload;
