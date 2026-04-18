@@ -191,6 +191,14 @@ const placeOrder = async (req, res) => {
         }
         console.log('[placeOrder] ✅ Segment enabled check passed for:', marketType);
 
+        // ─── PERMANENT SCRIP BAN CHECK ──────────────────────────────────────────
+        const [scripBan] = await db.execute('SELECT id FROM banned_scrips WHERE symbol = ?', [symbol]);
+        if (scripBan.length > 0) {
+            return res.status(400).json({ 
+                message: `Trading in ${symbol} is prohibited. Scrip is currently banned.` 
+            });
+        }
+
         // 5. Banned Limit Order Check (TIER 2 - Enhanced with EQUITY/OPTIONS/International)
         console.log('[placeOrder] DEBUG - order_type:', order_type, 'marketType:', marketType, 'banMcxLimitOrder:', clientConfig.banMcxLimitOrder);
 

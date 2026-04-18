@@ -596,6 +596,17 @@ const runMigrations = async () => {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
 
+    // Permanent Banned Scrips (Affects all order types)
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS banned_scrips (
+            id          INT AUTO_INCREMENT PRIMARY KEY,
+            symbol      VARCHAR(100) NOT NULL UNIQUE,
+            created_by  INT NOT NULL,
+            created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            KEY symbol_idx (symbol)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+
     // ─── 14. PAPER TRADING TABLES ──────────────────────────────────────────────
     
     // Per-user Kite sessions
