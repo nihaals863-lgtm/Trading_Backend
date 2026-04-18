@@ -1256,10 +1256,13 @@ const closeTrade = async (req, res) => {
         const entryTime = new Date(trade.entry_time);
         const now = new Date();
         const secondsHeld = Math.floor((now - entryTime) / 1000);
+        const [scripRows] = await db.execute('SELECT lot_size FROM scrip_data WHERE symbol = ?', [trade.symbol]);
+        const lotSize = (scripRows.length > 0) ? parseFloat(scripRows[0].lot_size || 1) : 1;
+
         const currentPrice = exitPrice || mockEngine.getPrice(trade.symbol) || trade.entry_price;
         const pnl = trade.type === 'BUY'
-            ? (currentPrice - trade.entry_price) * trade.qty
-            : (trade.entry_price - currentPrice) * trade.qty;
+            ? (currentPrice - trade.entry_price) * trade.qty * lotSize
+            : (trade.entry_price - currentPrice) * trade.qty * lotSize;
 
         if (pnl > 0 && minTimeSeconds > 0 && secondsHeld < minTimeSeconds) {
             return res.status(400).json({

@@ -49,10 +49,14 @@ class TradeService {
             }
 
             // 3. Normal Market Order Closure
+            // Get lot_size from scrip_data for accurate P/L
+            const [scripRows] = await connection.execute('SELECT lot_size FROM scrip_data WHERE symbol = ?', [trade.symbol]);
+            const lotSize = (scripRows.length > 0) ? parseFloat(scripRows[0].lot_size || 1) : 1;
+
             const finalExitPrice = exitPrice || mockEngine.getPrice(trade.symbol) || trade.entry_price;
             const pnl = trade.type === 'BUY'
-                ? (finalExitPrice - trade.entry_price) * trade.qty
-                : (trade.entry_price - finalExitPrice) * trade.qty;
+                ? (finalExitPrice - trade.entry_price) * trade.qty * lotSize
+                : (trade.entry_price - finalExitPrice) * trade.qty * lotSize;
 
             // 4. Calculate Brokerage & Swap
             let brokerage = 0;
