@@ -91,6 +91,7 @@ class SocketManager {
                         crypto,
                         forex,
                         dashboard,
+                        excludedContracts: global.EXCLUDED_CONTRACTS || [],
                         error: kiteResult.error || null
                     });
                 } catch (e) {
@@ -142,6 +143,17 @@ class SocketManager {
 
     getIo() {
         return this.io;
+    }
+
+    /**
+     * Broadcasts a message to all connected clients to re-request their market snapshot.
+     * This is useful when global config like excluded contracts changes.
+     */
+    broadcastMarketSnapshotRefresh() {
+        if (this.io) {
+            console.log('📢 Broadcasting market snapshot refresh to all clients...');
+            this.io.emit('market_snapshot_needed');
+        }
     }
 }
 
