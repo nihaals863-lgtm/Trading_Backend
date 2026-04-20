@@ -1,5 +1,5 @@
 {
-  "timestamp": 1776430900384,
+  "timestamp": 1776512791267,
   "data": [
     {
       "symbol": "BFO:BANKEX26APRFUT",
@@ -1064,6 +1064,13 @@
       "expiry": "26JUN",
       "segment": "MCX",
       "instrument_token": "144869895"
+    },
+    {
+      "symbol": "MCX:MCXBULLDEX26JULFUT",
+      "name": "MCXBULLDEX",
+      "expiry": "26JUL",
+      "segment": "MCX",
+      "instrument_token": "145883399"
     },
     {
       "symbol": "MCX:MCXMETLDEX26APRFUT",
