@@ -50,13 +50,27 @@ let indexedInstruments = {
     MCX: { FUT: [], OPT: [] }
 };
 
+let fetchingPromise = null;
+
 async function getInstrumentsFromCache() {
     const now = Date.now();
+    
+    // 1. If we have a valid cache, return it
     if (instrumentsCache && (now - instrumentsCacheTime) < CACHE_TTL) {
         return instrumentsCache;
     }
-    console.log('⚡ Fetching and INDEXING ALL instruments from Kite API...');
-    const instruments = await kiteService.getInstruments();
+
+    // 2. If already fetching/indexing, wait for that promise
+    if (fetchingPromise) {
+        return fetchingPromise;
+    }
+
+    // 3. Start a new fetch/index process and cache the promise
+    fetchingPromise = (async () => {
+        try {
+            console.log('⚡ Fetching and INDEXING ALL instruments from Kite API...');
+            const instruments = await kiteService.getInstruments();
+
 
     // 1. Rebuild basic mapping
     const newMap = new Map();
@@ -84,13 +98,22 @@ async function getInstrumentsFromCache() {
         }
     });
 
-    symbolTokenMap = newMap;
-    indexedInstruments = newIndex;
-    instrumentsCache = instruments;
-    instrumentsCacheTime = now;
+            symbolTokenMap = newMap;
+            indexedInstruments = newIndex;
+            instrumentsCache = instruments;
+            instrumentsCacheTime = now;
 
-    console.log(`✅ Indexed ${instruments.length} instruments`);
-    return instruments;
+            console.log(`✅ Indexed ${instruments.length} instruments`);
+            return instruments;
+        } catch (err) {
+            console.error('❌ Failed to fetch/index instruments:', err.message);
+            throw err;
+        } finally {
+            fetchingPromise = null;
+        }
+    })();
+
+    return fetchingPromise;
 }
 
 function getTokenSync(symbol) {
@@ -350,7 +373,8 @@ function getOptionStrikeStepNfo(underlying) {
 
 const MCX_ALLOWED_WATCHLIST = [
     'GOLD', 'SILVER', 'CRUDEOIL', 'COPPER', 'ZINC', 'ALUMINIUM', 'LEAD', 'NATURALGAS',
-    'GOLDM', 'SILVERM', 'CRUDEOILM', 'ZINCMINI', 'LEADMINI', 'COPPERMINI', 'NATURALGASMINI',
+    'GOLDM', 'SILVERM', 'CRUDEOILM', 'ZINCMINI', 'LEADMINI', 'COPPERM', 'NATURALGASMINI',
+    'ALUMINI',
 ];
 
 /** Unified watchlist: MCX options only for Crude + Natural Gas (incl. mini); other MCX bases = nearest FUT only */
@@ -414,8 +438,8 @@ async function refreshDashboardSymbols() {
     try {
         console.log('🔄 Rebuilding Dashboard Symbols Cache in Background...');
         const [mcxSymbols, nfoIndexFut, nfoStockFut] = await Promise.all([
-            buildFutSymbols('MCX', MCX_BASES, 2),
-            buildFutSymbols('NFO', NFO_INDICES, 3),
+            buildFutSymbols('MCX', MCX_BASES, 6),
+            buildFutSymbols('NFO', NFO_INDICES, 4),
             buildFutSymbols('NFO', NIFTY50, 1),
         ]);
 
@@ -476,7 +500,6 @@ function resolveNfoIndexSpotLtp(ltpQuotes, cfg) {
  * @returns {Promise<{ status: string, timestamp: string, counts: object, nseGroups: object, data: object, groups: object }>}
  */
 async function buildKiteDashboardPayload(userId) {
-    // Sync per-user token from DB to global kiteService if needed
     if (!kiteService.isAuthenticated() && userId) {
         try {
             const status = await kiteAuthService.getStatus(userId);
@@ -487,9 +510,7 @@ async function buildKiteDashboardPayload(userId) {
                     kiteService.sessionData = { access_token: session.access_token, user_name: session.user_name };
                 }
             }
-        } catch (syncErr) {
-            console.warn('Token sync failed:', syncErr.message);
-        }
+        } catch (_) { }
     }
 
     if (!kiteService.isAuthenticated()) {
@@ -499,26 +520,73 @@ async function buildKiteDashboardPayload(userId) {
     }
 
     const marketDataService = require('../services/MarketDataService');
-    marketDataService.init(userId).catch(err => console.log('MarketDataService init background:', err.message));
+    marketDataService.init(userId).catch(() => {});
 
+    const instruments = await getInstrumentsFromCache();
+
+    // 1. Basic Symbols (Stocks + Indices)
     const nseStocks = ALL_NSE_STOCKS.map(s => `NSE:${s}`);
     const nseIndices = ['NSE:NIFTY 50', 'NSE:NIFTY BANK', 'NSE:NIFTY FIN SERVICE', 'NSE:NIFTY MID SELECT'];
+    
+    // 2. Futures (from background cache)
+    if (!dashboardSymbolsCache) await refreshDashboardSymbols().catch(() => {});
+    const mcxFutSymbols = dashboardSymbolsCache?.mcxSymbols || [];
+    const nfoFutSymbols = dashboardSymbolsCache?.nfoSymbols || [];
 
-    if (!dashboardSymbolsCache) {
-        await refreshDashboardSymbols().catch(() => {});
+    // 3. Dynamic Options (matching Market Watch logic but for all tab visitors)
+    // We fetch current LTP of indices to define ATM range
+    const spotKeys = [...nseIndices, ...mcxFutSymbols];
+    const spotQuotes = await kiteService.getQuote(spotKeys).catch(() => ({}));
+
+    const dynamicOptions = [];
+    
+    // NFO ATM Options (±5 strikes)
+    for (const underlying of NFO_INDEX_OPTION_UNDERLYINGS) {
+        const step = getOptionStrikeStepNfo(underlying);
+        const idxKey = underlying === 'NIFTY' ? 'NSE:NIFTY 50' : underlying === 'BANKNIFTY' ? 'NSE:NIFTY BANK' : 'NSE:NIFTY FIN SERVICE';
+        const ltp = spotQuotes[idxKey]?.last_price || 0;
+        if (!ltp || !step) continue;
+
+        const atm = Math.round(ltp / step) * step;
+        const strikes = [atm - 2 * step, atm - step, atm, atm + step, atm + 2 * step];
+        
+        const nearestOpt = pickNearestExpiry(instruments, { exchange: 'NFO', name: underlying, instrumentTypes: ['CE', 'PE'] });
+        if (!nearestOpt) continue;
+        const expStr = new Date(nearestOpt.expiry).toDateString();
+        
+        const matches = (indexedInstruments['NFO']?.OPT || []).filter(i => 
+            i.name === underlying && 
+            new Date(i.expiry).toDateString() === expStr &&
+            strikes.includes(Number(i.strike))
+        );
+        matches.forEach(m => dynamicOptions.push(`NFO:${m.tradingsymbol}`));
     }
 
-    const mcxSymbols = dashboardSymbolsCache?.mcxSymbols || [];
-    const nfoSymbols = dashboardSymbolsCache?.nfoSymbols || [];
-    const allSymbols = [...nseStocks, ...nseIndices, ...mcxSymbols, ...nfoSymbols];
+    // MCX ATM Options (Crude/Natgas)
+    for (const base of ['CRUDEOIL', 'NATURALGAS']) {
+        const futKey = mcxFutSymbols.find(s => s.startsWith(`MCX:${base}`)) || `MCX:${base}FUT`;
+        const ltp = spotQuotes[futKey]?.last_price || 0;
+        if (!ltp) continue;
+        const step = MCX_ALLOWED[base]?.step || 100;
+        const atm = Math.round(ltp / step) * step;
+        const strikes = [atm - step, atm, atm + step];
+        
+        const nearestOpt = pickNearestExpiry(instruments, { exchange: 'MCX', name: base, instrumentTypes: ['CE', 'PE'] });
+        if (!nearestOpt) continue;
+        const expStr = new Date(nearestOpt.expiry).toDateString();
+        
+        const matches = (indexedInstruments['MCX']?.OPT || []).filter(i => 
+            i.name === base && 
+            new Date(i.expiry).toDateString() === expStr &&
+            strikes.includes(Number(i.strike))
+        );
+        matches.forEach(m => dynamicOptions.push(`MCX:${m.tradingsymbol}`));
+    }
 
-    getInstrumentsFromCache().catch(() => { });
+    const allSymbols = Array.from(new Set([...nseStocks, ...nseIndices, ...mcxFutSymbols, ...nfoFutSymbols, ...dynamicOptions]));
 
-    const subList = allSymbols.map(sym => ({
-        symbol: sym,
-        token: getTokenSync(sym)
-    })).filter(i => i.token);
-
+    // Subscribe to everything
+    const subList = allSymbols.map(sym => ({ symbol: sym, token: getTokenSync(sym) })).filter(i => i.token);
     marketDataService.bulkSubscribe(subList);
 
     const streamData = marketDataService.getPricesBatch(allSymbols);
@@ -550,9 +618,6 @@ async function buildKiteDashboardPayload(userId) {
     const finniftySet = new Set(FINNIFTY.map(s => `NSE:${s}`));
 
     const sections = { nse: {}, mcx: {}, nfo: {} };
-    const mcxSet = new Set(mcxSymbols);
-    const nfoSet = new Set(nfoSymbols);
-
     for (const [sym, data] of Object.entries(formatted)) {
         if (sym.startsWith('NSE:')) {
             sections.nse[sym] = data;
@@ -562,8 +627,8 @@ async function buildKiteDashboardPayload(userId) {
             if (midcapSet.has(sym)) nseGroups['MIDCAP'][sym] = data;
             if (finniftySet.has(sym)) nseGroups['FIN NIFTY'][sym] = data;
         }
-        else if (mcxSet.has(sym)) sections.mcx[sym] = data;
-        else if (nfoSet.has(sym)) sections.nfo[sym] = data;
+        else if (sym.startsWith('MCX:')) sections.mcx[sym] = data;
+        else if (sym.startsWith('NFO:')) sections.nfo[sym] = data;
     }
 
     return {
@@ -612,6 +677,12 @@ let watchlistRefreshing = false;
 let watchlistLastQuery = null;
 let watchlistLastUserId = null;
 
+// ─── Called by contractController after saving contract selection ───
+function bustWatchlistCache() {
+    watchlistCache = { data: null, time: 0, key: '' };
+    console.log('🔄 Watchlist cache busted (contract selection changed)');
+}
+
 // Auto-refresh loop: keeps cache warm every 2s after first request
 let watchlistAutoRefreshStarted = false;
 function startWatchlistAutoRefresh() {
@@ -647,7 +718,8 @@ router.get('/market/watchlist', authMiddleware, asyncHandler(async (req, res) =>
             return res.status(503).json({ error: 'Kite not connected.', kite_disconnected: true });
         }
 
-        const cacheKey = `${req.query.nse || ''}_${req.query.nfoUnderlyings || ''}_${req.query.mcxOptSymbols || ''}_${req.query.nfoIndexOptRange || ''}_${WATCHLIST_CACHE_BUST}`;
+        const configVer = global.WATCHLIST_CONFIG_VERSION || 0;
+        const cacheKey = `${req.query.nse || ''}_${req.query.nfoUnderlyings || ''}_${req.query.mcxOptSymbols || ''}_${req.query.nfoIndexOptRange || ''}_${WATCHLIST_CACHE_BUST}_v${configVer}`;
 
         // If cache has data → return INSTANTLY, trigger background refresh if stale
         if (watchlistCache.data && watchlistCache.key === cacheKey) {
@@ -825,10 +897,9 @@ async function _buildWatchlistData(query, userId) {
         try { ltpQuotes = await kiteService.getQuote(pc.ltpKeys); } catch (_) { }
     }
 
-    // ── Step 2: NFO index options (NIFTY / BANKNIFTY / FINNIFTY CE+PE) — strikes ±nfoIndexOptRange from spot, nearest expiry
+    // ── Step 2: NFO index options ──
     const nfoIndexOptRange = parseInt(query.nfoIndexOptRange, 10);
     const nfoOptRangePts = Number.isFinite(nfoIndexOptRange) && nfoIndexOptRange > 0 ? nfoIndexOptRange : 5000;
-
     const nfoOptKeys = [];
     const nfoOptMeta = {};
     for (const cfg of pc.nfoConfig) {
@@ -840,12 +911,10 @@ async function _buildWatchlistData(query, userId) {
         const expiryYmd = cfg.expiry;
         if (!expiryYmd) continue;
         const requestedExpiry = new Date(expiryYmd).toDateString();
-
         const lowerBound = Math.floor((ltp - nfoOptRangePts) / step) * step;
         const upperBound = Math.ceil((ltp + nfoOptRangePts) / step) * step;
         const strikeSet = new Set();
         for (let s = lowerBound; s <= upperBound; s += step) strikeSet.add(s);
-
         const optList = pc.nfoOptIndex[cfg.underlying] || [];
         for (const inst of optList) {
             if (new Date(inst.expiry || 0).toDateString() !== requestedExpiry) continue;
@@ -868,67 +937,43 @@ async function _buildWatchlistData(query, userId) {
         mcxFutMeta[f.fullKey] = { expiry: toYmd(f.expiry) };
     }
 
-    // ── Step 4: MCX Options using precomputed index + LTP from step 1 ──
+    // ── Step 4: MCX Options ──
     const mcxOptKeys = [];
     const mcxOptMeta = {};
-
     for (const reqName of pc.mcxOptRequested) {
         const base = canonicalMcxName(reqName);
         const step = MCX_ALLOWED[base]?.step || 10;
         const fut = pc.mcxFutByBase[base];
         if (!fut) continue;
-
         const ltp = ltpQuotes?.[fut.fullKey]?.last_price || 0;
-
         const nearestOpt = pickNearestExpiry(instruments, { exchange: 'MCX', name: base, instrumentTypes: ['CE', 'PE'] });
         if (!nearestOpt) continue;
         const expiryYmd = toYmd(nearestOpt.expiry);
         if (!expiryYmd) continue;
-
-        const atmStrike = ltp ? Math.round(ltp / step) * step : null;
-        if (ltp) {
-            const lower = Math.floor((ltp - pc.mcxOptRange) / step) * step;
-            const upper = Math.ceil((ltp + pc.mcxOptRange) / step) * step;
-            const strikeSet = new Set();
-            for (let s = lower; s <= upper; s += step) strikeSet.add(s);
-        }
-
         const requestedExpiry = new Date(expiryYmd).toDateString();
         const optList = pc.mcxOptIndex[base] || [];
         for (const inst of optList) {
             if (new Date(inst.expiry || 0).toDateString() !== requestedExpiry) continue;
             const strike = Number(inst.strike);
-            // Limitation removed: showing all strikes for the expiry
-            // if (!strikeSet.has(strike)) continue; 
             const fullKey = `MCX:${inst.tradingsymbol}`;
             const it = String(inst.instrument_type || '').toUpperCase();
             mcxOptKeys.push(fullKey);
-            mcxOptMeta[fullKey] = { strike, optionType: it, expiry: expiryYmd, base, isATM: strike === atmStrike };
+            mcxOptMeta[fullKey] = { strike, optionType: it, expiry: expiryYmd, base };
         }
     }
 
-    // ── Step 5: ONE batch quote fetch for ALL symbols (parallel chunks) ──
+    // ── Step 5: ONE batch quote fetch for ALL symbols ──
     const allKeys = [...pc.nseKeys, ...pc.nfoFutKeys, ...nfoOptKeys, ...mcxFutKeys, ...mcxOptKeys];
     const uniqueKeys = Array.from(new Set(allKeys));
-
-    // Parallel batch: split into 500-symbol chunks, fetch simultaneously
     const rawQuotes = {};
     const chunks = [];
-    for (let i = 0; i < uniqueKeys.length; i += 500) {
-        chunks.push(uniqueKeys.slice(i, i + 500));
-    }
-    const results = await Promise.all(chunks.map(chunk =>
-        kiteService.getQuote(chunk).catch(() => ({}))
-    ));
-    for (const r of results) {
-        if (r && typeof r === 'object') Object.assign(rawQuotes, r);
-    }
+    for (let i = 0; i < uniqueKeys.length; i += 500) chunks.push(uniqueKeys.slice(i, i + 500));
+    const results = await Promise.all(chunks.map(chunk => kiteService.getQuote(chunk).catch(() => ({}))));
+    for (const r of results) if (r && typeof r === 'object') Object.assign(rawQuotes, r);
 
-    // ── Step 6: Build rows ──
-    const rows = [];
-    for (const key of pc.nseKeys) {
-        rows.push(buildUnifiedRow({ type: 'NSE', symbol: key, quote: rawQuotes[key] }));
-    }
+    // ── Step 6: Build all rows ──
+    let rows = [];
+    for (const key of pc.nseKeys) rows.push(buildUnifiedRow({ type: 'NSE', symbol: key, quote: rawQuotes[key] }));
     for (const key of pc.nfoFutKeys) {
         const m = pc.nfoFutMeta[key] || {};
         rows.push(buildUnifiedRow({ type: 'FUT', symbol: key, expiry: m.expiry, quote: rawQuotes[key] }));
@@ -946,13 +991,14 @@ async function _buildWatchlistData(query, userId) {
         rows.push(buildUnifiedRow({ type: 'MCX_OPT', symbol: key, strike: m.strike, optionType: m.optionType, expiry: m.expiry, quote: rawQuotes[key] }));
     }
 
-    // ── Step 7: Push via WebSocket ──
+    // ── Step 7: Gather Contract Management Exclusions (Visibility decided by frontend) ──
+    const excluded = global.EXCLUDED_CONTRACTS || [];
+
+    // ── Step 8: Push via WebSocket ──
     const io = require('../websocket/SocketManager').getIo();
     if (io) {
         const wsPayload = {};
-        for (const row of rows) {
-            wsPayload[row.symbol] = row;
-        }
+        for (const row of rows) wsPayload[row.symbol] = row;
         io.emit('price_update', wsPayload);
     }
 
@@ -1598,9 +1644,16 @@ router.get('/market/search', authMiddleware, asyncHandler(async (req, res) => {
     const instruments = await getInstrumentsFromCache();
     const query = q.toUpperCase();
     const results = instruments
-        .filter(i => i.tradingsymbol?.toUpperCase().includes(query) || i.name?.toUpperCase().includes(query))
-        .slice(0, 30)
-        .map(i => ({ symbol: i.tradingsymbol, exchange: i.exchange, name: i.name || '', type: i.instrument_type || '', expiry: i.expiry || '' }));
+        .filter(i => i.tradingsymbol?.toUpperCase().startsWith(query) || i.name?.toUpperCase().startsWith(query))
+        .slice(0, 100)
+        .map(i => ({
+            symbol: i.tradingsymbol,
+            exchange: i.exchange,
+            name: i.name || '',
+            type: i.instrument_type || '',
+            expiry: i.expiry || '',
+            instrument_token: i.instrument_token
+        }));
 
     res.json({ status: 'success', count: results.length, data: results });
 }));
@@ -1725,7 +1778,8 @@ async function fetchUnifiedWatchlistForSocket(userId, query = {}) {
             return { ok: false, kite_disconnected: true, data: [], error: 'Kite not connected.' };
         }
 
-        const cacheKey = `${query.nse || ''}_${query.nfoUnderlyings || ''}_${query.mcxOptSymbols || ''}_${query.nfoIndexOptRange || ''}_${WATCHLIST_CACHE_BUST}`;
+        const configVer = global.WATCHLIST_CONFIG_VERSION || 0;
+        const cacheKey = `${query.nse || ''}_${query.nfoUnderlyings || ''}_${query.mcxOptSymbols || ''}_${query.nfoIndexOptRange || ''}_${WATCHLIST_CACHE_BUST}_v${configVer}`;
 
         if (watchlistCache.data && watchlistCache.key === cacheKey) {
             watchlistLastQuery = query;
