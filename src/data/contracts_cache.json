@@ -839,6 +839,13 @@
       "lot_size": "1"
     },
     {
+      "symbol": "MCX:MCXBULLDEX26JULFUT",
+      "name": "MCXBULLDEX",
+      "expiry": "26JUL",
+      "segment": "MCX",
+      "instrument_token": "145883399"
+    },
+    {
       "symbol": "MCX:MCXMETLDEX26APRFUT",
       "name": "MCXMETLDEX",
       "trading_symbol": "MCXMETLDEX26APRFUT",
