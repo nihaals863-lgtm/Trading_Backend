@@ -86,7 +86,7 @@ async function getAllContractsFromKite() {
         cacheTimestamp = Date.now();
         try {
             fs.writeFileSync(CONTRACTS_CACHE_FILE, JSON.stringify({ timestamp: cacheTimestamp, data: contracts }, null, 2));
-        } catch (e) {}
+        } catch (e) { }
         return contracts;
     } catch (err) {
         try {
@@ -96,7 +96,7 @@ async function getAllContractsFromKite() {
                 cacheTimestamp = cached.timestamp;
                 return cached.data;
             }
-        } catch (e) {}
+        } catch (e) { }
         return [];
     }
 }
@@ -120,6 +120,12 @@ function _bustWatchlistCache() {
 // Get all available contracts
 exports.getAllContracts = async (req, res) => {
     try {
+        if (!kiteService.isAuthenticated()) {
+            return res.status(403).json({
+                status: 'error',
+                message: 'Kite not connected. Please login first to manage contracts.'
+            });
+        }
         const allContracts = await getAllContractsFromKite();
         const contracts = allContracts.map(contract => ({
             ...contract,
@@ -134,6 +140,12 @@ exports.getAllContracts = async (req, res) => {
 // Get selected contracts only (for backward compat if needed)
 exports.getSelectedContracts = async (req, res) => {
     try {
+        if (!kiteService.isAuthenticated()) {
+            return res.status(403).json({
+                status: 'error',
+                message: 'Kite not connected.'
+            });
+        }
         const allContracts = await getAllContractsFromKite();
         const selected = allContracts.filter(contract => !excludedContracts.includes(contract.symbol));
         res.json({ status: 'success', count: selected.length, data: selected.map(c => c.symbol) });
@@ -145,13 +157,19 @@ exports.getSelectedContracts = async (req, res) => {
 // Save selection
 exports.saveContractSelection = async (req, res) => {
     try {
+        if (!kiteService.isAuthenticated()) {
+            return res.status(403).json({
+                status: 'error',
+                message: 'Kite not connected. Action denied.'
+            });
+        }
         const { contracts } = req.body; // symbols that WERE SELECTED (checked)
         if (!Array.isArray(contracts)) {
             return res.status(400).json({ error: 'contracts must be an array' });
         }
         const allContracts = await getAllContractsFromKite();
         const allSymbols = allContracts.map(c => c.symbol);
-        
+
         // Excluded = All - Selected
         const excluded = allSymbols.filter(sym => !contracts.includes(sym));
         excludedContracts = excluded;
@@ -176,16 +194,51 @@ exports.saveContractSelection = async (req, res) => {
 exports.searchContracts = async (req, res) => {
     try {
         const { q } = req.query;
-        const allContracts = await getAllContractsFromKite();
         const searchTerm = (q || '').toLowerCase();
-        const filtered = allContracts.filter(c => 
-            c.name.toLowerCase().includes(searchTerm) || 
-            c.symbol.toLowerCase().includes(searchTerm)
+
+        let kiteContracts = [];
+        // Only fetch Kite contracts if authenticated, otherwise return empty for Kite part
+        if (kiteService.isAuthenticated()) {
+            const allKite = await getAllContractsFromKite();
+            kiteContracts = allKite.filter(c =>
+                c.name.toLowerCase().includes(searchTerm) ||
+                c.symbol.toLowerCase().includes(searchTerm)
+            ).map(c => ({
+                ...c,
+                isSelected: !excludedContracts.includes(c.symbol)
+            }));
+        }
+
+        // --- Include Crypto & Forex from MarketDataService ---
+        const marketDataService = require('../services/MarketDataService');
+        const cryptoData = marketDataService.getCryptoPrices().filter(c =>
+            c.symbol.toLowerCase().includes(searchTerm) || (c.name || '').toLowerCase().includes(searchTerm)
         ).map(c => ({
-            ...c,
-            isSelected: !excludedContracts.includes(c.symbol)
+            symbol: c.symbol,
+            name: c.name,
+            segment: 'CRYPTO',
+            type: 'CRYPTO',
+            isSelected: true
         }));
-        res.json({ status: 'success', total: filtered.length, data: filtered });
+
+        const forexData = marketDataService.getForexPrices().filter(f =>
+            f.symbol.toLowerCase().includes(searchTerm) || (f.name || '').toLowerCase().includes(searchTerm)
+        ).map(f => ({
+            symbol: f.symbol,
+            name: f.name,
+            segment: 'FOREX',
+            type: 'FOREX',
+            isSelected: true
+        }));
+
+        const combined = [...kiteContracts, ...cryptoData, ...forexData];
+
+        res.json({
+            status: 'success',
+            total: combined.length,
+            data: combined,
+            kite_connected: kiteService.isAuthenticated()
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

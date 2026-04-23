@@ -6,10 +6,14 @@ const { getBannedOrders, createBannedOrder, deleteBannedOrder, deleteMultipleBan
 const { getExpiryRules, updateExpiryRules } = require('../controllers/expiryController');
 const { authMiddleware, roleMiddleware } = require('../middleware/auth');
 
-router.get('/audit-log',       authMiddleware, roleMiddleware(['SUPERADMIN','ADMIN']), getActionLedger);
-router.post('/global-update',  authMiddleware, roleMiddleware(['SUPERADMIN']), globalBatchUpdate);
-router.get('/segment-values',  authMiddleware, roleMiddleware(['SUPERADMIN','ADMIN']), getSegmentValues);
-router.post('/reset-segment',  authMiddleware, roleMiddleware(['SUPERADMIN']), resetSegmentValues);
+router.get('/ping', (req, res) => {
+    res.json({ status: 'ok', timestamp: Date.now(), platform: 'Railway / Node.js' });
+});
+
+router.get('/audit-log', authMiddleware, roleMiddleware(['SUPERADMIN', 'ADMIN']), getActionLedger);
+router.post('/global-update', authMiddleware, roleMiddleware(['SUPERADMIN']), globalBatchUpdate);
+router.get('/segment-values', authMiddleware, roleMiddleware(['SUPERADMIN', 'ADMIN']), getSegmentValues);
+router.post('/reset-segment', authMiddleware, roleMiddleware(['SUPERADMIN']), resetSegmentValues);
 
 // Scrip & Ticker Management
 router.get('/scrips', authMiddleware, getAllScrips);

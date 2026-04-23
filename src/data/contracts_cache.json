@@ -1,5 +1,5 @@
 {
-  "timestamp": 1776518620879,
+  "timestamp": 1776843765248,
   "data": [
     {
       "symbol": "MCX:ALUMINI26APRFUT",
@@ -263,15 +263,6 @@
       "lot_size": "1"
     },
     {
-      "symbol": "MCX:CRUDEOIL26APRFUT",
-      "name": "CRUDEOIL",
-      "trading_symbol": "CRUDEOIL26APRFUT",
-      "expiry": "26APR",
-      "segment": "MCX",
-      "instrument_token": "124544519",
-      "lot_size": "1"
-    },
-    {
       "symbol": "MCX:CRUDEOIL26AUGFUT",
       "name": "CRUDEOIL",
       "trading_symbol": "CRUDEOIL26AUGFUT",
@@ -308,21 +299,21 @@
       "lot_size": "1"
     },
     {
+      "symbol": "MCX:CRUDEOIL26OCTFUT",
+      "name": "CRUDEOIL",
+      "trading_symbol": "CRUDEOIL26OCTFUT",
+      "expiry": "26OCT",
+      "segment": "MCX",
+      "instrument_token": "145894407",
+      "lot_size": "1"
+    },
+    {
       "symbol": "MCX:CRUDEOIL26SEPFUT",
       "name": "CRUDEOIL",
       "trading_symbol": "CRUDEOIL26SEPFUT",
       "expiry": "26SEP",
       "segment": "MCX",
       "instrument_token": "144870151",
-      "lot_size": "1"
-    },
-    {
-      "symbol": "MCX:CRUDEOILM26APRFUT",
-      "name": "CRUDEOILM",
-      "trading_symbol": "CRUDEOILM26APRFUT",
-      "expiry": "26APR",
-      "segment": "MCX",
-      "instrument_token": "124544775",
       "lot_size": "1"
     },
     {
@@ -359,6 +350,15 @@
       "expiry": "26MAY",
       "segment": "MCX",
       "instrument_token": "125002503",
+      "lot_size": "1"
+    },
+    {
+      "symbol": "MCX:CRUDEOILM26OCTFUT",
+      "name": "CRUDEOILM",
+      "trading_symbol": "CRUDEOILM26OCTFUT",
+      "expiry": "26OCT",
+      "segment": "MCX",
+      "instrument_token": "145894663",
       "lot_size": "1"
     },
     {
