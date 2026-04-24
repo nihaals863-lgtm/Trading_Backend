@@ -1,5 +1,5 @@
 {
-  "timestamp": 1776843765248,
+  "timestamp": 1777016736516,
   "data": [
     {
       "symbol": "MCX:ALUMINI26APRFUT",
@@ -803,15 +803,6 @@
       "lot_size": "1"
     },
     {
-      "symbol": "MCX:MCXBULLDEX26APRFUT",
-      "name": "MCXBULLDEX",
-      "trading_symbol": "MCXBULLDEX26APRFUT",
-      "expiry": "26APR",
-      "segment": "MCX",
-      "instrument_token": "133384711",
-      "lot_size": "1"
-    },
-    {
       "symbol": "MCX:MCXBULLDEX26JULFUT",
       "name": "MCXBULLDEX",
       "trading_symbol": "MCXBULLDEX26JULFUT",
@@ -836,22 +827,6 @@
       "expiry": "26MAY",
       "segment": "MCX",
       "instrument_token": "143611655",
-      "lot_size": "1"
-    },
-    {
-      "symbol": "MCX:MCXBULLDEX26JULFUT",
-      "name": "MCXBULLDEX",
-      "expiry": "26JUL",
-      "segment": "MCX",
-      "instrument_token": "145883399"
-    },
-    {
-      "symbol": "MCX:MCXMETLDEX26APRFUT",
-      "name": "MCXMETLDEX",
-      "trading_symbol": "MCXMETLDEX26APRFUT",
-      "expiry": "26APR",
-      "segment": "MCX",
-      "instrument_token": "132378887",
       "lot_size": "1"
     },
     {

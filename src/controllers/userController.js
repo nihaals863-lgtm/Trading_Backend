@@ -667,27 +667,43 @@ const recalculateBrokerage = async (req, res) => {
             [userId]
         );
 
+        // Fetch all segment settings for this user once
+        const [segmentSettings] = await db.execute('SELECT * FROM user_segments WHERE user_id = ?', [userId]);
+        const segmentMap = {};
+        segmentSettings.forEach(s => segmentMap[s.segment] = s);
+
         let totalBrokerage = 0;
-        const brokerMcxBrokerage = config.brokerMcxBrokerage || config.mcxLotBrokerage || {};
 
         for (const trade of trades) {
             let brokerage = 0;
+            const seg = segmentMap[trade.market_type || 'MCX'];
 
-            // Try broker's lot-wise brokerage first
-            if (brokerMcxBrokerage[trade.symbol] !== undefined) {
-                brokerage = trade.qty * parseFloat(brokerMcxBrokerage[trade.symbol]);
-                console.log(`[recalcBrokerage] Symbol=${trade.symbol}, Qty=${trade.qty}, BrokeragePerLot=${brokerMcxBrokerage[trade.symbol]}, Total=${brokerage}`);
-            } else {
-                // Fallback to config
-                const brokeragePerLot = parseFloat(config.mcxBrokerage || 0);
-                const brokerageType = config.mcxBrokerageType || 'per_crore';
+            if (seg) {
+                const rate = parseFloat(seg.brokerage_value || 0);
+                const type = (seg.brokerage_type || 'PER_LOT').toUpperCase();
 
-                if (brokerageType === 'per_lot') {
-                    brokerage = trade.qty * brokeragePerLot;
+                if (type === 'PER_LOT' || type === 'PER LOT') {
+                    brokerage = trade.qty * rate;
+                } else if (type === 'PER_CRORE' || type === 'PER CRORE') {
+                    const turnover = (parseFloat(trade.entry_price) + parseFloat(trade.exit_price || 0)) * trade.qty;
+                    brokerage = (turnover / 10000000) * rate;
                 } else {
-                    // per crore basis
-                    const turnover = trade.qty * (parseFloat(trade.entry_price) + parseFloat(trade.exit_price || 0));
-                    brokerage = (turnover / 10000000) * brokeragePerLot;
+                    brokerage = trade.qty * rate;
+                }
+            } else {
+                // Fallback to legacy config
+                const brokerMcxBrokerage = config.brokerMcxBrokerage || config.mcxLotBrokerage || {};
+                if (brokerMcxBrokerage[trade.symbol] !== undefined) {
+                    brokerage = trade.qty * parseFloat(brokerMcxBrokerage[trade.symbol]);
+                } else {
+                    const brokeragePerLot = parseFloat(config.mcxBrokerage || 0);
+                    const brokerageType = config.mcxBrokerageType || 'per_crore';
+                    if (brokerageType === 'per_lot') {
+                        brokerage = trade.qty * brokeragePerLot;
+                    } else {
+                        const turnover = trade.qty * (parseFloat(trade.entry_price) + parseFloat(trade.exit_price || 0));
+                        brokerage = (turnover / 10000000) * brokeragePerLot;
+                    }
                 }
             }
 
